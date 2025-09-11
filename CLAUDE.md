@@ -1,0 +1,303 @@
+# 乔雅社区后端项目架构规范
+
+## DDD架构设计
+
+### 架构概述
+本项目采用自定义的领域驱动设计(DDD)架构，结合MyBatis Plus进行数据持久化。
+
+### 目录结构
+```
+src/main/java/org/xhy/community/
+├── interfaces/          # 接口层（当前项目暂不使用）
+├── application/         # 应用层  
+│   └── {subdomain}/     # 各子域应用层
+│       ├── service/     # 应用服务
+│       ├── dto/         # 数据传输对象
+│       └── assembler/   # 转换器
+├── domain/             # 领域层
+│   ├── entity/         # 通用实体基类
+│   └── {subdomain}/    # 各子域
+│       ├── entity/     # 领域实体
+│       ├── valueobject/ # 值对象
+│       ├── repository/ # Repository接口
+│       └── service/    # 领域服务
+└── infrastructure/     # 基础设施层
+    └── config/         # 配置类
+```
+
+### 层级职责
+
+#### 1. Application层 (应用层)
+- **AppService**: 应用服务，编排业务流程
+- **DTO**: 数据传输对象，用于对外输出
+- **Assembler**: 转换器，负责Domain实体到DTO的转换
+- **职责**: 
+  - 业务流程编排
+  - 领域对象到DTO的转换
+  - 事务管理
+
+#### 2. Domain层 (领域层)
+- **BaseEntity**: 通用实体基类，包含公共字段
+- **Entity**: 领域实体，包含业务逻辑（以Entity结尾）
+- **ValueObject**: 值对象，不可变对象
+- **Repository**: 仓储接口，直接继承MyBatis Plus的BaseMapper
+- **Service**: 领域服务，处理跨实体的业务逻辑
+- **职责**: 核心业务逻辑，数据持久化
+
+#### 3. Infrastructure层 (基础设施层)
+- **Config**: 配置类
+- **职责**: 提供技术实现，如缓存、消息队列等
+
+### 调用关系规范
+
+#### 严格的分层调用关系
+1. **Application Layer** → **Domain Service** （仅此）
+2. **Domain Service** → **Repository** （仅此）
+3. **任何层** → **Infrastructure** 
+4. **Infrastructure** → **Application Service** (仅此)
+
+#### 禁止的调用关系
+- **Application层不能直接调用Repository层**
+- **Infrastructure不能调用Domain层**
+- **Domain层不能调用Application层**
+
+#### 层级职责分工
+
+**Application层职责：**
+- 业务流程编排
+- 调用Domain服务完成业务操作
+- Domain实体到DTO的转换
+- 事务管理
+- **不负责参数校验（由API层负责）**
+
+**Domain层职责：**
+- 核心业务逻辑
+- 数据持久化操作
+- 领域规则实现
+- **不负责参数格式校验（由API层负责）**
+- **只负责业务规则校验（如邮箱唯一性等）**
+
+### 数据流转规范
+
+#### 响应数据流
+1. **Domain实体** → **DTO转换** (Application层Assembler)
+2. **DTO** → **返回结果** (Application层)
+
+## 开发规范
+
+### 1. 命名规范
+
+#### 实体命名
+- 所有领域实体必须以`Entity`结尾
+- 示例: `UserEntity`, `PostEntity`, `CommentEntity`
+
+#### 服务命名
+- 应用服务必须以`AppService`结尾
+- 领域服务以`DomainService`结尾
+- 示例: `UserAppService`, `UserDomainService`
+
+#### Repository命名
+- 仓储接口以`Repository`结尾
+- 直接继承`BaseMapper<EntityType>`
+- 示例: `UserRepository extends BaseMapper<UserEntity>`
+
+### 2. Repository使用规范
+
+#### Repository接口定义
+```java
+@Repository
+public interface UserRepository extends BaseMapper<UserEntity> {
+    // 不需要写自定义SQL方法
+    // 使用MyBatis Plus提供的方法和条件构造器
+}
+```
+
+#### 在领域服务中使用
+```java
+@Service
+public class UserDomainService {
+    
+    @Autowired
+    private UserRepository userRepository;
+    
+    public void validateUniqueEmail(String email, Long excludeUserId) {
+        LambdaQueryWrapper<UserEntity> queryWrapper = 
+            new LambdaQueryWrapper<UserEntity>()
+                .eq(UserEntity::getEmail, email)
+                .eq(UserEntity::getDeleted, false);
+        
+        if (excludeUserId != null) {
+            queryWrapper.ne(UserEntity::getId, excludeUserId);
+        }
+        
+        if (userRepository.exists(queryWrapper)) {
+            throw new IllegalArgumentException("该邮箱已被注册");
+        }
+    }
+}
+```
+
+### 3. 转换层规范
+
+#### Assembler命名和位置
+- **位置**: 转换器必须位于Application层的assembler包中
+- **命名**: 转换器必须以`Assembler`结尾
+- **示例**: `UserAssembler`, `PostAssembler`, `CommentAssembler`
+
+#### 转换器使用静态方法
+```java
+// 位置：org.xhy.community.application.user.assembler.UserAssembler
+public class UserAssembler {
+    
+    public static UserDTO toDTO(UserEntity entity) {
+        if (entity == null) {
+            return null;
+        }
+        
+        UserDTO dto = new UserDTO();
+        BeanUtils.copyProperties(entity, dto);
+        return dto;
+    }
+}
+```
+
+#### 在应用服务中调用
+```java
+@Service
+public class UserAppService {
+    
+    public UserDTO getUserById(Long userId) {
+        UserEntity user = getUserEntityById(userId);
+        return UserAssembler.toDTO(user);  // 静态方法调用
+    }
+}
+```
+
+### 4. 实体设计规范
+
+#### BaseEntity使用
+```java
+// 通用基类位置：org.xhy.community.domain.entity.BaseEntity
+public abstract class BaseEntity {
+    @TableId(type = IdType.AUTO)
+    private Long id;
+    
+    @TableField(fill = FieldFill.INSERT)
+    private LocalDateTime createTime;
+    
+    @TableField(fill = FieldFill.INSERT_UPDATE)
+    private LocalDateTime updateTime;
+    
+    @TableLogic
+    private Boolean deleted;
+    
+    // getters and setters...
+}
+```
+
+#### 具体实体继承
+```java
+@TableName("users")
+public class UserEntity extends BaseEntity {
+    private String name;
+    private String email;
+    // 其他业务字段...
+    
+    // 业务方法
+    public void activate() {
+        this.status = UserStatus.ACTIVE;
+    }
+}
+```
+
+### 5. 参数校验规范
+
+#### 校验职责分工
+- **API层（Controller）**：负责所有参数格式校验
+  - 空值校验、长度校验、格式校验（如邮箱格式）
+  - 使用@Valid、@NotBlank、@Email等注解
+- **Application层**：不负责参数校验，专注业务流程编排
+- **Domain层**：只负责业务规则校验
+  - 如邮箱唯一性校验、业务状态校验等
+  - 不包含参数格式校验逻辑
+
+#### Domain层业务规则校验示例
+```java
+@Service
+public class UserDomainService {
+    
+    // ✅ 正确：业务规则校验
+    public boolean isEmailExists(String email, Long excludeUserId) {
+        // 只校验业务规则：邮箱是否已存在
+        return userRepository.exists(queryWrapper);
+    }
+    
+    // ❌ 错误：不应该在Domain层做格式校验
+    public void validateEmail(String email) {
+        if (email == null || email.trim().isEmpty()) {
+            throw new IllegalArgumentException("邮箱不能为空");
+        }
+        // 这些应该在API层完成
+    }
+}
+```
+
+#### Application层调用示例
+```java
+@Service
+public class UserAppService {
+    
+    public UserDTO createUser(String name, String email, String password) {
+        // API层已完成参数格式校验，这里直接进行业务校验
+        if (userDomainService.isEmailExists(email, null)) {
+            throw new IllegalArgumentException("该邮箱已被注册");
+        }
+        
+        UserEntity user = userDomainService.createUser(name, email, password);
+        return UserAssembler.toDTO(user);
+    }
+}
+```
+
+### 6. 不使用的规范
+
+1. **不使用值对象封装简单类型**：如Email等直接使用String
+2. **不写自定义SQL**：Repository只继承BaseMapper，使用条件构造器
+3. **暂不实现API接口**：不创建Controller和Request对象
+4. **不使用复杂的Repository实现**：直接在Domain层使用MyBatis Plus
+
+### 7. MyBatis Plus使用规范
+
+#### 条件查询示例
+```java
+// 根据邮箱查询用户
+UserEntity user = userRepository.selectOne(
+    new LambdaQueryWrapper<UserEntity>()
+        .eq(UserEntity::getEmail, email)
+        .eq(UserEntity::getDeleted, false)
+);
+
+// 分页查询
+Page<UserEntity> page = new Page<>(pageNum, pageSize);
+IPage<UserEntity> result = userRepository.selectPage(page,
+    new LambdaQueryWrapper<UserEntity>()
+        .like(UserEntity::getName, name)
+        .eq(UserEntity::getDeleted, false)
+        .orderByDesc(UserEntity::getCreateTime));
+```
+
+### 8. 数据库迁移规范
+
+使用FlyWay管理数据库版本：
+- 迁移文件位置：`src/main/resources/db/migration`
+- 命名格式：`V{version}__{description}.sql`
+- 示例：`V1__Create_user_table.sql`
+
+### 技术栈
+- JDK 17
+- Spring Boot 3.2.0
+- MyBatis Plus 3.5.4
+- FlyWay (数据库迁移)
+- PostgreSQL
+- Spring Security Crypto (密码加密)
+- Maven
