@@ -6,7 +6,9 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.domain.user.entity.UserEntity;
+import org.xhy.community.infrastructure.exception.UserErrorCode;
 import org.xhy.community.domain.user.repository.UserRepository;
 import org.xhy.community.domain.user.valueobject.UserStatus;
 
@@ -67,7 +69,7 @@ public class UserDomainService {
     public UserEntity changeUserPassword(String userId, String oldPassword, String newPassword) {
         UserEntity user = getUserById(userId);
         if (!verifyPassword(oldPassword, user.getPassword())) {
-            throw new IllegalArgumentException("原密码错误");
+            throw new BusinessException(UserErrorCode.WRONG_PASSWORD);
         }
         
         String encryptedPassword = encryptPassword(newPassword);
@@ -107,7 +109,7 @@ public class UserDomainService {
     public UserEntity getUserById(String userId) {
         UserEntity user = userRepository.selectById(userId);
         if (user == null || user.getDeleted()) {
-            throw new IllegalArgumentException("用户不存在");
+            throw new BusinessException(UserErrorCode.USER_NOT_FOUND);
         }
         return user;
     }
@@ -120,7 +122,7 @@ public class UserDomainService {
                 .eq(UserEntity::getDeleted, false)
         );
         if (user == null) {
-            throw new IllegalArgumentException("用户不存在");
+            throw new BusinessException(UserErrorCode.USER_NOT_FOUND);
         }
         return user;
     }

@@ -1,0 +1,76 @@
+package org.xhy.community.domain.post.entity;
+
+import com.baomidou.mybatisplus.annotation.TableName;
+import org.xhy.community.domain.entity.BaseEntity;
+import org.xhy.community.domain.post.valueobject.PostStatus;
+
+import java.time.LocalDateTime;
+
+@TableName("posts")
+public class PostEntity extends BaseEntity {
+    
+    private String title;
+    private String content;
+    private String summary;
+    private String coverImage;
+    private String authorId;
+    private String categoryId;
+    private PostStatus status;
+    private Integer likeCount;
+    private Integer viewCount;
+    private Integer commentCount;
+    private Boolean isTop;
+    private LocalDateTime publishTime;
+    
+    public PostEntity() {
+    }
+    
+    public PostEntity(String title, String content, String authorId, String categoryId) {
+        this.title = title;
+        this.content = content;
+        this.authorId = authorId;
+        this.categoryId = categoryId;
+        this.status = PostStatus.DRAFT;
+        this.likeCount = 0;
+        this.viewCount = 0;
+        this.commentCount = 0;
+        this.isTop = false;
+    }
+    
+    // Getters and Setters
+    public String getTitle() { return title; }
+    public void setTitle(String title) { this.title = title; }
+    
+    public String getContent() { return content; }
+    public void setContent(String content) { this.content = content; }
+    
+    public String getSummary() { return summary; }
+    public void setSummary(String summary) { this.summary = summary; }
+    
+    public String getCoverImage() { return coverImage; }
+    public void setCoverImage(String coverImage) { this.coverImage = coverImage; }
+    
+    public String getAuthorId() { return authorId; }
+    public void setAuthorId(String authorId) { this.authorId = authorId; }
+    
+    public String getCategoryId() { return categoryId; }
+    public void setCategoryId(String categoryId) { this.categoryId = categoryId; }
+    
+    public PostStatus getStatus() { return status; }
+    public void setStatus(PostStatus status) { this.status = status; }
+    
+    public Integer getLikeCount() { return likeCount; }
+    public void setLikeCount(Integer likeCount) { this.likeCount = likeCount; }
+    
+    public Integer getViewCount() { return viewCount; }
+    public void setViewCount(Integer viewCount) { this.viewCount = viewCount; }
+    
+    public Integer getCommentCount() { return commentCount; }
+    public void setCommentCount(Integer commentCount) { this.commentCount = commentCount; }
+    
+    public Boolean getIsTop() { return isTop; }
+    public void setIsTop(Boolean isTop) { this.isTop = isTop; }
+    
+    public LocalDateTime getPublishTime() { return publishTime; }
+    public void setPublishTime(LocalDateTime publishTime) { this.publishTime = publishTime; }
+}

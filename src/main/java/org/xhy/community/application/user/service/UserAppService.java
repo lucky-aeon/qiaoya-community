@@ -5,7 +5,9 @@ import org.springframework.stereotype.Service;
 import org.xhy.community.application.user.assembler.UserAssembler;
 import org.xhy.community.application.user.dto.LoginResponseDTO;
 import org.xhy.community.application.user.dto.UserDTO;
+import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.domain.user.entity.UserEntity;
+import org.xhy.community.infrastructure.exception.UserErrorCode;
 import org.xhy.community.domain.user.service.UserDomainService;
 import org.xhy.community.infrastructure.config.JwtUtil;
 
@@ -23,7 +25,7 @@ public class UserAppService {
     
     public LoginResponseDTO login(String email, String password) {
         if (!userDomainService.authenticateUser(email, password)) {
-            throw new IllegalArgumentException("邮箱或密码错误");
+            throw new BusinessException(UserErrorCode.WRONG_PASSWORD, "邮箱或密码错误");
         }
         
         UserEntity user = userDomainService.getUserByEmail(email);
@@ -37,7 +39,7 @@ public class UserAppService {
     
     public UserDTO register(String email, String emailVerificationCode, String password) {
         if (userDomainService.isEmailExists(email, null)) {
-            throw new IllegalArgumentException("该邮箱已被注册");
+            throw new BusinessException(UserErrorCode.EMAIL_EXISTS);
         }
         
         UserEntity user = userDomainService.registerUser(email, password);

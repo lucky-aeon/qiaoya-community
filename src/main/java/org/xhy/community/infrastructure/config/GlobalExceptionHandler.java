@@ -9,6 +9,10 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.xhy.community.infrastructure.exception.BaseException;
+import org.xhy.community.infrastructure.exception.BusinessException;
+import org.xhy.community.infrastructure.exception.SystemException;
+import org.xhy.community.infrastructure.exception.ValidationException;
 
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
@@ -49,17 +53,38 @@ public class GlobalExceptionHandler {
         return ApiResponse.error(400, message);
     }
     
-    @ExceptionHandler(IllegalArgumentException.class)
+    @ExceptionHandler(BusinessException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ApiResponse<Void> handleIllegalArgumentException(IllegalArgumentException ex) {
-        log.warn("非法参数异常: {}", ex.getMessage());
-        return ApiResponse.error(400, ex.getMessage());
+    public ApiResponse<Void> handleBusinessException(BusinessException ex) {
+        log.warn("业务异常: [{}] {}", ex.getCode(), ex.getMessage());
+        return ApiResponse.error(ex.getCode(), ex.getMessage());
+    }
+    
+    @ExceptionHandler(ValidationException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ApiResponse<Void> handleValidationException(ValidationException ex) {
+        log.warn("参数校验异常: [{}] {}", ex.getCode(), ex.getMessage());
+        return ApiResponse.error(ex.getCode(), ex.getMessage());
+    }
+    
+    @ExceptionHandler(SystemException.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public ApiResponse<Void> handleSystemException(SystemException ex) {
+        log.error("系统异常: [{}] {}", ex.getCode(), ex.getMessage(), ex);
+        return ApiResponse.error(ex.getCode(), ex.getMessage());
+    }
+    
+    @ExceptionHandler(BaseException.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public ApiResponse<Void> handleBaseException(BaseException ex) {
+        log.error("基础异常: [{}] {}", ex.getCode(), ex.getMessage(), ex);
+        return ApiResponse.error(ex.getCode(), ex.getMessage());
     }
     
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ApiResponse<Void> handleGenericException(Exception ex) {
         log.error("系统异常", ex);
-        return ApiResponse.error("系统内部错误");
+        return ApiResponse.error(SystemErrorCode.INTERNAL_ERROR.getCode(), "系统内部错误");
     }
 }

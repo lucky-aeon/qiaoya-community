@@ -62,7 +62,9 @@ public class UserEntity extends BaseEntity {
     
     public void updateMaxConcurrentDevices(Integer maxDevices) {
         if (maxDevices == null || maxDevices < 1 || maxDevices > 10) {
-            throw new IllegalArgumentException("最大并发设备数必须在1-10之间");
+            throw new org.xhy.community.infrastructure.exception.BusinessException(
+                org.xhy.community.infrastructure.exception.UserErrorCode.MAX_DEVICES_INVALID
+            );
         }
         this.maxConcurrentDevices = maxDevices;
     }
