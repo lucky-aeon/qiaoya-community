@@ -7,7 +7,7 @@ CREATE TABLE users (
     email VARCHAR(100) NOT NULL,
     password VARCHAR(255) NOT NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
-    subscribe_external_messages BOOLEAN NOT NULL DEFAULT FALSE,
+    email_notification_enabled BOOLEAN NOT NULL DEFAULT FALSE,
     max_concurrent_devices INTEGER NOT NULL DEFAULT 5,
     create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     update_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -39,7 +39,7 @@ COMMENT ON COLUMN users.avatar IS '头像URL';
 COMMENT ON COLUMN users.email IS '邮箱地址';
 COMMENT ON COLUMN users.password IS '加密密码';
 COMMENT ON COLUMN users.status IS '用户状态：ACTIVE-正常，INACTIVE-禁用，BANNED-封禁';
-COMMENT ON COLUMN users.subscribe_external_messages IS '是否订阅站外消息';
+COMMENT ON COLUMN users.email_notification_enabled IS '是否开启邮箱推送站内消息通知';
 COMMENT ON COLUMN users.max_concurrent_devices IS '最大并发设备数';
 COMMENT ON COLUMN users.create_time IS '创建时间';
 COMMENT ON COLUMN users.update_time IS '更新时间';

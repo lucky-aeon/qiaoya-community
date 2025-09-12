@@ -13,7 +13,7 @@ public class UserEntity extends BaseEntity {
     private String email;
     private String password;
     private UserStatus status;
-    private Boolean subscribeExternalMessages;
+    private Boolean emailNotificationEnabled;
     private Integer maxConcurrentDevices;
     
     public UserEntity() {
@@ -24,7 +24,7 @@ public class UserEntity extends BaseEntity {
         this.email = email;
         this.password = password;
         this.status = UserStatus.ACTIVE;
-        this.subscribeExternalMessages = false;
+        this.emailNotificationEnabled = false;
         this.maxConcurrentDevices = 5;
     }
     
@@ -56,8 +56,8 @@ public class UserEntity extends BaseEntity {
         this.status = UserStatus.BANNED;
     }
     
-    public void updateSubscriptionSettings(Boolean subscribeExternalMessages) {
-        this.subscribeExternalMessages = subscribeExternalMessages;
+    public void updateEmailNotificationSettings(Boolean emailNotificationEnabled) {
+        this.emailNotificationEnabled = emailNotificationEnabled;
     }
     
     public void updateMaxConcurrentDevices(Integer maxDevices) {
@@ -90,9 +90,9 @@ public class UserEntity extends BaseEntity {
     public UserStatus getStatus() { return status; }
     public void setStatus(UserStatus status) { this.status = status; }
     
-    public Boolean getSubscribeExternalMessages() { return subscribeExternalMessages; }
-    public void setSubscribeExternalMessages(Boolean subscribeExternalMessages) { 
-        this.subscribeExternalMessages = subscribeExternalMessages; 
+    public Boolean getEmailNotificationEnabled() { return emailNotificationEnabled; }
+    public void setEmailNotificationEnabled(Boolean emailNotificationEnabled) { 
+        this.emailNotificationEnabled = emailNotificationEnabled; 
     }
     
     public Integer getMaxConcurrentDevices() { return maxConcurrentDevices; }

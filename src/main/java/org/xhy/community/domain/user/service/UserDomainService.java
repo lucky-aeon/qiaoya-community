@@ -87,10 +87,10 @@ public class UserDomainService {
         return user;
     }
     
-    public UserEntity updateUserSettings(String userId, Boolean subscribeExternalMessages, Integer maxConcurrentDevices) {
+    public UserEntity updateUserSettings(String userId, Boolean emailNotificationEnabled, Integer maxConcurrentDevices) {
         UserEntity user = getUserById(userId);
-        if (subscribeExternalMessages != null) {
-            user.updateSubscriptionSettings(subscribeExternalMessages);
+        if (emailNotificationEnabled != null) {
+            user.updateEmailNotificationSettings(emailNotificationEnabled);
         }
         if (maxConcurrentDevices != null) {
             user.updateMaxConcurrentDevices(maxConcurrentDevices);

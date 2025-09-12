@@ -12,7 +12,7 @@ public class UserDTO {
     private String avatar;
     private String email;
     private UserStatus status;
-    private Boolean subscribeExternalMessages;
+    private Boolean emailNotificationEnabled;
     private Integer maxConcurrentDevices;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
@@ -38,9 +38,9 @@ public class UserDTO {
     public UserStatus getStatus() { return status; }
     public void setStatus(UserStatus status) { this.status = status; }
     
-    public Boolean getSubscribeExternalMessages() { return subscribeExternalMessages; }
-    public void setSubscribeExternalMessages(Boolean subscribeExternalMessages) { 
-        this.subscribeExternalMessages = subscribeExternalMessages; 
+    public Boolean getEmailNotificationEnabled() { return emailNotificationEnabled; }
+    public void setEmailNotificationEnabled(Boolean emailNotificationEnabled) { 
+        this.emailNotificationEnabled = emailNotificationEnabled; 
     }
     
     public Integer getMaxConcurrentDevices() { return maxConcurrentDevices; }
