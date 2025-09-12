@@ -1,0 +1,56 @@
+package org.xhy.community.application.user.dto;
+
+import org.xhy.community.domain.user.valueobject.UserStatus;
+
+import java.time.LocalDateTime;
+
+public class UserDTO {
+    
+    private String id;
+    private String name;
+    private String description;
+    private String avatar;
+    private String email;
+    private UserStatus status;
+    private Boolean subscribeExternalMessages;
+    private Integer maxConcurrentDevices;
+    private LocalDateTime createTime;
+    private LocalDateTime updateTime;
+    
+    public UserDTO() {
+    }
+    
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
+    
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+    
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+    
+    public String getAvatar() { return avatar; }
+    public void setAvatar(String avatar) { this.avatar = avatar; }
+    
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
+    
+    public UserStatus getStatus() { return status; }
+    public void setStatus(UserStatus status) { this.status = status; }
+    
+    public Boolean getSubscribeExternalMessages() { return subscribeExternalMessages; }
+    public void setSubscribeExternalMessages(Boolean subscribeExternalMessages) { 
+        this.subscribeExternalMessages = subscribeExternalMessages; 
+    }
+    
+    public Integer getMaxConcurrentDevices() { return maxConcurrentDevices; }
+    public void setMaxConcurrentDevices(Integer maxConcurrentDevices) { 
+        this.maxConcurrentDevices = maxConcurrentDevices; 
+    }
+    
+    public LocalDateTime getCreateTime() { return createTime; }
+    public void setCreateTime(LocalDateTime createTime) { this.createTime = createTime; }
+    
+    public LocalDateTime getUpdateTime() { return updateTime; }
+    public void setUpdateTime(LocalDateTime updateTime) { this.updateTime = updateTime; }
+}

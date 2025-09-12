@@ -1,6 +1,6 @@
 -- 创建用户表
 CREATE TABLE users (
-    id BIGSERIAL PRIMARY KEY,
+    id VARCHAR(36) PRIMARY KEY,
     name VARCHAR(50) NOT NULL,
     description TEXT,
     avatar VARCHAR(500),
@@ -32,7 +32,7 @@ ALTER TABLE users ADD CONSTRAINT chk_users_max_devices
 
 -- 添加表注释
 COMMENT ON TABLE users IS '用户表';
-COMMENT ON COLUMN users.id IS '用户ID';
+COMMENT ON COLUMN users.id IS '用户ID (UUID格式)';
 COMMENT ON COLUMN users.name IS '用户名称';
 COMMENT ON COLUMN users.description IS '用户描述';
 COMMENT ON COLUMN users.avatar IS '头像URL';

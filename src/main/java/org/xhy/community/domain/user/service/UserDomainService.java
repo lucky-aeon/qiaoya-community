@@ -10,6 +10,8 @@ import org.xhy.community.domain.user.entity.UserEntity;
 import org.xhy.community.domain.user.repository.UserRepository;
 import org.xhy.community.domain.user.valueobject.UserStatus;
 
+import java.util.Random;
+
 @Service
 public class UserDomainService {
     
@@ -37,21 +39,32 @@ public class UserDomainService {
         return user;
     }
     
-    public UserEntity updateUserProfile(Long userId, String name, String description, String avatar) {
+    public UserEntity registerUser(String email, String password) {
+        String defaultNickname = generateDefaultNickname();
+        return createUser(defaultNickname, email, password);
+    }
+    
+    private String generateDefaultNickname() {
+        Random random = new Random();
+        int randomNumber = 100000 + random.nextInt(900000);
+        return "敲鸭-" + randomNumber;
+    }
+    
+    public UserEntity updateUserProfile(String userId, String name, String description, String avatar) {
         UserEntity user = getUserById(userId);
         user.updateProfile(name, description, avatar);
         userRepository.updateById(user);
         return user;
     }
     
-    public UserEntity changeUserEmail(Long userId, String newEmail) {
+    public UserEntity changeUserEmail(String userId, String newEmail) {
         UserEntity user = getUserById(userId);
         user.changeEmail(newEmail.trim().toLowerCase());
         userRepository.updateById(user);
         return user;
     }
     
-    public UserEntity changeUserPassword(Long userId, String oldPassword, String newPassword) {
+    public UserEntity changeUserPassword(String userId, String oldPassword, String newPassword) {
         UserEntity user = getUserById(userId);
         if (!verifyPassword(oldPassword, user.getPassword())) {
             throw new IllegalArgumentException("原密码错误");
@@ -63,7 +76,7 @@ public class UserDomainService {
         return user;
     }
     
-    public UserEntity updateUserStatus(Long userId, UserStatus status) {
+    public UserEntity updateUserStatus(String userId, UserStatus status) {
         UserEntity user = getUserById(userId);
         switch (status) {
             case ACTIVE -> user.activate();
@@ -74,7 +87,7 @@ public class UserDomainService {
         return user;
     }
     
-    public UserEntity updateUserSettings(Long userId, Boolean subscribeExternalMessages, Integer maxConcurrentDevices) {
+    public UserEntity updateUserSettings(String userId, Boolean subscribeExternalMessages, Integer maxConcurrentDevices) {
         UserEntity user = getUserById(userId);
         if (subscribeExternalMessages != null) {
             user.updateSubscriptionSettings(subscribeExternalMessages);
@@ -86,12 +99,12 @@ public class UserDomainService {
         return user;
     }
     
-    public void deleteUser(Long userId) {
+    public void deleteUser(String userId) {
         getUserById(userId); // 验证用户存在
         userRepository.deleteById(userId);
     }
     
-    public UserEntity getUserById(Long userId) {
+    public UserEntity getUserById(String userId) {
         UserEntity user = userRepository.selectById(userId);
         if (user == null || user.getDeleted()) {
             throw new IllegalArgumentException("用户不存在");
@@ -151,7 +164,7 @@ public class UserDomainService {
         return user.isActive() && verifyPassword(password, user.getPassword());
     }
     
-    public boolean isEmailExists(String email, Long excludeUserId) {
+    public boolean isEmailExists(String email, String excludeUserId) {
         String normalizedEmail = email.trim().toLowerCase();
         
         LambdaQueryWrapper<UserEntity> queryWrapper = new LambdaQueryWrapper<UserEntity>()

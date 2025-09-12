@@ -10,8 +10,8 @@ import java.time.LocalDateTime;
 
 public abstract class BaseEntity {
     
-    @TableId(type = IdType.AUTO)
-    private Long id;
+    @TableId(type = IdType.ASSIGN_UUID)
+    private String id;
     
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
@@ -23,8 +23,8 @@ public abstract class BaseEntity {
     private Boolean deleted;
     
     // Getters and Setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
     
     public LocalDateTime getCreateTime() { return createTime; }
     public void setCreateTime(LocalDateTime createTime) { this.createTime = createTime; }

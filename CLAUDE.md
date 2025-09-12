@@ -120,7 +120,7 @@ public class UserDomainService {
     @Autowired
     private UserRepository userRepository;
     
-    public void validateUniqueEmail(String email, Long excludeUserId) {
+    public void validateUniqueEmail(String email, String excludeUserId) {
         LambdaQueryWrapper<UserEntity> queryWrapper = 
             new LambdaQueryWrapper<UserEntity>()
                 .eq(UserEntity::getEmail, email)
@@ -166,7 +166,7 @@ public class UserAssembler {
 @Service
 public class UserAppService {
     
-    public UserDTO getUserById(Long userId) {
+    public UserDTO getUserById(String userId) {
         UserEntity user = getUserEntityById(userId);
         return UserAssembler.toDTO(user);  // 静态方法调用
     }
@@ -179,8 +179,8 @@ public class UserAppService {
 ```java
 // 通用基类位置：org.xhy.community.domain.entity.BaseEntity
 public abstract class BaseEntity {
-    @TableId(type = IdType.AUTO)
-    private Long id;
+    @TableId(type = IdType.ASSIGN_UUID)
+    private String id;
     
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
@@ -227,7 +227,7 @@ public class UserEntity extends BaseEntity {
 public class UserDomainService {
     
     // ✅ 正确：业务规则校验
-    public boolean isEmailExists(String email, Long excludeUserId) {
+    public boolean isEmailExists(String email, String excludeUserId) {
         // 只校验业务规则：邮箱是否已存在
         return userRepository.exists(queryWrapper);
     }
@@ -292,6 +292,42 @@ IPage<UserEntity> result = userRepository.selectPage(page,
 - 迁移文件位置：`src/main/resources/db/migration`
 - 命名格式：`V{version}__{description}.sql`
 - 示例：`V1__Create_user_table.sql`
+
+### 9. UUID主键使用规范
+
+#### 主键生成策略
+- **BaseEntity主键类型**: 使用`String`类型，数据库存储为`VARCHAR(36)`
+- **ID生成方式**: 使用`@TableId(type = IdType.ASSIGN_UUID)`，由MyBatis Plus自动生成UUID
+- **自动填充**: 在`MyBatisPlusMetaObjectHandler`中配置UUID自动生成
+
+#### UUID主键配置示例
+```java
+// BaseEntity配置
+@TableId(type = IdType.ASSIGN_UUID)
+private String id;
+
+// MetaObjectHandler配置
+@Component
+public class MyBatisPlusMetaObjectHandler implements MetaObjectHandler {
+    @Override
+    public void insertFill(MetaObject metaObject) {
+        this.strictInsertFill(metaObject, "id", String.class, UUID.randomUUID().toString());
+        this.strictInsertFill(metaObject, "createTime", LocalDateTime.class, LocalDateTime.now());
+        this.strictInsertFill(metaObject, "updateTime", LocalDateTime.class, LocalDateTime.now());
+    }
+}
+```
+
+#### 数据库表结构
+```sql
+-- 主键字段定义
+id VARCHAR(36) PRIMARY KEY,
+```
+
+#### DTO和服务层类型
+- **DTO中ID字段**: `private String id;`
+- **服务方法参数**: 所有涉及用户ID的方法参数使用`String userId`
+- **Repository查询**: 查询条件中ID使用String类型
 
 ### 技术栈
 - JDK 17
