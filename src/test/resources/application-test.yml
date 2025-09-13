@@ -1,0 +1,27 @@
+aws:
+  region: us-east-1
+  access-key-id: test-access-key
+  secret-access-key: test-secret-key
+  s3:
+    bucket: test-bucket
+    region: us-east-1
+    presigned-url-expiration: 3600
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+  flyway:
+    enabled: false
+
+mybatis-plus:
+  global-config:
+    db-config:
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0

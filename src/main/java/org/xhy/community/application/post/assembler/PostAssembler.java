@@ -1,6 +1,7 @@
 package org.xhy.community.application.post.assembler;
 
 import org.springframework.beans.BeanUtils;
+import org.springframework.util.StringUtils;
 import org.xhy.community.application.post.dto.PostDTO;
 import org.xhy.community.domain.post.entity.PostEntity;
 import org.xhy.community.interfaces.post.request.CreatePostRequest;
@@ -56,7 +57,7 @@ public class PostAssembler {
             return;
         }
         
-        if (request.getTitle() != null && !request.getTitle().trim().isEmpty()) {
+        if (StringUtils.hasText(request.getTitle())) {
             entity.setTitle(request.getTitle().trim());
         }
         

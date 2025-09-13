@@ -209,11 +209,8 @@ public class PostDomainService {
         
         LambdaQueryWrapper<PostEntity> queryWrapper = new LambdaQueryWrapper<PostEntity>()
                 .eq(PostEntity::getAuthorId, authorId)
+                .eq(status != null, PostEntity::getStatus, status)
                 .orderByDesc(PostEntity::getCreateTime);
-        
-        if (status != null) {
-            queryWrapper.eq(PostEntity::getStatus, status);
-        }
         
         return postRepository.selectPage(page, queryWrapper);
     }

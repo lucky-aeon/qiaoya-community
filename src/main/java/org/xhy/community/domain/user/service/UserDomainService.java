@@ -163,11 +163,8 @@ public class UserDomainService {
         String normalizedEmail = email.trim().toLowerCase();
         
         LambdaQueryWrapper<UserEntity> queryWrapper = new LambdaQueryWrapper<UserEntity>()
-                .eq(UserEntity::getEmail, normalizedEmail);
-        
-        if (excludeUserId != null) {
-            queryWrapper.ne(UserEntity::getId, excludeUserId);
-        }
+                .eq(UserEntity::getEmail, normalizedEmail)
+                .ne(excludeUserId != null, UserEntity::getId, excludeUserId);
         
         return userRepository.exists(queryWrapper);
     }

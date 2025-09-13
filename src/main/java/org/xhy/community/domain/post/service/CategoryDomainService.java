@@ -94,17 +94,10 @@ public class CategoryDomainService {
     public boolean isCategoryNameExists(String name, CategoryType type, String parentId, String excludeCategoryId) {
         LambdaQueryWrapper<CategoryEntity> queryWrapper = new LambdaQueryWrapper<CategoryEntity>()
             .eq(CategoryEntity::getName, name)
-            .eq(CategoryEntity::getType, type);
-
-        if (parentId != null) {
-            queryWrapper.eq(CategoryEntity::getParentId, parentId);
-        } else {
-            queryWrapper.isNull(CategoryEntity::getParentId);
-        }
-        
-        if (excludeCategoryId != null) {
-            queryWrapper.ne(CategoryEntity::getId, excludeCategoryId);
-        }
+            .eq(CategoryEntity::getType, type)
+            .eq(parentId != null, CategoryEntity::getParentId, parentId)
+            .isNull(parentId == null, CategoryEntity::getParentId)
+            .ne(excludeCategoryId != null, CategoryEntity::getId, excludeCategoryId);
         
         return categoryRepository.exists(queryWrapper);
     }

@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.xhy.community.domain.course.entity.ChapterEntity;
 import org.xhy.community.domain.course.entity.CourseEntity;
 import org.xhy.community.domain.course.repository.ChapterRepository;
@@ -69,11 +70,8 @@ public class ChapterDomainService {
         
         LambdaQueryWrapper<ChapterEntity> queryWrapper = new LambdaQueryWrapper<ChapterEntity>()
             .eq(ChapterEntity::getDeleted, false)
+            .eq(StringUtils.hasText(courseId), ChapterEntity::getCourseId, courseId)
             .orderByDesc(ChapterEntity::getCreateTime);
-        
-        if (courseId != null && !courseId.trim().isEmpty()) {
-            queryWrapper.eq(ChapterEntity::getCourseId, courseId);
-        }
         
         return chapterRepository.selectPage(page, queryWrapper);
     }

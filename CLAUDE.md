@@ -394,3 +394,4 @@ public CourseEntity updateCourse(CourseEntity course) {
 
 - git commit message 提交需要使用规范：feat/fix(模块):消息
 - 三种 api 路由的方式：前台/用户管理后台/管理员后台 
+- 项目中涉及到枚举类类型的传递必须使用枚举类型！而不是其他类型！

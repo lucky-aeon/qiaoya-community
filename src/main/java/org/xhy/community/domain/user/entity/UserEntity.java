@@ -2,6 +2,7 @@ package org.xhy.community.domain.user.entity;
 
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
+import org.springframework.util.StringUtils;
 import org.xhy.community.domain.entity.BaseEntity;
 import org.xhy.community.domain.user.valueobject.UserStatus;
 import org.xhy.community.infrastructure.converter.UserStatusConverter;
@@ -47,7 +48,7 @@ public class UserEntity extends BaseEntity {
     }
     
     public void updateProfile(String name, String description, String avatar) {
-        if (name != null && !name.trim().isEmpty()) {
+        if (StringUtils.hasText(name)) {
             this.name = name.trim();
         }
         this.description = description;
