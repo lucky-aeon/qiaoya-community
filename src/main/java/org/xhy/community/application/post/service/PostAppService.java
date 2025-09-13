@@ -105,8 +105,8 @@ public class PostAppService {
     
     public IPage<FrontPostDTO> queryPublicPosts(PublicPostQueryRequest request) {
         IPage<PostEntity> entityPage = postDomainService.queryPublicPosts(
-            request.getPage(),
-            request.getSize(),
+            request.getPageNum(),
+            request.getPageSize(),
             request.getCategoryType()
         );
         

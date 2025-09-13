@@ -346,3 +346,47 @@ id VARCHAR(36) PRIMARY KEY,
 - request 对象的创建对象和修改对象差异就只有主键，因此修改对象可直接继承创建对象
 - 如果是管理员接口，路由规范/api/admin/xx，app 层规范：AdminXxxAppService
 - 实体中需要使用枚举类类型，需要添加转换类后还需要添加到 MyBatisTypeHandlerConfig 中
+- 抛出异常类的时候需要使用对应模块的异常类以及异常码进行处理:/Users/xhy/IdeaProjects/qiaoya-community/qiaoya-community-backend/src/main/java/org/xhy/community/infrastructure/exception
+- api层如果接收的是 request 对象，那么传入 app 层也是 request 对象，app 层传入 domain 一般是实体，而不是多个入参。通过 assembler 转换。可参考：org/xhy/community/application/course/service/AdminCourseAppService.java
+- 修改数据的时候，接收 api 层的 update 对象，转换成 entity 进行修改，例如：
+
+```java
+  public CourseDTO updateCourse(String courseId, UpdateCourseRequest request) {
+        CourseEntity course = CourseAssembler.fromUpdateRequest(request, courseId);
+        
+        CourseEntity updatedCourse = courseDomainService.updateCourse(course);
+        
+        return CourseAssembler.toDTO(updatedCourse);
+    }
+
+public CourseEntity updateCourse(CourseEntity course) {
+  courseRepository.updateById(course);
+  return course;
+}
+
+
+```
+
+- 查数据的忽略软删除，因配置文件做了处理，反向案例：
+
+```java
+ public List<ChapterEntity> getChaptersByCourseId(String courseId) {
+        LambdaQueryWrapper<ChapterEntity> queryWrapper = new LambdaQueryWrapper<ChapterEntity>()
+            .eq(ChapterEntity::getCourseId, courseId)
+            .eq(ChapterEntity::getDeleted, false)
+            .orderByAsc(ChapterEntity::getSortOrder);
+        
+        return chapterRepository.selectList(queryWrapper);
+    }
+```
+
+正确案例
+```java
+ public List<ChapterEntity> getChaptersByCourseId(String courseId) {
+        LambdaQueryWrapper<ChapterEntity> queryWrapper = new LambdaQueryWrapper<ChapterEntity>()
+            .eq(ChapterEntity::getCourseId, courseId)
+            .orderByAsc(ChapterEntity::getSortOrder);
+        
+        return chapterRepository.selectList(queryWrapper);
+    }
+```
