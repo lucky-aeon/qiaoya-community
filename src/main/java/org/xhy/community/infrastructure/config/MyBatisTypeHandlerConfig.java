@@ -6,10 +6,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.xhy.community.domain.course.valueobject.CourseStatus;
 import org.xhy.community.domain.post.valueobject.CategoryType;
 import org.xhy.community.domain.post.valueobject.PostStatus;
 import org.xhy.community.domain.user.valueobject.UserStatus;
 import org.xhy.community.infrastructure.converter.CategoryTypeConverter;
+import org.xhy.community.infrastructure.converter.CourseStatusConverter;
 import org.xhy.community.infrastructure.converter.PostStatusConverter;
 import org.xhy.community.infrastructure.converter.UserStatusConverter;
 
@@ -33,6 +35,7 @@ public class MyBatisTypeHandlerConfig {
         typeHandlerRegistry.register(UserStatus.class, new UserStatusConverter());
         typeHandlerRegistry.register(PostStatus.class, new PostStatusConverter());
         typeHandlerRegistry.register(CategoryType.class, new CategoryTypeConverter());
+        typeHandlerRegistry.register(CourseStatus.class, new CourseStatusConverter());
 
         log.info("手动注册类型处理器：UserStatusConverter, PostStatusConverter, CategoryTypeConverter");
         log.info("已注册的类型处理器总数: {}", typeHandlerRegistry.getTypeHandlers().size());

@@ -337,3 +337,12 @@ id VARCHAR(36) PRIMARY KEY,
 - PostgreSQL
 - Spring Security Crypto (密码加密)
 - Maven
+
+
+### 10. 开发规范
+- 依赖注入使用构造函数的方式
+- assembler 使用 BeanUtils.copy 的方式
+- 如果要使用到分页查询，则 request 对象继承 org/xhy/community/interfaces/common/request/PageRequest.java
+- request 对象的创建对象和修改对象差异就只有主键，因此修改对象可直接继承创建对象
+- 如果是管理员接口，路由规范/api/admin/xx，app 层规范：AdminXxxAppService
+- 实体中需要使用枚举类类型，需要添加转换类后还需要添加到 MyBatisTypeHandlerConfig 中
