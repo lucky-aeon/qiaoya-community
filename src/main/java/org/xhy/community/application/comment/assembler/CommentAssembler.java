@@ -4,6 +4,7 @@ import org.springframework.beans.BeanUtils;
 import org.xhy.community.application.comment.dto.CommentDTO;
 import org.xhy.community.domain.comment.entity.CommentEntity;
 import org.xhy.community.domain.comment.valueobject.BusinessType;
+import org.xhy.community.interfaces.comment.request.CreateCommentRequest;
 import org.xhy.community.interfaces.comment.request.CreateReplyCommentRequest;
 
 public class CommentAssembler {
@@ -30,6 +31,20 @@ public class CommentAssembler {
         entity.setBusinessType(request.getBusinessType());
         entity.setParentCommentId(request.getParentCommentId());
         entity.setReplyUserId(request.getReplyUserId());
+        
+        return entity;
+    }
+    
+    public static CommentEntity fromCreateRequest(CreateCommentRequest request, String userId) {
+        if (request == null) {
+            return null;
+        }
+        
+        CommentEntity entity = new CommentEntity();
+        entity.setContent(request.getContent());
+        entity.setCommentUserId(userId);
+        entity.setBusinessId(request.getBusinessId());
+        entity.setBusinessType(request.getBusinessType());
         
         return entity;
     }

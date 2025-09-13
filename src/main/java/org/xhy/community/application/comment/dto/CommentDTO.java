@@ -11,7 +11,9 @@ public class CommentDTO {
     private String rootCommentId;
     private String content;
     private String commentUserId;
+    private String commentUserName;
     private String replyUserId;
+    private String replyUserName;
     private String businessId;
     private BusinessType businessType;
     private LocalDateTime createTime;
@@ -36,8 +38,14 @@ public class CommentDTO {
     public String getCommentUserId() { return commentUserId; }
     public void setCommentUserId(String commentUserId) { this.commentUserId = commentUserId; }
     
+    public String getCommentUserName() { return commentUserName; }
+    public void setCommentUserName(String commentUserName) { this.commentUserName = commentUserName; }
+    
     public String getReplyUserId() { return replyUserId; }
     public void setReplyUserId(String replyUserId) { this.replyUserId = replyUserId; }
+    
+    public String getReplyUserName() { return replyUserName; }
+    public void setReplyUserName(String replyUserName) { this.replyUserName = replyUserName; }
     
     public String getBusinessId() { return businessId; }
     public void setBusinessId(String businessId) { this.businessId = businessId; }
