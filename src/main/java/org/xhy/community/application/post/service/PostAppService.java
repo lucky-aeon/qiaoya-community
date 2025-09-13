@@ -127,16 +127,10 @@ public class PostAppService {
                 .collect(java.util.stream.Collectors.toSet());
         
         // 批量查询用户和分类信息
-        List<UserEntity> users = userDomainService.getUsersByIds(authorIds);
+        java.util.Map<String, String> authorNames = userDomainService.getUserNameMapByIds(authorIds);
         List<CategoryEntity> categories = categoryDomainService.getCategoriesByIds(categoryIds);
         
         // 转换为Map便于查找
-        java.util.Map<String, String> authorNames = users.stream()
-                .collect(java.util.stream.Collectors.toMap(
-                    UserEntity::getId,
-                    UserEntity::getName
-                ));
-        
         java.util.Map<String, String> categoryNames = categories.stream()
                 .collect(java.util.stream.Collectors.toMap(
                     CategoryEntity::getId,

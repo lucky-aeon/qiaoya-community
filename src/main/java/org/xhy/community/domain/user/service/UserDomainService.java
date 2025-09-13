@@ -178,4 +178,17 @@ public class UserDomainService {
         }
         return userRepository.selectBatchIds(userIds);
     }
+    
+    public java.util.Map<String, String> getUserNameMapByIds(java.util.Collection<String> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return java.util.Collections.emptyMap();
+        }
+        
+        java.util.List<UserEntity> users = userRepository.selectBatchIds(userIds);
+        return users.stream()
+                .collect(java.util.stream.Collectors.toMap(
+                    UserEntity::getId,
+                    UserEntity::getName
+                ));
+    }
 }
