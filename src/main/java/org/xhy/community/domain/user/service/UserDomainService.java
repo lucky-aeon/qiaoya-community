@@ -3,7 +3,6 @@ package org.xhy.community.domain.user.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.xhy.community.infrastructure.exception.BusinessException;
@@ -20,7 +19,6 @@ public class UserDomainService {
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
     
-    @Autowired
     public UserDomainService(UserRepository userRepository, BCryptPasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
@@ -108,7 +106,7 @@ public class UserDomainService {
     
     public UserEntity getUserById(String userId) {
         UserEntity user = userRepository.selectById(userId);
-        if (user == null || user.getDeleted()) {
+        if (user == null) {
             throw new BusinessException(UserErrorCode.USER_NOT_FOUND);
         }
         return user;
@@ -119,7 +117,6 @@ public class UserDomainService {
         UserEntity user = userRepository.selectOne(
             new LambdaQueryWrapper<UserEntity>()
                 .eq(UserEntity::getEmail, normalizedEmail)
-                .eq(UserEntity::getDeleted, false)
         );
         if (user == null) {
             throw new BusinessException(UserErrorCode.USER_NOT_FOUND);
@@ -132,7 +129,6 @@ public class UserDomainService {
         return userRepository.selectPage(page,
             new LambdaQueryWrapper<UserEntity>()
                 .eq(UserEntity::getStatus, status)
-                .eq(UserEntity::getDeleted, false)
                 .orderByDesc(UserEntity::getCreateTime));
     }
     
@@ -141,7 +137,6 @@ public class UserDomainService {
         return userRepository.selectPage(page,
             new LambdaQueryWrapper<UserEntity>()
                 .like(UserEntity::getName, name)
-                .eq(UserEntity::getDeleted, false)
                 .orderByDesc(UserEntity::getCreateTime));
     }
     
@@ -149,7 +144,6 @@ public class UserDomainService {
         Page<UserEntity> page = new Page<>(pageNum, pageSize);
         return userRepository.selectPage(page, 
             new LambdaQueryWrapper<UserEntity>()
-                .eq(UserEntity::getDeleted, false)
                 .orderByDesc(UserEntity::getCreateTime));
     }
     
@@ -158,7 +152,6 @@ public class UserDomainService {
         UserEntity user = userRepository.selectOne(
             new LambdaQueryWrapper<UserEntity>()
                 .eq(UserEntity::getEmail, normalizedEmail)
-                .eq(UserEntity::getDeleted, false)
         );
         if (user == null) {
             return false;
@@ -170,8 +163,7 @@ public class UserDomainService {
         String normalizedEmail = email.trim().toLowerCase();
         
         LambdaQueryWrapper<UserEntity> queryWrapper = new LambdaQueryWrapper<UserEntity>()
-                .eq(UserEntity::getEmail, normalizedEmail)
-                .eq(UserEntity::getDeleted, false);
+                .eq(UserEntity::getEmail, normalizedEmail);
         
         if (excludeUserId != null) {
             queryWrapper.ne(UserEntity::getId, excludeUserId);

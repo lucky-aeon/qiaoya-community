@@ -7,13 +7,28 @@ import org.xhy.community.domain.user.valueobject.UserStatus;
 @TableName("users")
 public class UserEntity extends BaseEntity {
     
+    /** 用户姓名 */
     private String name;
+    
+    /** 用户个人描述/简介 */
     private String description;
+    
+    /** 用户头像地址 */
     private String avatar;
+    
+    /** 用户邮箱，用于登录和通知 */
     private String email;
+    
+    /** 用户密码，加密存储 */
     private String password;
+    
+    /** 用户状态：ACTIVE-活跃，INACTIVE-未激活，BANNED-已封禁 */
     private UserStatus status;
+    
+    /** 是否启用邮件通知 */
     private Boolean emailNotificationEnabled;
+    
+    /** 最大并发设备数，范围：1-10 */
     private Integer maxConcurrentDevices;
     
     public UserEntity() {

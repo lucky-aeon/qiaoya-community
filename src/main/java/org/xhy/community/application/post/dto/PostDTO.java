@@ -1,66 +1,34 @@
-package org.xhy.community.domain.post.entity;
+package org.xhy.community.application.post.dto;
 
-import com.baomidou.mybatisplus.annotation.TableName;
-import org.xhy.community.domain.entity.BaseEntity;
 import org.xhy.community.domain.post.valueobject.PostStatus;
 
 import java.time.LocalDateTime;
 
-@TableName("posts")
-public class PostEntity extends BaseEntity {
+public class PostDTO {
     
-    /** 文章标题 */
+    private String id;
     private String title;
-    
-    /** 文章内容 */
     private String content;
-    
-    /** 文章摘要/简介 */
     private String summary;
-    
-    /** 文章封面图片地址 */
     private String coverImage;
-    
-    /** 作者用户ID */
     private String authorId;
-    
-    /** 所属分类ID */
     private String categoryId;
-    
-    /** 文章状态：DRAFT-草稿，PUBLISHED-已发布 */
     private PostStatus status;
-    
-    /** 点赞数 */
     private Integer likeCount;
-    
-    /** 浏览次数 */
     private Integer viewCount;
-    
-    /** 评论数 */
     private Integer commentCount;
-    
-    /** 是否置顶 */
     private Boolean isTop;
-    
-    /** 发布时间 */
     private LocalDateTime publishTime;
+    private LocalDateTime createTime;
+    private LocalDateTime updateTime;
     
-    public PostEntity() {
-    }
-    
-    public PostEntity(String title, String content, String authorId, String categoryId) {
-        this.title = title;
-        this.content = content;
-        this.authorId = authorId;
-        this.categoryId = categoryId;
-        this.status = PostStatus.DRAFT;
-        this.likeCount = 0;
-        this.viewCount = 0;
-        this.commentCount = 0;
-        this.isTop = false;
+    public PostDTO() {
     }
     
     // Getters and Setters
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
+    
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }
     
@@ -96,4 +64,10 @@ public class PostEntity extends BaseEntity {
     
     public LocalDateTime getPublishTime() { return publishTime; }
     public void setPublishTime(LocalDateTime publishTime) { this.publishTime = publishTime; }
+    
+    public LocalDateTime getCreateTime() { return createTime; }
+    public void setCreateTime(LocalDateTime createTime) { this.createTime = createTime; }
+    
+    public LocalDateTime getUpdateTime() { return updateTime; }
+    public void setUpdateTime(LocalDateTime updateTime) { this.updateTime = updateTime; }
 }

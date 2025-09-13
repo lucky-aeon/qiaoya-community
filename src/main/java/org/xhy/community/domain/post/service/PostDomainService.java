@@ -1,7 +1,9 @@
 package org.xhy.community.domain.post.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.stereotype.Service;
 import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.domain.post.entity.CategoryEntity;
@@ -15,118 +17,160 @@ import java.time.LocalDateTime;
 @Service
 public class PostDomainService {
     
-    @Autowired
-    private PostRepository postRepository;
+    private final PostRepository postRepository;
+    private final CategoryDomainService categoryDomainService;
     
-    @Autowired
-    private CategoryDomainService categoryDomainService;
+    public PostDomainService(PostRepository postRepository, CategoryDomainService categoryDomainService) {
+        this.postRepository = postRepository;
+        this.categoryDomainService = categoryDomainService;
+    }
     
-    public PostEntity createPost(String title, String content, String authorId, String categoryId) {
-        CategoryEntity category = categoryDomainService.getCategoryById(categoryId);
+    public PostEntity createPost(PostEntity post) {
+        CategoryEntity category = categoryDomainService.getCategoryById(post.getCategoryId());
         if (category == null) {
             throw new BusinessException(PostErrorCode.CATEGORY_NOT_FOUND);
         }
         
         if (!category.getIsActive()) {
-            throw new BusinessException(PostErrorCode.CATEGORY_DISABLED, "分类已禁用，无法发布文章");
+            throw new BusinessException(PostErrorCode.CATEGORY_DISABLED);
         }
         
-        PostEntity post = new PostEntity(title, content, authorId, categoryId);
         postRepository.insert(post);
         return post;
     }
     
     public PostEntity getPostById(String postId) {
-        return postRepository.selectOne(
+        PostEntity post = postRepository.selectOne(
             new LambdaQueryWrapper<PostEntity>()
                 .eq(PostEntity::getId, postId)
-                .eq(PostEntity::getDeleted, false)
         );
-    }
-    
-    public void updatePost(String postId, String authorId, String title, String content, String summary, String coverImage, String categoryId) {
-        PostEntity post = getPostById(postId);
+        
         if (post == null) {
             throw new BusinessException(PostErrorCode.POST_NOT_FOUND);
         }
         
-        if (!post.getAuthorId().equals(authorId)) {
-            throw new BusinessException(PostErrorCode.UNAUTHORIZED_EDIT);
-        }
-        
-        if (categoryId != null && !categoryId.equals(post.getCategoryId())) {
-            CategoryEntity category = categoryDomainService.getCategoryById(categoryId);
-            if (category == null) {
-                throw new BusinessException(PostErrorCode.CATEGORY_NOT_FOUND);
-            }
-            if (!category.getIsActive()) {
-                throw new BusinessException(PostErrorCode.CATEGORY_DISABLED, "分类已禁用");
-            }
-            post.setCategoryId(categoryId);
-        }
-        
-        if (title != null && !title.trim().isEmpty()) {
-            post.setTitle(title.trim());
-        }
-        
-        if (content != null) {
-            post.setContent(content);
-        }
-        
-        post.setSummary(summary);
-        post.setCoverImage(coverImage);
-        
-        postRepository.updateById(post);
+        return post;
     }
     
-    public void publishPost(String postId, String authorId) {
-        PostEntity post = getPostById(postId);
+    public PostEntity getUserPostById(String postId, String authorId) {
+        PostEntity post = postRepository.selectOne(
+            new LambdaQueryWrapper<PostEntity>()
+                .eq(PostEntity::getId, postId)
+                .eq(PostEntity::getAuthorId, authorId)
+        );
+        
         if (post == null) {
             throw new BusinessException(PostErrorCode.POST_NOT_FOUND);
         }
         
-        if (!post.getAuthorId().equals(authorId)) {
-            throw new BusinessException(PostErrorCode.UNAUTHORIZED_PUBLISH);
+        return post;
+    }
+    
+    public PostEntity updatePost(PostEntity post, String authorId) {
+        // 验证分类是否可用
+        CategoryEntity category = categoryDomainService.getCategoryById(post.getCategoryId());
+        if (category == null) {
+            throw new BusinessException(PostErrorCode.CATEGORY_NOT_FOUND);
+        }
+        if (!category.getIsActive()) {
+            throw new BusinessException(PostErrorCode.CATEGORY_DISABLED);
+        }
+        
+        // 确保authorId设置到实体
+        post.setAuthorId(authorId);
+        
+        // 使用条件更新，同时检查ID和作者ID
+        LambdaUpdateWrapper<PostEntity> updateWrapper = new LambdaUpdateWrapper<PostEntity>()
+                .eq(PostEntity::getId, post.getId())
+                .eq(PostEntity::getAuthorId, authorId);
+        
+        int updated = postRepository.update(post, updateWrapper);
+        if (updated == 0) {
+            throw new BusinessException(PostErrorCode.POST_NOT_FOUND);
+        }
+        
+        return post;
+    }
+    
+    public PostEntity publishPost(String postId, String authorId) {
+        // 查询文章（需要获取分类ID和当前状态）
+        PostEntity post = postRepository.selectOne(
+            new LambdaQueryWrapper<PostEntity>()
+                .eq(PostEntity::getId, postId)
+                .eq(PostEntity::getAuthorId, authorId)
+        );
+        
+        if (post == null) {
+            throw new BusinessException(PostErrorCode.POST_NOT_FOUND);
         }
         
         if (post.getStatus() == PostStatus.PUBLISHED) {
             throw new BusinessException(PostErrorCode.POST_ALREADY_PUBLISHED);
         }
         
+        // 验证分类是否可用
         CategoryEntity category = categoryDomainService.getCategoryById(post.getCategoryId());
-        if (category == null || !category.getIsActive()) {
-            throw new BusinessException(PostErrorCode.CATEGORY_DISABLED, "分类不存在或已禁用，无法发布文章");
+        if (category == null) {
+            throw new BusinessException(PostErrorCode.CATEGORY_NOT_FOUND);
+        }
+        if (!category.getIsActive()) {
+            throw new BusinessException(PostErrorCode.CATEGORY_DISABLED);
         }
         
-        post.setStatus(PostStatus.PUBLISHED);
-        post.setPublishTime(LocalDateTime.now());
-        postRepository.updateById(post);
-    }
-    
-    public void unpublishPost(String postId, String authorId) {
-        PostEntity post = getPostById(postId);
-        if (post == null) {
+        // 使用条件更新
+        LambdaUpdateWrapper<PostEntity> updateWrapper = new LambdaUpdateWrapper<PostEntity>()
+                .eq(PostEntity::getId, postId)
+                .eq(PostEntity::getAuthorId, authorId)
+                .set(PostEntity::getStatus, PostStatus.PUBLISHED)
+                .set(PostEntity::getPublishTime, LocalDateTime.now());
+        
+        int updated = postRepository.update(null, updateWrapper);
+        if (updated == 0) {
             throw new BusinessException(PostErrorCode.POST_NOT_FOUND);
         }
         
-        if (!post.getAuthorId().equals(authorId)) {
-            throw new BusinessException(PostErrorCode.UNAUTHORIZED_EDIT, "只能下架自己的文章");
+        // 更新内存中的实体状态并返回
+        post.setStatus(PostStatus.PUBLISHED);
+        post.setPublishTime(LocalDateTime.now());
+        return post;
+    }
+    
+    public PostEntity unpublishPost(String postId, String authorId) {
+        // 查询文章（需要获取当前状态）
+        PostEntity post = postRepository.selectOne(
+            new LambdaQueryWrapper<PostEntity>()
+                .eq(PostEntity::getId, postId)
+                .eq(PostEntity::getAuthorId, authorId)
+        );
+        
+        if (post == null) {
+            throw new BusinessException(PostErrorCode.POST_NOT_FOUND);
         }
         
         if (post.getStatus() == PostStatus.DRAFT) {
             throw new BusinessException(PostErrorCode.POST_ALREADY_DRAFT);
         }
         
+        // 使用条件更新
+        LambdaUpdateWrapper<PostEntity> updateWrapper = new LambdaUpdateWrapper<PostEntity>()
+                .eq(PostEntity::getId, postId)
+                .eq(PostEntity::getAuthorId, authorId)
+                .set(PostEntity::getStatus, PostStatus.DRAFT)
+                .set(PostEntity::getPublishTime, null);
+        
+        int updated = postRepository.update(null, updateWrapper);
+        if (updated == 0) {
+            throw new BusinessException(PostErrorCode.POST_NOT_FOUND);
+        }
+        
+        // 更新内存中的实体状态并返回
         post.setStatus(PostStatus.DRAFT);
         post.setPublishTime(null);
-        postRepository.updateById(post);
+        return post;
     }
     
     public void setTopPost(String postId, boolean isTop) {
         PostEntity post = getPostById(postId);
-        if (post == null) {
-            throw new BusinessException(PostErrorCode.POST_NOT_FOUND);
-        }
         
         if (post.getStatus() != PostStatus.PUBLISHED) {
             throw new BusinessException(PostErrorCode.POST_NOT_PUBLISHED);
@@ -138,41 +182,13 @@ public class PostDomainService {
     
     public void incrementViewCount(String postId) {
         PostEntity post = getPostById(postId);
-        if (post == null) {
-            throw new BusinessException(PostErrorCode.POST_NOT_FOUND);
-        }
         
         post.setViewCount(post.getViewCount() + 1);
         postRepository.updateById(post);
     }
     
-    public void incrementLikeCount(String postId) {
-        PostEntity post = getPostById(postId);
-        if (post == null) {
-            throw new BusinessException(PostErrorCode.POST_NOT_FOUND);
-        }
-        
-        post.setLikeCount(post.getLikeCount() + 1);
-        postRepository.updateById(post);
-    }
-    
-    public void decrementLikeCount(String postId) {
-        PostEntity post = getPostById(postId);
-        if (post == null) {
-            throw new BusinessException(PostErrorCode.POST_NOT_FOUND);
-        }
-        
-        if (post.getLikeCount() > 0) {
-            post.setLikeCount(post.getLikeCount() - 1);
-            postRepository.updateById(post);
-        }
-    }
-    
     public void incrementCommentCount(String postId) {
         PostEntity post = getPostById(postId);
-        if (post == null) {
-            throw new BusinessException(PostErrorCode.POST_NOT_FOUND);
-        }
         
         post.setCommentCount(post.getCommentCount() + 1);
         postRepository.updateById(post);
@@ -180,13 +196,39 @@ public class PostDomainService {
     
     public void decrementCommentCount(String postId) {
         PostEntity post = getPostById(postId);
-        if (post == null) {
-            throw new BusinessException(PostErrorCode.POST_NOT_FOUND);
-        }
         
         if (post.getCommentCount() > 0) {
             post.setCommentCount(post.getCommentCount() - 1);
             postRepository.updateById(post);
         }
+    }
+    
+    public IPage<PostEntity> getUserPosts(String authorId, Integer pageNum, Integer pageSize, PostStatus status) {
+        Page<PostEntity> page = new Page<>(pageNum, pageSize);
+        
+        LambdaQueryWrapper<PostEntity> queryWrapper = new LambdaQueryWrapper<PostEntity>()
+                .eq(PostEntity::getAuthorId, authorId)
+                .orderByDesc(PostEntity::getCreateTime);
+        
+        if (status != null) {
+            queryWrapper.eq(PostEntity::getStatus, status);
+        }
+        
+        return postRepository.selectPage(page, queryWrapper);
+    }
+    
+    public void deletePost(String postId, String authorId) {
+        LambdaQueryWrapper<PostEntity> deleteWrapper = new LambdaQueryWrapper<PostEntity>()
+                .eq(PostEntity::getId, postId)
+                .eq(PostEntity::getAuthorId, authorId);
+        
+        int deleted = postRepository.delete(deleteWrapper);
+        if (deleted == 0) {
+            throw new BusinessException(PostErrorCode.POST_NOT_FOUND);
+        }
+    }
+    
+    public void updatePostFields(PostEntity post) {
+        postRepository.updateById(post);
     }
 }

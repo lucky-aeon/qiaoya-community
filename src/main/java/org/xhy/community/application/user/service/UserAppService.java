@@ -1,6 +1,5 @@
 package org.xhy.community.application.user.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.xhy.community.application.user.assembler.UserAssembler;
 import org.xhy.community.application.user.dto.LoginResponseDTO;
@@ -17,7 +16,6 @@ public class UserAppService {
     private final UserDomainService userDomainService;
     private final JwtUtil jwtUtil;
     
-    @Autowired
     public UserAppService(UserDomainService userDomainService, JwtUtil jwtUtil) {
         this.userDomainService = userDomainService;
         this.jwtUtil = jwtUtil;
