@@ -17,7 +17,7 @@ import org.xhy.community.interfaces.post.request.PostStatusRequest;
 import org.xhy.community.interfaces.post.request.UpdatePostRequest;
 
 @RestController
-@RequestMapping("/api/posts")
+@RequestMapping("/api/user/posts")
 public class PostController {
     
     @Autowired
