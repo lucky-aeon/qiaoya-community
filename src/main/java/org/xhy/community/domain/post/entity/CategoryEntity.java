@@ -1,8 +1,10 @@
 package org.xhy.community.domain.post.entity;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import org.xhy.community.domain.entity.BaseEntity;
 import org.xhy.community.domain.post.valueobject.CategoryType;
+import org.xhy.community.infrastructure.converter.CategoryTypeConverter;
 
 @TableName("categories")
 public class CategoryEntity extends BaseEntity {
@@ -14,6 +16,7 @@ public class CategoryEntity extends BaseEntity {
     private String parentId;
     
     /** 分类类型：ARTICLE-文章，QA-问答 */
+    @TableField(typeHandler = CategoryTypeConverter.class)
     private CategoryType type;
     
     /** 分类层级，从1开始 */

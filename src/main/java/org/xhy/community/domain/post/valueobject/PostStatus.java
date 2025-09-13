@@ -13,4 +13,13 @@ public enum PostStatus {
     public String getDescription() {
         return description;
     }
+    
+    public static PostStatus fromCode(String code) {
+        for (PostStatus status : values()) {
+            if (status.name().equals(code)) {
+                return status;
+            }
+        }
+        throw new IllegalArgumentException("Unknown post status code: " + code);
+    }
 }

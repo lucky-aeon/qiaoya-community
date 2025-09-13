@@ -4,7 +4,13 @@
       "WebSearch",
       "Bash(mvn:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Read(/Users/xhy/course/AgentX/AgentX/src/main/java/org/xhy/domain/llm/model/**)",
+      "Read(/Users/xhy/course/AgentX/AgentX/src/main/java/org/xhy/infrastructure/converter/**)",
+      "Read(/Users/xhy/course/AgentX/AgentX/src/main/java/org/xhy/infrastructure/converter/**)",
+      "Read(/Users/xhy/course/AgentX/AgentX/src/main/java/**)",
+      "Read(/Users/xhy/course/AgentX/AgentX/src/main/java/org/xhy/infrastructure/llm/protocol/enums/**)",
+      "Read(/Users/xhy/course/AgentX/AgentX/src/main/java/org/xhy/infrastructure/config/**)"
     ],
     "deny": [],
     "ask": []

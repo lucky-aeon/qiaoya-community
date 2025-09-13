@@ -1,8 +1,10 @@
 package org.xhy.community.domain.post.entity;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import org.xhy.community.domain.entity.BaseEntity;
 import org.xhy.community.domain.post.valueobject.PostStatus;
+import org.xhy.community.infrastructure.converter.PostStatusConverter;
 
 import java.time.LocalDateTime;
 
@@ -28,6 +30,7 @@ public class PostEntity extends BaseEntity {
     private String categoryId;
     
     /** 文章状态：DRAFT-草稿，PUBLISHED-已发布 */
+    @TableField(typeHandler = PostStatusConverter.class)
     private PostStatus status;
     
     /** 点赞数 */

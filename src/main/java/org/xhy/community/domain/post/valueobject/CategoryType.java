@@ -13,4 +13,13 @@ public enum CategoryType {
     public String getDescription() {
         return description;
     }
+    
+    public static CategoryType fromCode(String code) {
+        for (CategoryType type : values()) {
+            if (type.name().equals(code)) {
+                return type;
+            }
+        }
+        throw new IllegalArgumentException("Unknown category type code: " + code);
+    }
 }

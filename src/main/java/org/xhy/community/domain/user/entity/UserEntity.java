@@ -1,8 +1,10 @@
 package org.xhy.community.domain.user.entity;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import org.xhy.community.domain.entity.BaseEntity;
 import org.xhy.community.domain.user.valueobject.UserStatus;
+import org.xhy.community.infrastructure.converter.UserStatusConverter;
 
 @TableName("users")
 public class UserEntity extends BaseEntity {
@@ -23,6 +25,7 @@ public class UserEntity extends BaseEntity {
     private String password;
     
     /** 用户状态：ACTIVE-活跃，INACTIVE-未激活，BANNED-已封禁 */
+    @TableField(typeHandler = UserStatusConverter.class)
     private UserStatus status;
     
     /** 是否启用邮件通知 */

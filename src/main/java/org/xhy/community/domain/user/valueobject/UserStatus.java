@@ -14,4 +14,13 @@ public enum UserStatus {
     public String getDescription() {
         return description;
     }
+    
+    public static UserStatus fromCode(String code) {
+        for (UserStatus status : values()) {
+            if (status.name().equals(code)) {
+                return status;
+            }
+        }
+        throw new IllegalArgumentException("Unknown user status code: " + code);
+    }
 }
