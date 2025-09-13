@@ -16,7 +16,6 @@ public class UserController {
     
     private final UserAppService userAppService;
     
-    @Autowired
     public UserController(UserAppService userAppService) {
         this.userAppService = userAppService;
     }

@@ -108,4 +108,15 @@ public class CategoryDomainService {
         
         return categoryRepository.exists(queryWrapper);
     }
+    
+    public java.util.List<CategoryEntity> getCategories(LambdaQueryWrapper<CategoryEntity> queryWrapper) {
+        return categoryRepository.selectList(queryWrapper);
+    }
+    
+    public java.util.List<CategoryEntity> getCategoriesByIds(java.util.Collection<String> categoryIds) {
+        if (categoryIds == null || categoryIds.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+        return categoryRepository.selectBatchIds(categoryIds);
+    }
 }

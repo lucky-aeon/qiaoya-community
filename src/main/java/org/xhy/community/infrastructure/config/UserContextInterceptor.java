@@ -10,15 +10,22 @@ import org.springframework.web.servlet.HandlerInterceptor;
 @Component
 public class UserContextInterceptor implements HandlerInterceptor {
     
-    @Autowired
-    private JwtUtil jwtUtil;
-    
+
+    private final JwtUtil jwtUtil;
+
+    public UserContextInterceptor(JwtUtil jwtUtil) {
+        this.jwtUtil = jwtUtil;
+    }
+
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         String userId = extractUserIdFromRequest(request);
         
         if (StringUtils.hasText(userId)) {
             UserContext.setCurrentUserId(userId);
+        } else {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            return false;
         }
         
         return true;

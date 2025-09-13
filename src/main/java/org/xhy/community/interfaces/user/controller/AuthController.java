@@ -16,7 +16,6 @@ public class AuthController {
     
     private final UserAppService userAppService;
     
-    @Autowired
     public AuthController(UserAppService userAppService) {
         this.userAppService = userAppService;
     }

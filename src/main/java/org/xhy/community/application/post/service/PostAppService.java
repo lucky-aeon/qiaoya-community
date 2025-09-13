@@ -3,15 +3,24 @@ package org.xhy.community.application.post.service;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.stereotype.Service;
+import org.xhy.community.application.post.assembler.FrontPostAssembler;
 import org.xhy.community.application.post.assembler.PostAssembler;
+import org.xhy.community.application.post.assembler.PublicPostAssembler;
+import org.xhy.community.application.post.dto.FrontPostDTO;
 import org.xhy.community.application.post.dto.PostDTO;
+import org.xhy.community.application.post.dto.PublicPostDTO;
+import org.xhy.community.domain.post.entity.CategoryEntity;
 import org.xhy.community.domain.post.entity.PostEntity;
+import org.xhy.community.domain.post.service.CategoryDomainService;
 import org.xhy.community.domain.post.service.PostDomainService;
 import org.xhy.community.domain.post.valueobject.PostStatus;
+import org.xhy.community.domain.user.entity.UserEntity;
+import org.xhy.community.domain.user.service.UserDomainService;
 import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.infrastructure.config.ValidationErrorCode;
 import org.xhy.community.interfaces.post.request.CreatePostRequest;
 import org.xhy.community.interfaces.post.request.PostQueryRequest;
+import org.xhy.community.interfaces.post.request.PublicPostQueryRequest;
 import org.xhy.community.interfaces.post.request.UpdatePostRequest;
 
 import java.util.List;
@@ -20,9 +29,15 @@ import java.util.List;
 public class PostAppService {
     
     private final PostDomainService postDomainService;
+    private final UserDomainService userDomainService;
+    private final CategoryDomainService categoryDomainService;
     
-    public PostAppService(PostDomainService postDomainService) {
+    public PostAppService(PostDomainService postDomainService, 
+                         UserDomainService userDomainService,
+                         CategoryDomainService categoryDomainService) {
         this.postDomainService = postDomainService;
+        this.userDomainService = userDomainService;
+        this.categoryDomainService = categoryDomainService;
     }
     
     public PostDTO createPost(CreatePostRequest request, String authorId) {
@@ -86,5 +101,56 @@ public class PostAppService {
         }
         
         return PostAssembler.toDTO(updatedPost);
+    }
+    
+    public IPage<FrontPostDTO> queryPublicPosts(PublicPostQueryRequest request) {
+        IPage<PostEntity> entityPage = postDomainService.queryPublicPosts(
+            request.getPage(),
+            request.getSize(),
+            request.getCategoryType()
+        );
+        
+        List<PostEntity> posts = entityPage.getRecords();
+        if (posts.isEmpty()) {
+            Page<FrontPostDTO> emptyPage = new Page<>(entityPage.getCurrent(), entityPage.getSize(), entityPage.getTotal());
+            emptyPage.setRecords(java.util.Collections.emptyList());
+            return emptyPage;
+        }
+        
+        // 收集所有的authorId和categoryId
+        java.util.Set<String> authorIds = posts.stream()
+                .map(PostEntity::getAuthorId)
+                .collect(java.util.stream.Collectors.toSet());
+        
+        java.util.Set<String> categoryIds = posts.stream()
+                .map(PostEntity::getCategoryId)
+                .collect(java.util.stream.Collectors.toSet());
+        
+        // 批量查询用户和分类信息
+        List<UserEntity> users = userDomainService.getUsersByIds(authorIds);
+        List<CategoryEntity> categories = categoryDomainService.getCategoriesByIds(categoryIds);
+        
+        // 转换为Map便于查找
+        java.util.Map<String, String> authorNames = users.stream()
+                .collect(java.util.stream.Collectors.toMap(
+                    UserEntity::getId,
+                    UserEntity::getName
+                ));
+        
+        java.util.Map<String, String> categoryNames = categories.stream()
+                .collect(java.util.stream.Collectors.toMap(
+                    CategoryEntity::getId,
+                    CategoryEntity::getName
+                ));
+        
+        // 组装FrontPostDTO
+        List<FrontPostDTO> dtoList = posts.stream()
+                .map(post -> FrontPostAssembler.toDTO(post, authorNames, categoryNames))
+                .toList();
+        
+        Page<FrontPostDTO> dtoPage = new Page<>(entityPage.getCurrent(), entityPage.getSize(), entityPage.getTotal());
+        dtoPage.setRecords(dtoList);
+        
+        return dtoPage;
     }
 }

@@ -171,4 +171,11 @@ public class UserDomainService {
         
         return userRepository.exists(queryWrapper);
     }
+    
+    public java.util.List<UserEntity> getUsersByIds(java.util.Collection<String> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+        return userRepository.selectBatchIds(userIds);
+    }
 }

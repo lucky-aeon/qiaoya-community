@@ -10,6 +10,7 @@ import org.xhy.community.domain.post.entity.CategoryEntity;
 import org.xhy.community.domain.post.entity.PostEntity;
 import org.xhy.community.infrastructure.exception.PostErrorCode;
 import org.xhy.community.domain.post.repository.PostRepository;
+import org.xhy.community.domain.post.valueobject.CategoryType;
 import org.xhy.community.domain.post.valueobject.PostStatus;
 
 import java.time.LocalDateTime;
@@ -230,5 +231,36 @@ public class PostDomainService {
     
     public void updatePostFields(PostEntity post) {
         postRepository.updateById(post);
+    }
+    
+    public IPage<PostEntity> queryPublicPosts(Integer page, Integer size, CategoryType categoryType) {
+        Page<PostEntity> pageQuery = new Page<>(page, size);
+        
+        LambdaQueryWrapper<PostEntity> queryWrapper = new LambdaQueryWrapper<PostEntity>()
+                .eq(PostEntity::getStatus, PostStatus.PUBLISHED)
+                .orderByDesc(PostEntity::getCreateTime);
+        
+        // 如果指定了分类类型，需要关联查询分类表
+        if (categoryType != null) {
+            // 先查询符合条件的分类ID列表
+            LambdaQueryWrapper<CategoryEntity> categoryWrapper = new LambdaQueryWrapper<CategoryEntity>()
+                    .eq(CategoryEntity::getType, categoryType)
+                    .eq(CategoryEntity::getIsActive, true)
+                    .select(CategoryEntity::getId);
+            
+            java.util.List<CategoryEntity> categories = categoryDomainService.getCategories(categoryWrapper);
+            if (categories.isEmpty()) {
+                // 如果没有找到符合条件的分类，返回空结果
+                return new Page<>(page, size, 0);
+            }
+            
+            java.util.List<String> categoryIds = categories.stream()
+                    .map(CategoryEntity::getId)
+                    .toList();
+            
+            queryWrapper.in(PostEntity::getCategoryId, categoryIds);
+        }
+        
+        return postRepository.selectPage(pageQuery, queryWrapper);
     }
 }
