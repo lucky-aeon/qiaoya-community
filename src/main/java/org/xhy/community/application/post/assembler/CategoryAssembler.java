@@ -2,9 +2,15 @@ package org.xhy.community.application.post.assembler;
 
 import org.springframework.beans.BeanUtils;
 import org.xhy.community.application.post.dto.CategoryDTO;
+import org.xhy.community.application.post.dto.CategoryTreeDTO;
 import org.xhy.community.domain.post.entity.CategoryEntity;
 import org.xhy.community.interfaces.post.request.CreateCategoryRequest;
 import org.xhy.community.interfaces.post.request.UpdateCategoryRequest;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class CategoryAssembler {
     
@@ -39,5 +45,43 @@ public class CategoryAssembler {
         entity.setId(categoryId);
         
         return entity;
+    }
+    
+    public static CategoryTreeDTO toTreeDTO(CategoryEntity entity) {
+        if (entity == null) {
+            return null;
+        }
+        
+        CategoryTreeDTO dto = new CategoryTreeDTO();
+        BeanUtils.copyProperties(entity, dto);
+        dto.setChildren(new ArrayList<>());
+        return dto;
+    }
+    
+    public static List<CategoryTreeDTO> buildCategoryTree(List<CategoryEntity> categories) {
+        if (categories == null || categories.isEmpty()) {
+            return new ArrayList<>();
+        }
+        
+        // 转换为TreeDTO并按parentId分组
+        Map<String, List<CategoryTreeDTO>> categoryMap = categories.stream()
+            .map(CategoryAssembler::toTreeDTO)
+            .collect(Collectors.groupingBy(dto -> dto.getParentId() == null ? "ROOT" : dto.getParentId()));
+        
+        // 构建树形结构
+        List<CategoryTreeDTO> rootCategories = categoryMap.getOrDefault("ROOT", new ArrayList<>());
+        buildChildren(rootCategories, categoryMap);
+        
+        return rootCategories;
+    }
+    
+    private static void buildChildren(List<CategoryTreeDTO> parents, Map<String, List<CategoryTreeDTO>> categoryMap) {
+        for (CategoryTreeDTO parent : parents) {
+            List<CategoryTreeDTO> children = categoryMap.get(parent.getId());
+            if (children != null && !children.isEmpty()) {
+                parent.setChildren(children);
+                buildChildren(children, categoryMap);
+            }
+        }
     }
 }

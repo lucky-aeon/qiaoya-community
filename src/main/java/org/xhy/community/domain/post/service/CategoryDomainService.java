@@ -132,4 +132,15 @@ public class CategoryDomainService {
         
         return categoryRepository.selectPage(page, queryWrapper);
     }
+    
+    public java.util.List<CategoryEntity> getAllActiveCategories(CategoryType type) {
+        LambdaQueryWrapper<CategoryEntity> queryWrapper = new LambdaQueryWrapper<CategoryEntity>()
+            .eq(CategoryEntity::getIsActive, true)
+            .eq(type != null, CategoryEntity::getType, type)
+            .orderByAsc(CategoryEntity::getLevel)
+            .orderByAsc(CategoryEntity::getSortOrder)
+            .orderByDesc(CategoryEntity::getCreateTime);
+        
+        return categoryRepository.selectList(queryWrapper);
+    }
 }
