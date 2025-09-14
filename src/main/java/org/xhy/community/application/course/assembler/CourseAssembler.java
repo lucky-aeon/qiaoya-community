@@ -2,6 +2,7 @@ package org.xhy.community.application.course.assembler;
 
 import org.springframework.beans.BeanUtils;
 import org.xhy.community.application.course.dto.CourseDTO;
+import org.xhy.community.application.course.dto.SimpleCourseDTO;
 import org.xhy.community.domain.course.entity.CourseEntity;
 import org.xhy.community.interfaces.course.request.CreateCourseRequest;
 import org.xhy.community.interfaces.course.request.UpdateCourseRequest;
@@ -41,5 +42,15 @@ public class CourseAssembler {
         entity.setId(courseId);
         
         return entity;
+    }
+    
+    public static SimpleCourseDTO toSimpleDTO(CourseEntity entity) {
+        if (entity == null) {
+            return null;
+        }
+        
+        SimpleCourseDTO dto = new SimpleCourseDTO();
+        BeanUtils.copyProperties(entity, dto);
+        return dto;
     }
 }

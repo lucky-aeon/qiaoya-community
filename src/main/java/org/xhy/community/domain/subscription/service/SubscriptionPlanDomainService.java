@@ -9,8 +9,12 @@ import org.xhy.community.domain.subscription.entity.SubscriptionPlanEntity;
 import org.xhy.community.domain.subscription.entity.SubscriptionPlanCourseEntity;
 import org.xhy.community.domain.subscription.repository.SubscriptionPlanRepository;
 import org.xhy.community.domain.subscription.repository.SubscriptionPlanCourseRepository;
+import org.xhy.community.application.subscription.dto.SimpleSubscriptionPlanDTO;
+import org.xhy.community.application.subscription.assembler.SubscriptionPlanAssembler;
 import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.infrastructure.exception.SubscriptionPlanErrorCode;
+
+import java.util.stream.Collectors;
 
 import java.util.List;
 
@@ -18,10 +22,12 @@ import java.util.List;
 public class SubscriptionPlanDomainService {
     
     private final SubscriptionPlanRepository subscriptionPlanRepository;
+    private final SubscriptionPlanCourseRepository subscriptionPlanCourseRepository;
 
-    public SubscriptionPlanDomainService(SubscriptionPlanRepository subscriptionPlanRepository
-                                      ) {
+    public SubscriptionPlanDomainService(SubscriptionPlanRepository subscriptionPlanRepository,
+                                       SubscriptionPlanCourseRepository subscriptionPlanCourseRepository) {
         this.subscriptionPlanRepository = subscriptionPlanRepository;
+        this.subscriptionPlanCourseRepository = subscriptionPlanCourseRepository;
     }
     
     public SubscriptionPlanEntity createSubscriptionPlan(SubscriptionPlanEntity plan) {
@@ -59,7 +65,47 @@ public class SubscriptionPlanDomainService {
         
         return subscriptionPlanRepository.selectPage(page, queryWrapper);
     }
+    
+    public void syncSubscriptionPlanCourses(String subscriptionPlanId, List<String> courseIds) {
+        LambdaQueryWrapper<SubscriptionPlanCourseEntity> deleteWrapper = 
+            new LambdaQueryWrapper<SubscriptionPlanCourseEntity>()
+                .eq(SubscriptionPlanCourseEntity::getSubscriptionPlanId, subscriptionPlanId);
+        subscriptionPlanCourseRepository.delete(deleteWrapper);
+        
+        if (courseIds != null && !courseIds.isEmpty()) {
+            for (String courseId : courseIds) {
+                SubscriptionPlanCourseEntity planCourse = 
+                    new SubscriptionPlanCourseEntity(subscriptionPlanId, courseId);
+                subscriptionPlanCourseRepository.insert(planCourse);
+            }
+        }
+    }
+    
+    public List<SubscriptionPlanCourseEntity> getSubscriptionPlanCourses(String subscriptionPlanId) {
+        LambdaQueryWrapper<SubscriptionPlanCourseEntity> queryWrapper = 
+            new LambdaQueryWrapper<SubscriptionPlanCourseEntity>()
+                .eq(SubscriptionPlanCourseEntity::getSubscriptionPlanId, subscriptionPlanId);
+        return subscriptionPlanCourseRepository.selectList(queryWrapper);
+    }
 
+    
+    public List<SimpleSubscriptionPlanDTO> getAllSimpleSubscriptionPlans() {
+        List<SubscriptionPlanEntity> entities = subscriptionPlanRepository.selectList(
+            new LambdaQueryWrapper<SubscriptionPlanEntity>()
+                .orderByDesc(SubscriptionPlanEntity::getCreateTime)
+        );
+        return entities.stream()
+                      .map(SubscriptionPlanAssembler::toSimpleDTO)
+                      .collect(Collectors.toList());
+    }
+    
+    public List<String> getSubscriptionPlanCourseIds(String subscriptionPlanId) {
+        List<SubscriptionPlanCourseEntity> planCourses = getSubscriptionPlanCourses(subscriptionPlanId);
+        return planCourses.stream()
+                         .map(SubscriptionPlanCourseEntity::getCourseId)
+                         .collect(Collectors.toList());
+    }
+    
     private void validateUniqueSubscriptionPlanName(String name, String excludeId) {
         LambdaQueryWrapper<SubscriptionPlanEntity> queryWrapper = 
             new LambdaQueryWrapper<SubscriptionPlanEntity>()

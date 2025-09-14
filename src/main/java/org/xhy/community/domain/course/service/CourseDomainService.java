@@ -7,10 +7,14 @@ import org.springframework.stereotype.Service;
 import org.xhy.community.domain.course.entity.CourseEntity;
 import org.xhy.community.domain.course.repository.CourseRepository;
 import org.xhy.community.domain.course.valueobject.CourseStatus;
+import org.xhy.community.application.course.dto.SimpleCourseDTO;
+import org.xhy.community.application.course.assembler.CourseAssembler;
 import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.infrastructure.exception.CourseErrorCode;
 
 import java.math.BigDecimal;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class CourseDomainService {
@@ -51,5 +55,15 @@ public class CourseDomainService {
                 .orderByDesc(CourseEntity::getCreateTime);
         
         return courseRepository.selectPage(page, queryWrapper);
+    }
+    
+    public List<SimpleCourseDTO> getAllSimpleCourses() {
+        List<CourseEntity> entities = courseRepository.selectList(
+            new LambdaQueryWrapper<CourseEntity>()
+                .orderByDesc(CourseEntity::getCreateTime)
+        );
+        return entities.stream()
+                      .map(CourseAssembler::toSimpleDTO)
+                      .collect(Collectors.toList());
     }
 }

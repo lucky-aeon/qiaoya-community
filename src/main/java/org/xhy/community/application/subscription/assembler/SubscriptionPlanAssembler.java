@@ -2,6 +2,7 @@ package org.xhy.community.application.subscription.assembler;
 
 import org.springframework.beans.BeanUtils;
 import org.xhy.community.application.subscription.dto.SubscriptionPlanDTO;
+import org.xhy.community.application.subscription.dto.SimpleSubscriptionPlanDTO;
 import org.xhy.community.domain.subscription.entity.SubscriptionPlanEntity;
 import org.xhy.community.interfaces.subscription.request.CreateSubscriptionPlanRequest;
 import org.xhy.community.interfaces.subscription.request.UpdateSubscriptionPlanRequest;
@@ -37,5 +38,15 @@ public class SubscriptionPlanAssembler {
         BeanUtils.copyProperties(request, entity);
         entity.setId(id);
         return entity;
+    }
+    
+    public static SimpleSubscriptionPlanDTO toSimpleDTO(SubscriptionPlanEntity entity) {
+        if (entity == null) {
+            return null;
+        }
+        
+        SimpleSubscriptionPlanDTO dto = new SimpleSubscriptionPlanDTO();
+        BeanUtils.copyProperties(entity, dto);
+        return dto;
     }
 }
