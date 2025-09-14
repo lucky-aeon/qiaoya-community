@@ -13,6 +13,11 @@ import org.xhy.community.interfaces.course.request.ChapterQueryRequest;
 
 import java.util.List;
 
+/**
+ * 管理员课程章节管理控制器
+ * 提供管理员对课程章节的完整管理功能，包括创建、编辑、删除、查询等操作
+ * @module 课程管理
+ */
 @RestController
 @RequestMapping("/api/admin/chapters")
 public class AdminChapterController {
@@ -23,6 +28,14 @@ public class AdminChapterController {
         this.adminChapterAppService = adminChapterAppService;
     }
     
+    /**
+     * 创建课程章节
+     * 管理员为指定课程创建新的章节内容
+     * 需要管理员权限认证
+     * 
+     * @param request 创建章节请求参数，包含章节基本信息
+     * @return 创建成功的章节详情信息
+     */
     @PostMapping
     public ApiResponse<ChapterDTO> createChapter(@Valid @RequestBody CreateChapterRequest request) {
         String currentUserId = UserContext.getCurrentUserId();
@@ -30,6 +43,15 @@ public class AdminChapterController {
         return ApiResponse.success(chapter);
     }
     
+    /**
+     * 更新课程章节
+     * 管理员修改指定章节的信息内容
+     * 需要管理员权限认证
+     * 
+     * @param id 章节ID，UUID格式
+     * @param request 更新章节请求参数
+     * @return 更新后的章节详情信息
+     */
     @PutMapping("/{id}")
     public ApiResponse<ChapterDTO> updateChapter(@PathVariable String id,
                                                 @Valid @RequestBody UpdateChapterRequest request) {
@@ -37,24 +59,56 @@ public class AdminChapterController {
         return ApiResponse.success(chapter);
     }
     
+    /**
+     * 删除课程章节
+     * 管理员软删除指定的课程章节
+     * 需要管理员权限认证
+     * 
+     * @param id 章节ID，UUID格式
+     * @return 删除操作结果
+     */
     @DeleteMapping("/{id}")
     public ApiResponse<Void> deleteChapter(@PathVariable String id) {
         adminChapterAppService.deleteChapter(id);
         return ApiResponse.success();
     }
     
+    /**
+     * 获取章节详情
+     * 管理员查看指定章节的详细信息
+     * 需要管理员权限认证
+     * 
+     * @param id 章节ID，UUID格式
+     * @return 章节详情信息
+     */
     @GetMapping("/{id}")
     public ApiResponse<ChapterDTO> getChapter(@PathVariable String id) {
         ChapterDTO chapter = adminChapterAppService.getChapterById(id);
         return ApiResponse.success(chapter);
     }
     
+    /**
+     * 获取课程的所有章节
+     * 管理员查看指定课程下的所有章节列表
+     * 需要管理员权限认证
+     * 
+     * @param courseId 课程ID，UUID格式
+     * @return 该课程下的所有章节列表
+     */
     @GetMapping("/course/{courseId}")
     public ApiResponse<List<ChapterDTO>> getChaptersByCourse(@PathVariable String courseId) {
         List<ChapterDTO> chapters = adminChapterAppService.getChaptersByCourseId(courseId);
         return ApiResponse.success(chapters);
     }
     
+    /**
+     * 分页查询章节列表
+     * 管理员分页查看所有章节，支持多条件筛选
+     * 需要管理员权限认证
+     * 
+     * @param request 章节查询请求参数，包含分页和筛选条件
+     * @return 分页的章节列表数据
+     */
     @GetMapping
     public ApiResponse<IPage<ChapterDTO>> getChapters(ChapterQueryRequest request) {
         IPage<ChapterDTO> chapters = adminChapterAppService.getPagedChapters(request);

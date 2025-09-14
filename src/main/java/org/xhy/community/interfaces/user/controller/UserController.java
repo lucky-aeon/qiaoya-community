@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.xhy.community.application.user.dto.UserDTO;
+import org.xhy.community.application.user.dto.UserPublicProfileDTO;
 import org.xhy.community.application.user.service.UserAppService;
 import org.xhy.community.infrastructure.config.ApiResponse;
 import org.xhy.community.infrastructure.config.UserContext;
@@ -79,6 +80,44 @@ public class UserController {
             String userId = UserContext.getCurrentUserId();
             UserDTO user = userAppService.toggleEmailNotification(userId);
             return ApiResponse.success("邮箱通知设置修改成功", user);
+        } catch (IllegalArgumentException e) {
+            return ApiResponse.error(400, e.getMessage());
+        }
+    }
+    
+    /**
+     * 查看当前用户信息
+     * 获取当前登录用户的完整个人信息，包含私密信息（邮箱、通知设置等）
+     * 主要用于个人设置页面展示和修改个人信息
+     * 需要JWT令牌认证
+     * 
+     * @return 当前用户的完整信息，包含所有可编辑的字段
+     */
+    @GetMapping("")
+    public ApiResponse<UserDTO> getCurrentUserInfo() {
+        try {
+            String userId = UserContext.getCurrentUserId();
+            UserDTO user = userAppService.getCurrentUserInfo(userId);
+            return ApiResponse.success(user);
+        } catch (IllegalArgumentException e) {
+            return ApiResponse.error(400, e.getMessage());
+        }
+    }
+    
+    /**
+     * 查看指定用户信息
+     * 获取指定用户的公开个人资料信息，不包含私密信息（邮箱、通知设置等）
+     * 主要用于查看其他用户的公开资料
+     * 需要JWT令牌认证
+     * 
+     * @param userId 目标用户ID，UUID格式
+     * @return 指定用户的公开资料信息
+     */
+    @GetMapping("/{userId}")
+    public ApiResponse<UserPublicProfileDTO> getUserPublicProfile(@PathVariable String userId) {
+        try {
+            UserPublicProfileDTO user = userAppService.getUserPublicProfile(userId);
+            return ApiResponse.success(user);
         } catch (IllegalArgumentException e) {
             return ApiResponse.error(400, e.getMessage());
         }

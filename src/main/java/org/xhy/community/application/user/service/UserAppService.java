@@ -4,6 +4,7 @@ import org.springframework.stereotype.Service;
 import org.xhy.community.application.user.assembler.UserAssembler;
 import org.xhy.community.application.user.dto.LoginResponseDTO;
 import org.xhy.community.application.user.dto.UserDTO;
+import org.xhy.community.application.user.dto.UserPublicProfileDTO;
 import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.domain.user.entity.UserEntity;
 import org.xhy.community.infrastructure.exception.UserErrorCode;
@@ -66,5 +67,15 @@ public class UserAppService {
         
         UserEntity user = userDomainService.updateUserSettings(userId, newSetting, null);
         return UserAssembler.toDTO(user);
+    }
+    
+    public UserDTO getCurrentUserInfo(String userId) {
+        UserEntity user = userDomainService.getUserById(userId);
+        return UserAssembler.toDTO(user);
+    }
+    
+    public UserPublicProfileDTO getUserPublicProfile(String userId) {
+        UserEntity user = userDomainService.getUserById(userId);
+        return UserAssembler.toPublicProfileDTO(user);
     }
 }
