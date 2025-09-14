@@ -16,7 +16,7 @@ public class ApiResponse<T> {
     }
     
     public static <T> ApiResponse<T> success(T data) {
-        return new ApiResponse<>(200, "成功", data);
+        return new ApiResponse<>(200, "", data);
     }
     
     public static <T> ApiResponse<T> success(String message, T data) {
@@ -24,7 +24,7 @@ public class ApiResponse<T> {
     }
     
     public static <T> ApiResponse<T> success() {
-        return new ApiResponse<>(200, "成功", null);
+        return new ApiResponse<>(200, "", null);
     }
     
     public static <T> ApiResponse<T> error(Integer code, String message) {
