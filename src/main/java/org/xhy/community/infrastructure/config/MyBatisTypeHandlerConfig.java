@@ -11,12 +11,14 @@ import org.xhy.community.domain.course.valueobject.CourseStatus;
 import org.xhy.community.domain.post.valueobject.CategoryType;
 import org.xhy.community.domain.post.valueobject.PostStatus;
 import org.xhy.community.domain.resource.valueobject.ResourceType;
+import org.xhy.community.domain.subscription.valueobject.SubscriptionPlanStatus;
 import org.xhy.community.domain.user.valueobject.UserStatus;
 import org.xhy.community.infrastructure.converter.BusinessTypeConverter;
 import org.xhy.community.infrastructure.converter.CategoryTypeConverter;
 import org.xhy.community.infrastructure.converter.CourseStatusConverter;
 import org.xhy.community.infrastructure.converter.PostStatusConverter;
 import org.xhy.community.infrastructure.converter.ResourceTypeConverter;
+import org.xhy.community.infrastructure.converter.SubscriptionPlanStatusConverter;
 import org.xhy.community.infrastructure.converter.UserStatusConverter;
 
 import jakarta.annotation.PostConstruct;
@@ -42,8 +44,9 @@ public class MyBatisTypeHandlerConfig {
         typeHandlerRegistry.register(CourseStatus.class, new CourseStatusConverter());
         typeHandlerRegistry.register(BusinessType.class, new BusinessTypeConverter());
         typeHandlerRegistry.register(ResourceType.class, new ResourceTypeConverter());
+        typeHandlerRegistry.register(SubscriptionPlanStatus.class, new SubscriptionPlanStatusConverter());
 
-        log.info("手动注册类型处理器：UserStatusConverter, PostStatusConverter, CategoryTypeConverter, CourseStatusConverter, BusinessTypeConverter, ResourceTypeConverter");
+        log.info("手动注册类型处理器：UserStatusConverter, PostStatusConverter, CategoryTypeConverter, CourseStatusConverter, BusinessTypeConverter, ResourceTypeConverter, SubscriptionPlanStatusConverter");
         log.info("已注册的类型处理器总数: {}", typeHandlerRegistry.getTypeHandlers().size());
     }
 }
