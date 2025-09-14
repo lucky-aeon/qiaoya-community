@@ -14,7 +14,7 @@ import org.xhy.community.interfaces.resource.request.ResourceQueryRequest;
 import java.net.URI;
 
 @RestController
-@RequestMapping("/api/resource")
+@RequestMapping("/api/user/resource")
 public class ResourceController {
     
     private final ResourceAppService resourceAppService;
@@ -40,7 +40,7 @@ public class ResourceController {
                 .build();
     }
     
-    @GetMapping("/user-resources")
+    @GetMapping("/")
     public ApiResponse<PagedResourceDTO> getUserResources(@Valid ResourceQueryRequest request) {
         PagedResourceDTO resources = resourceAppService.getUserResources(request);
         return ApiResponse.success(resources);

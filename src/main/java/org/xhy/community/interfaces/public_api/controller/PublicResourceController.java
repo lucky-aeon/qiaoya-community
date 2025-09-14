@@ -26,7 +26,7 @@ public class PublicResourceController {
             HttpServletRequest request
     ) {
         // OSS回调不需要用户认证，直接处理
-        // 简化签名验证 - 可以通过IP白名单或其他方式验证
+        // 简化签名验证 - 可以通过IP白名单或其他方式验证 TODO
         ResourceDTO resource = resourceAppService.handleOssCallback(callbackRequest);
         
         Map<String, String> response = Map.of("Status", "OK");
