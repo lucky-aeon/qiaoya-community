@@ -292,6 +292,7 @@ IPage<UserEntity> result = userRepository.selectPage(page,
 - 迁移文件位置：`src/main/resources/db/migration`
 - 命名格式：`V{version}__{description}.sql`
 - 示例：`V1__Create_user_table.sql`
+- 语法规范是 postgre sql
 
 ### 9. UUID主键使用规范
 
@@ -400,3 +401,5 @@ public CourseEntity updateCourse(CourseEntity course) {
 ```java
 Children like(boolean condition, R column, Object val);
 ```
+
+- 
