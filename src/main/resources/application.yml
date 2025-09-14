@@ -28,8 +28,8 @@ mybatis-plus:
     db-config:
       id-type: auto
       logic-delete-field: deleted
-      logic-delete-value: 1
-      logic-not-delete-value: 0
+      logic-delete-value: true
+      logic-not-delete-value: false
     banner: false
   mapper-locations: classpath:mapper/*.xml
 
