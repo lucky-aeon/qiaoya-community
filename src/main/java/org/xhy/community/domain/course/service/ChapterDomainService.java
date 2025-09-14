@@ -69,7 +69,6 @@ public class ChapterDomainService {
         Page<ChapterEntity> page = new Page<>(pageNum, pageSize);
         
         LambdaQueryWrapper<ChapterEntity> queryWrapper = new LambdaQueryWrapper<ChapterEntity>()
-            .eq(ChapterEntity::getDeleted, false)
             .eq(StringUtils.hasText(courseId), ChapterEntity::getCourseId, courseId)
             .orderByDesc(ChapterEntity::getCreateTime);
         

@@ -12,6 +12,11 @@ import org.xhy.community.interfaces.course.request.CreateCourseRequest;
 import org.xhy.community.interfaces.course.request.UpdateCourseRequest;
 import org.xhy.community.interfaces.course.request.CourseQueryRequest;
 
+/**
+ * 管理员课程管理控制器
+ * 提供课程的增删改查等管理功能，需要管理员权限
+ * @module 课程管理
+ */
 @RestController
 @RequestMapping("/api/admin/courses")
 public class AdminCourseController {
@@ -22,6 +27,12 @@ public class AdminCourseController {
         this.adminCourseAppService = adminCourseAppService;
     }
 
+    /**
+     * 创建新课程
+     * 管理员创建新的课程，需要管理员权限
+     * @param request 创建课程请求参数
+     * @return 创建成功的课程信息
+     */
     @PostMapping
     public ApiResponse<CourseDTO> createCourse(@Valid @RequestBody CreateCourseRequest request) {
         String currentUserId = UserContext.getCurrentUserId();
@@ -29,6 +40,13 @@ public class AdminCourseController {
         return ApiResponse.success(course);
     }
     
+    /**
+     * 更新课程信息
+     * 管理员更新课程的基本信息
+     * @param id 课程ID
+     * @param request 更新课程请求参数
+     * @return 更新后的课程信息
+     */
     @PutMapping("/{id}")
     public ApiResponse<CourseDTO> updateCourse(@PathVariable String id, 
                                               @Valid @RequestBody UpdateCourseRequest request) {
@@ -36,12 +54,24 @@ public class AdminCourseController {
         return ApiResponse.success(course);
     }
     
+    /**
+     * 获取课程详情
+     * 查看课程的详细信息
+     * @param id 课程ID
+     * @return 课程详情
+     */
     @GetMapping("/{id}")
     public ApiResponse<CourseDTO> getCourse(@PathVariable String id) {
         CourseDTO course = adminCourseAppService.getCourseById(id);
         return ApiResponse.success(course);
     }
     
+    /**
+     * 删除课程
+     * 管理员删除课程（软删除）
+     * @param id 课程ID
+     * @return 空响应
+     */
     @DeleteMapping("/{id}")
     public ApiResponse<Void> deleteCourse(@PathVariable String id) {
         adminCourseAppService.deleteCourse(id);

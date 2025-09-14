@@ -10,6 +10,11 @@ import org.xhy.community.infrastructure.config.ApiResponse;
 import org.xhy.community.interfaces.user.request.LoginRequest;
 import org.xhy.community.interfaces.user.request.RegisterRequest;
 
+/**
+ * 用户认证控制器
+ * 提供用户登录、注册等认证相关功能
+ * @module 用户认证
+ */
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -20,6 +25,15 @@ public class AuthController {
         this.userAppService = userAppService;
     }
     
+    /**
+     * 用户登录
+     * 通过邮箱和密码进行用户登录认证，成功后返回JWT令牌
+     * 
+     * @param request 登录请求参数
+     *                - email: 用户邮箱地址，必须为有效的邮箱格式
+     *                - password: 用户密码，不能为空
+     * @return 登录响应数据，包含JWT令牌和用户基本信息
+     */
     @PostMapping("/login")
     public ApiResponse<LoginResponseDTO> login(@Valid @RequestBody LoginRequest request) {
         try {
@@ -30,6 +44,17 @@ public class AuthController {
         }
     }
     
+    /**
+     * 用户注册
+     * 通过邮箱验证码完成用户注册，注册成功后返回用户信息
+     * 注册前需要先通过其他接口获取邮箱验证码
+     * 
+     * @param request 注册请求参数
+     *                - email: 用户邮箱地址，必须为有效的邮箱格式，系统中不能已存在
+     *                - emailVerificationCode: 邮箱验证码，6位数字，通过邮件获取
+     *                - password: 用户密码，长度6-20位
+     * @return 注册成功的用户信息
+     */
     @PostMapping("/register")
     public ApiResponse<UserDTO> register(@Valid @RequestBody RegisterRequest request) {
         try {

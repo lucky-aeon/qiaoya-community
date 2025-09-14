@@ -10,6 +10,11 @@ import org.xhy.community.interfaces.resource.request.OssCallbackRequest;
 
 import java.util.Map;
 
+/**
+ * 公开资源管理控制器
+ * 提供与第三方服务集成的公开接口，无需用户认证
+ * @module 公开API
+ */
 @RestController
 @RequestMapping("/api/public")
 public class PublicResourceController {
@@ -20,6 +25,15 @@ public class PublicResourceController {
         this.resourceAppService = resourceAppService;
     }
     
+    /**
+     * 处理阿里云OSS上传回调
+     * 接收阿里云OSS服务器的上传成功回调通知，并保存文件元数据
+     * 该接口由OSS服务调用，无需用户认证
+     * 
+     * @param callbackRequest OSS回调请求参数，包含上传文件的元数据信息
+     * @param request HTTP请求对象，用于签名验证
+     * @return 回调处理结果，返回给OSS服务的响应
+     */
     @PostMapping("/oss-callback")
     public ResponseEntity<Map<String, String>> handleOssCallback(
             @Valid OssCallbackRequest callbackRequest,
