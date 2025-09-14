@@ -10,36 +10,54 @@ import org.xhy.community.application.resource.dto.UploadCredentialsDTO;
 import org.xhy.community.domain.resource.entity.ResourceEntity;
 import org.xhy.community.domain.resource.service.ResourceDomainService;
 import org.xhy.community.domain.resource.valueobject.ResourceType;
-import org.xhy.community.infrastructure.config.AwsProperties;
+import org.xhy.community.infrastructure.config.AliyunOssProperties;
 import org.xhy.community.infrastructure.config.UserContext;
+import org.xhy.community.interfaces.resource.request.OssCallbackRequest;
 import org.xhy.community.interfaces.resource.request.ResourceQueryRequest;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
 public class ResourceAppService {
     
     private final ResourceDomainService resourceDomainService;
-    private final AwsProperties awsProperties;
+    private final AliyunOssProperties ossProperties;
     
-    public ResourceAppService(ResourceDomainService resourceDomainService, AwsProperties awsProperties) {
+    public ResourceAppService(ResourceDomainService resourceDomainService, AliyunOssProperties ossProperties) {
         this.resourceDomainService = resourceDomainService;
-        this.awsProperties = awsProperties;
+        this.ossProperties = ossProperties;
     }
     
     public UploadCredentialsDTO getUploadCredentials(String originalName, String contentType) {
         String userId = UserContext.getCurrentUserId();
         String fileKey = generateFileKey(userId, originalName);
         
-        String uploadUrl = resourceDomainService.generatePresignedUploadUrl(fileKey, contentType);
+        Map<String, Object> credentials = resourceDomainService.getStsCredentials(fileKey);
         
-        return ResourceAssembler.toUploadCredentialsDTO(uploadUrl, fileKey, awsProperties);
+        return ResourceAssembler.toUploadCredentialsDTO(credentials, ossProperties);
     }
     
+
+    public ResourceDTO handleOssCallback(OssCallbackRequest callbackRequest) {
+        // 从filename中提取关键信息
+        String fileKey = callbackRequest.getFilename();
+        String originalName = extractOriginalName(fileKey);
+        
+        // 创建资源实体
+        ResourceEntity resource = resourceDomainService.saveResourceFromCallback(
+            fileKey, 
+            originalName,
+            callbackRequest.getMimeType(),
+            callbackRequest.getSize()
+        );
+        
+        return ResourceAssembler.toDTO(resource);
+    }
 
     public String getResourceAccessUrl(String resourceId) {
         return resourceDomainService.getDownloadUrl(resourceId);
@@ -81,5 +99,12 @@ public class ResourceAppService {
             return "";
         }
         return filename.substring(filename.lastIndexOf(".") + 1).toLowerCase();
+    }
+    
+    private String extractOriginalName(String fileKey) {
+        // 从fileKey中提取原始文件名的逻辑
+        // 这里简化处理，实际可能需要更复杂的逻辑
+        String[] parts = fileKey.split("/");
+        return parts.length > 0 ? parts[parts.length - 1] : fileKey;
     }
 }

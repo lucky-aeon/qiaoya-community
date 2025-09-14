@@ -40,8 +40,8 @@ public class ResourceController {
                 .build();
     }
     
-    @GetMapping("/my")
-    public ApiResponse<PagedResourceDTO> getMyResources(@Valid ResourceQueryRequest request) {
+    @GetMapping("/user-resources")
+    public ApiResponse<PagedResourceDTO> getUserResources(@Valid ResourceQueryRequest request) {
         PagedResourceDTO resources = resourceAppService.getUserResources(request);
         return ApiResponse.success(resources);
     }

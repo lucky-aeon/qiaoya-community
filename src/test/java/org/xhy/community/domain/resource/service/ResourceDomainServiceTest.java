@@ -11,7 +11,6 @@ import org.xhy.community.domain.resource.repository.ResourceRepository;
 import org.xhy.community.domain.resource.valueobject.ResourceType;
 import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.infrastructure.exception.ResourceErrorCode;
-import org.xhy.community.infrastructure.service.S3Service;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -30,9 +29,7 @@ class ResourceDomainServiceTest {
     @Autowired
     private ResourceRepository resourceRepository;
     
-    @Autowired
-    private S3Service s3Service;
-    
+
     private String testUserId;
     private String testFileName;
     private String testContentType;

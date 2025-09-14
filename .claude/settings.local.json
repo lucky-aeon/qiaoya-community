@@ -10,7 +10,8 @@
       "Read(/Users/xhy/course/AgentX/AgentX/src/main/java/org/xhy/infrastructure/converter/**)",
       "Read(/Users/xhy/course/AgentX/AgentX/src/main/java/**)",
       "Read(/Users/xhy/course/AgentX/AgentX/src/main/java/org/xhy/infrastructure/llm/protocol/enums/**)",
-      "Read(/Users/xhy/course/AgentX/AgentX/src/main/java/org/xhy/infrastructure/config/**)"
+      "Read(/Users/xhy/course/AgentX/AgentX/src/main/java/org/xhy/infrastructure/config/**)",
+      "WebFetch(domain:help.aliyun.com)"
     ],
     "deny": [],
     "ask": []

@@ -6,11 +6,12 @@ import org.xhy.community.application.resource.dto.PagedResourceDTO;
 import org.xhy.community.application.resource.dto.ResourceDTO;
 import org.xhy.community.application.resource.dto.UploadCredentialsDTO;
 import org.xhy.community.domain.resource.entity.ResourceEntity;
-import org.xhy.community.infrastructure.config.AwsProperties;
+import org.xhy.community.infrastructure.config.AliyunOssProperties;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class ResourceAssembler {
@@ -40,13 +41,31 @@ public class ResourceAssembler {
         return dto;
     }
     
-    public static UploadCredentialsDTO toUploadCredentialsDTO(String uploadUrl, String fileKey, 
-                                                            AwsProperties awsProperties) {
+    public static UploadCredentialsDTO toUploadCredentialsDTO(Map<String, Object> credentials, 
+                                                            AliyunOssProperties ossProperties) {
         UploadCredentialsDTO dto = new UploadCredentialsDTO();
-        dto.setUploadUrl(uploadUrl);
-        dto.setFileKey(fileKey);
-        dto.setBucket(awsProperties.getS3().getBucket());
-        dto.setExpiration(LocalDateTime.now().plusSeconds(awsProperties.getS3().getPresignedUrlExpiration()));
+        
+        // STS临时凭证
+        dto.setAccessKeyId((String) credentials.get("accessKeyId"));
+        dto.setAccessKeySecret((String) credentials.get("accessKeySecret"));
+        dto.setSecurityToken((String) credentials.get("securityToken"));
+        dto.setExpiration((String) credentials.get("expiration"));
+        
+        // OSS信息
+        dto.setRegion((String) credentials.get("region"));
+        dto.setBucket((String) credentials.get("bucket"));
+        dto.setEndpoint((String) credentials.get("endpoint"));
+        
+        // 上传策略和签名
+        dto.setPolicy((String) credentials.get("policy"));
+        dto.setSignature((String) credentials.get("signature"));
+        dto.setKey((String) credentials.get("key"));
+        
+        // 回调参数
+        dto.setCallback((String) credentials.get("callback"));
+        
+        // 设置兼容性字段
+        dto.setFileKey((String) credentials.get("key"));
         dto.setMaxFileSize(100 * 1024 * 1024L); // 默认100MB限制
         
         return dto;

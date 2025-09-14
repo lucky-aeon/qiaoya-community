@@ -10,12 +10,13 @@ import org.xhy.community.domain.resource.repository.ResourceRepository;
 import org.xhy.community.domain.resource.valueobject.ResourceType;
 import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.infrastructure.exception.ResourceErrorCode;
-import org.xhy.community.infrastructure.service.S3Service;
+import org.xhy.community.infrastructure.service.AliyunOssService;
 
 import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -23,11 +24,11 @@ import java.util.UUID;
 public class ResourceDomainService {
     
     private final ResourceRepository resourceRepository;
-    private final S3Service s3Service;
+    private final AliyunOssService aliyunOssService;
     
-    public ResourceDomainService(ResourceRepository resourceRepository, S3Service s3Service) {
+    public ResourceDomainService(ResourceRepository resourceRepository, AliyunOssService aliyunOssService) {
         this.resourceRepository = resourceRepository;
-        this.s3Service = s3Service;
+        this.aliyunOssService = aliyunOssService;
     }
     
     public ResourceEntity uploadFile(String userId, String originalName, String contentType, 
@@ -36,8 +37,8 @@ public class ResourceDomainService {
         String fileKey = generateFileKey(userId, originalName);
         
         try {
-            // 上传文件到S3
-            s3Service.uploadFile(fileKey, inputStream, contentType, size);
+            // 上传文件到OSS
+            aliyunOssService.uploadFile(fileKey, inputStream, contentType);
             
             // 创建资源实体
             ResourceEntity resource = new ResourceEntity();
@@ -57,13 +58,18 @@ public class ResourceDomainService {
         }
     }
     
+    public Map<String, Object> getStsCredentials(String fileKey) {
+        return aliyunOssService.getStsCredentials(fileKey);
+    }
+    
     public String generatePresignedUploadUrl(String userId, String originalName, String contentType) {
         String fileKey = generateFileKey(userId, originalName);
-        return s3Service.generatePresignedUploadUrl(fileKey, contentType);
+        return generatePresignedUploadUrl(fileKey, contentType);
     }
     
     public String generatePresignedUploadUrl(String fileKey, String contentType) {
-        return s3Service.generatePresignedUploadUrl(fileKey, contentType);
+        // OSS直传不需要预签名URL，这个方法保持兼容性但不使用
+        return null;
     }
     
 
@@ -77,7 +83,7 @@ public class ResourceDomainService {
     
     public String getDownloadUrl(String resourceId) {
         ResourceEntity resource = getResourceById(resourceId);
-        return s3Service.generatePresignedDownloadUrl(resource.getFileKey());
+        return aliyunOssService.generatePresignedDownloadUrl(resource.getFileKey());
     }
     
     public List<ResourceEntity> getUserResources(String userId) {
@@ -99,6 +105,29 @@ public class ResourceDomainService {
         
         return resourceRepository.selectPage(page, queryWrapper);
     }
+    
+    public boolean verifyOssCallback(String authorization, String callbackBody, String publicKeyUrl) {
+        return aliyunOssService.verifyOssCallback(authorization, callbackBody, publicKeyUrl);
+    }
+    
+    public ResourceEntity saveResourceFromCallback(String fileKey, String originalName, String mimeType, Long size) {
+        // 从fileKey中提取userId
+        String userId = extractUserIdFromFileKey(fileKey);
+        
+        // 创建资源实体
+        ResourceEntity resource = new ResourceEntity();
+        resource.setFileKey(fileKey);
+        resource.setSize(size);
+        resource.setFormat(getFileExtension(originalName));
+        resource.setUserId(userId);
+        resource.setOriginalName(originalName);
+        resource.initializeResourceType();
+        
+        // 保存到数据库
+        resourceRepository.insert(resource);
+        
+        return resource;
+    }
 
     private String generateFileKey(String userId, String originalName) {
         String date = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd"));
@@ -112,5 +141,14 @@ public class ResourceDomainService {
             return "";
         }
         return filename.substring(filename.lastIndexOf(".") + 1).toLowerCase();
+    }
+    
+    private String extractUserIdFromFileKey(String fileKey) {
+        // fileKey格式: uploads/{userId}/{date}/{uuid}.{ext}
+        String[] parts = fileKey.split("/");
+        if (parts.length > 1) {
+            return parts[1]; // userId在第二个位置
+        }
+        throw new IllegalArgumentException("无法从fileKey中提取用户ID: " + fileKey);
     }
 }

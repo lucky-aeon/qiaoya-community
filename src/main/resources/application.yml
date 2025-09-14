@@ -1,7 +1,5 @@
 server:
   port: 8080
-  servlet:
-    context-path: /api
 
 spring:
   application:
@@ -20,16 +18,6 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: true
     validate-on-migrate: true
-    
-  # JPA配置 (如果需要)
-  jpa:
-    hibernate:
-      ddl-auto: validate
-    show-sql: false
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-        format_sql: true
 
 # MyBatis Plus配置
 mybatis-plus:
@@ -44,6 +32,21 @@ mybatis-plus:
       logic-not-delete-value: 0
     banner: false
   mapper-locations: classpath:mapper/*.xml
+
+# 阿里云OSS配置
+aliyun:
+  oss:
+    endpoint: ${ALIYUN_OSS_ENDPOINT:https://oss-cn-hangzhou.aliyuncs.com}
+    access-key-id: ${ALIYUN_ACCESS_KEY_ID:your-access-key-id}
+    access-key-secret: ${ALIYUN_ACCESS_KEY_SECRET:your-access-key-secret}
+    bucket-name: ${ALIYUN_OSS_BUCKET:your-bucket-name}
+    region: ${ALIYUN_OSS_REGION:cn-hangzhou}
+    role-arn: ${ALIYUN_STS_ROLE_ARN:acs:ram::your-account-id:role/your-role-name}
+    presigned-url-expiration: 3600
+    callback:
+      url: ${ALIYUN_OSS_CALLBACK_URL:http://localhost:8080/api/public/oss-callback}
+      body: filename=${object}&size=${size}&mimeType=${mimeType}&height=${imageInfo.height}&width=${imageInfo.width}
+      body-type: application/x-www-form-urlencoded
 
 # 日志配置
 logging:
