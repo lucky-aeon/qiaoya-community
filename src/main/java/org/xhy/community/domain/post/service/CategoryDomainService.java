@@ -1,7 +1,10 @@
 package org.xhy.community.domain.post.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.domain.post.entity.CategoryEntity;
 import org.xhy.community.infrastructure.exception.PostErrorCode;
@@ -111,5 +114,22 @@ public class CategoryDomainService {
             return java.util.Collections.emptyList();
         }
         return categoryRepository.selectBatchIds(categoryIds);
+    }
+    
+    public void deleteCategory(String categoryId) {
+        categoryRepository.deleteById(categoryId);
+    }
+    
+    public IPage<CategoryEntity> getPagedCategories(Integer pageNum, Integer pageSize, CategoryType type, String parentId) {
+        Page<CategoryEntity> page = new Page<>(pageNum, pageSize);
+        
+        LambdaQueryWrapper<CategoryEntity> queryWrapper = new LambdaQueryWrapper<CategoryEntity>()
+            .eq(type != null, CategoryEntity::getType, type)
+            .eq(StringUtils.hasText(parentId), CategoryEntity::getParentId, parentId)
+            .isNull(!StringUtils.hasText(parentId), CategoryEntity::getParentId)
+            .orderByAsc(CategoryEntity::getSortOrder)
+            .orderByDesc(CategoryEntity::getCreateTime);
+        
+        return categoryRepository.selectPage(page, queryWrapper);
     }
 }
