@@ -4,7 +4,7 @@ CREATE TABLE subscription_plan_courses (
                                            course_id VARCHAR(36) NOT NULL,
                                            create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                                            update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                                           deleted BOOLEAN DEFAULT FALSE,
+                                           deleted BOOLEAN DEFAULT FALSE
 );
 
 -- 表注释

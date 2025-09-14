@@ -260,4 +260,26 @@ public class PostDomainService {
         
         return postRepository.selectPage(pageQuery, queryWrapper);
     }
+    
+    /**
+     * 根据ID获取已发布的公开文章
+     * 只返回已发布状态的文章
+     * 
+     * @param postId 文章ID
+     * @return 文章实体
+     * @throws BusinessException 如果文章不存在或未发布
+     */
+    public PostEntity getPublicPostById(String postId) {
+        PostEntity post = postRepository.selectOne(
+            new LambdaQueryWrapper<PostEntity>()
+                .eq(PostEntity::getId, postId)
+                .eq(PostEntity::getStatus, PostStatus.PUBLISHED)
+        );
+        
+        if (post == null) {
+            throw new BusinessException(PostErrorCode.POST_NOT_FOUND);
+        }
+        
+        return post;
+    }
 }

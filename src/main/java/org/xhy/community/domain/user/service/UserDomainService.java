@@ -11,6 +11,7 @@ import org.xhy.community.infrastructure.exception.UserErrorCode;
 import org.xhy.community.domain.user.repository.UserRepository;
 import org.xhy.community.domain.user.valueobject.UserStatus;
 
+import java.util.Collection;
 import java.util.Random;
 
 @Service
@@ -170,14 +171,8 @@ public class UserDomainService {
         return userRepository.exists(queryWrapper);
     }
     
-    public java.util.List<UserEntity> getUsersByIds(java.util.Collection<String> userIds) {
-        if (userIds == null || userIds.isEmpty()) {
-            return java.util.Collections.emptyList();
-        }
-        return userRepository.selectBatchIds(userIds);
-    }
-    
-    public java.util.Map<String, String> getUserNameMapByIds(java.util.Collection<String> userIds) {
+
+    public java.util.Map<String, String> getUserNameMapByIds(Collection<String> userIds) {
         if (userIds == null || userIds.isEmpty()) {
             return java.util.Collections.emptyMap();
         }

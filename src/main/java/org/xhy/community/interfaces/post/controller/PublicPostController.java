@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import org.xhy.community.application.post.dto.FrontPostDetailDTO;
 import org.xhy.community.application.post.dto.FrontPostDTO;
 import org.xhy.community.application.post.service.PostAppService;
 import org.xhy.community.infrastructure.config.ApiResponse;
@@ -41,5 +42,24 @@ public class PublicPostController {
     public ApiResponse<IPage<FrontPostDTO>> queryPosts(@Valid @RequestBody PublicPostQueryRequest request) {
         IPage<FrontPostDTO> posts = postAppService.queryPublicPosts(request);
         return ApiResponse.success(posts);
+    }
+
+    /**
+     * 根据文章ID获取文章详情
+     * 获取已发布文章的详细信息，包含完整内容
+     * 无需认证，公开访问
+     * 
+     * @param id 文章ID，UUID格式
+     * @return 文章详细信息，包含：
+     *         - 文章基本信息（标题、内容、概要、封面图等）
+     *         - 作者信息（作者名称）
+     *         - 分类信息（分类名称）
+     *         - 统计数据（点赞数、浏览数、评论数）
+     *         - 发布时间等
+     */
+    @GetMapping("/{id}")
+    public ApiResponse<FrontPostDetailDTO> getPostDetail(@PathVariable String id) {
+        FrontPostDetailDTO postDetail = postAppService.getPublicPostDetail(id);
+        return ApiResponse.success(postDetail);
     }
 }

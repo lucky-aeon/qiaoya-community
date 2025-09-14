@@ -8,7 +8,7 @@ CREATE TABLE subscription_plans (
                                     description VARCHAR(1000),
                                     create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                                     update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                                    deleted BOOLEAN DEFAULT FALSE,
+                                    deleted BOOLEAN DEFAULT FALSE
 );
 
 -- 表注释

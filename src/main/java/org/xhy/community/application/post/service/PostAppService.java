@@ -3,9 +3,11 @@ package org.xhy.community.application.post.service;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.stereotype.Service;
+import org.xhy.community.application.post.assembler.FrontPostDetailAssembler;
 import org.xhy.community.application.post.assembler.FrontPostAssembler;
 import org.xhy.community.application.post.assembler.PostAssembler;
 import org.xhy.community.application.post.assembler.PublicPostAssembler;
+import org.xhy.community.application.post.dto.FrontPostDetailDTO;
 import org.xhy.community.application.post.dto.FrontPostDTO;
 import org.xhy.community.application.post.dto.PostDTO;
 import org.xhy.community.application.post.dto.PublicPostDTO;
@@ -24,6 +26,8 @@ import org.xhy.community.interfaces.post.request.PublicPostQueryRequest;
 import org.xhy.community.interfaces.post.request.UpdatePostRequest;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @Service
 public class PostAppService {
@@ -146,5 +150,28 @@ public class PostAppService {
         dtoPage.setRecords(dtoList);
         
         return dtoPage;
+    }
+    
+    /**
+     * 获取公开文章详情
+     * 无需认证，只能查看已发布的文章
+     * 
+     * @param postId 文章ID
+     * @return 文章详细信息，包含完整内容
+     * @throws BusinessException 如果文章不存在或未发布
+     */
+    public FrontPostDetailDTO getPublicPostDetail(String postId) {
+        PostEntity post = postDomainService.getPublicPostById(postId);
+        
+        // 获取作者信息
+        Set<String> authorIds = java.util.Collections.singleton(post.getAuthorId());
+        Map<String, String> authorNames = userDomainService.getUserNameMapByIds(authorIds);
+        String authorName = authorNames.get(post.getAuthorId());
+        
+        // 获取分类信息
+        CategoryEntity category = categoryDomainService.getCategoryById(post.getCategoryId());
+        String categoryName = category != null ? category.getName() : null;
+        
+        return FrontPostDetailAssembler.toDTO(post, authorName, categoryName);
     }
 }
