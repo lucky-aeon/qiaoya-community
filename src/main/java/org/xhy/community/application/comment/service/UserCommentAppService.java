@@ -79,7 +79,7 @@ public class UserCommentAppService {
             .collect(Collectors.toSet());
         
         if (dto.getReplyUserId() != null) {
-            userIds = Set.of(dto.getCommentUserId(), dto.getReplyUserId())
+            userIds = List.of(dto.getCommentUserId(), dto.getReplyUserId())
                 .stream()
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());

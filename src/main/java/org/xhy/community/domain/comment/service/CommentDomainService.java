@@ -66,7 +66,6 @@ public class CommentDomainService {
         LambdaQueryWrapper<CommentEntity> queryWrapper = new LambdaQueryWrapper<CommentEntity>()
                 .eq(CommentEntity::getBusinessId, businessId)
                 .eq(CommentEntity::getBusinessType, businessType)
-                .isNull(CommentEntity::getParentCommentId)
                 .orderByDesc(CommentEntity::getCreateTime);
         
         return commentRepository.selectPage(page, queryWrapper);
