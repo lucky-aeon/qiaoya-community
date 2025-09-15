@@ -3,8 +3,10 @@ package org.xhy.community.domain.cdk.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.xhy.community.domain.cdk.entity.CDKEntity;
+import org.xhy.community.domain.cdk.event.CDKActivatedEvent;
 import org.xhy.community.domain.cdk.repository.CDKRepository;
 import org.xhy.community.domain.cdk.valueobject.CDKType;
 import org.xhy.community.domain.cdk.valueobject.CDKStatus;
@@ -19,9 +21,11 @@ import java.util.UUID;
 public class CDKDomainService {
     
     private final CDKRepository cdkRepository;
+    private final ApplicationEventPublisher applicationEventPublisher;
     
-    public CDKDomainService(CDKRepository cdkRepository) {
+    public CDKDomainService(CDKRepository cdkRepository, ApplicationEventPublisher applicationEventPublisher) {
         this.cdkRepository = cdkRepository;
+        this.applicationEventPublisher = applicationEventPublisher;
     }
     
     public List<CDKEntity> createCDKBatch(CDKType cdkType, String targetId, int quantity) {
@@ -36,6 +40,22 @@ public class CDKDomainService {
         }
         
         return cdkList;
+    }
+    
+    public void activateCDK(String userId, String cdkCode) {
+        // 1. 验证CDK有效性
+        CDKEntity cdk = getCDKByCode(cdkCode);
+        
+        if (!cdk.isUsable()) {
+            throw new BusinessException(CDKErrorCode.CDK_NOT_USABLE);
+        }
+        
+        // 2. 标记CDK已使用
+        markCDKAsUsed(cdkCode, userId);
+        
+        // 3. 发布CDK激活事件
+        CDKActivatedEvent event = new CDKActivatedEvent(userId, cdkCode, cdk.getCdkType(), cdk.getTargetId());
+        applicationEventPublisher.publishEvent(event);
     }
     
     public CDKEntity getCDKById(String id) {

@@ -7,15 +7,10 @@ import org.springframework.stereotype.Service;
 import org.xhy.community.domain.subscription.entity.UserSubscriptionEntity;
 import org.xhy.community.domain.subscription.repository.UserSubscriptionRepository;
 import org.xhy.community.domain.subscription.valueobject.SubscriptionStatus;
-import org.xhy.community.domain.cdk.service.CDKDomainService;
-import org.xhy.community.domain.cdk.entity.CDKEntity;
-import org.xhy.community.domain.cdk.valueobject.CDKType;
 import org.xhy.community.domain.subscription.service.SubscriptionPlanDomainService;
 import org.xhy.community.domain.subscription.entity.SubscriptionPlanEntity;
-import org.xhy.community.domain.course.service.CourseDomainService;
 import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.infrastructure.exception.SubscriptionErrorCode;
-import org.xhy.community.infrastructure.exception.CDKErrorCode;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -24,51 +19,18 @@ import java.util.List;
 public class SubscriptionDomainService {
     
     private final UserSubscriptionRepository userSubscriptionRepository;
-    private final CDKDomainService cdkDomainService;
     private final SubscriptionPlanDomainService subscriptionPlanDomainService;
-    private final CourseDomainService courseDomainService;
     
     public SubscriptionDomainService(UserSubscriptionRepository userSubscriptionRepository,
-                                   CDKDomainService cdkDomainService,
-                                   SubscriptionPlanDomainService subscriptionPlanDomainService,
-                                   CourseDomainService courseDomainService) {
+                                   SubscriptionPlanDomainService subscriptionPlanDomainService) {
         this.userSubscriptionRepository = userSubscriptionRepository;
-        this.cdkDomainService = cdkDomainService;
         this.subscriptionPlanDomainService = subscriptionPlanDomainService;
-        this.courseDomainService = courseDomainService;
     }
     
-    public CDKActivationResult activateCDK(String userId, String cdkCode) {
-        // 1. 验证CDK有效性
-        CDKEntity cdk;
-        try {
-            cdk = cdkDomainService.getCDKByCode(cdkCode);
-        } catch (BusinessException e) {
-            throw e; // 直接抛出CDK验证异常
-        }
-        
-        if (!cdk.isUsable()) {
-            throw new BusinessException(CDKErrorCode.CDK_NOT_USABLE);
-        }
-        
-        // 2. 根据CDK类型处理
-        if (cdk.getCdkType() == CDKType.SUBSCRIPTION_PLAN) {
-            return activateSubscriptionPlanCDK(userId, cdk);
-        } else if (cdk.getCdkType() == CDKType.COURSE) {
-            return activateCourseCDK(userId, cdk);
-        } else {
-            throw new BusinessException(CDKErrorCode.INVALID_CDK_TYPE);
-        }
-    }
     
-    private CDKActivationResult activateSubscriptionPlanCDK(String userId, CDKEntity cdk) {
-        // 验证套餐存在
-        SubscriptionPlanEntity plan;
-        try {
-            plan = subscriptionPlanDomainService.getSubscriptionPlanById(cdk.getTargetId());
-        } catch (BusinessException e) {
-            throw new BusinessException(SubscriptionErrorCode.PLAN_NOT_FOUND_FOR_CDK);
-        }
+    public UserSubscriptionEntity createSubscriptionFromCDK(String userId, String subscriptionPlanId, String cdkCode) {
+        // 验证套餐存在，如果不存在会自动抛出 PLAN_NOT_FOUND 异常
+        SubscriptionPlanEntity plan = subscriptionPlanDomainService.getSubscriptionPlanById(subscriptionPlanId);
         
         // 检查重复订阅
         if (checkActiveSubscriptionExists(userId, plan.getId())) {
@@ -76,28 +38,10 @@ public class SubscriptionDomainService {
         }
         
         // 创建订阅记录
-        UserSubscriptionEntity subscription = createSubscription(userId, plan, cdk.getCode());
+        UserSubscriptionEntity subscription = createSubscription(userId, plan, cdkCode);
         userSubscriptionRepository.insert(subscription);
         
-        // 标记CDK已使用
-        cdkDomainService.markCDKAsUsed(cdk.getCode(), userId);
-        
-        return new CDKActivationResult(true, "套餐激活成功", subscription, plan.getName());
-    }
-    
-    private CDKActivationResult activateCourseCDK(String userId, CDKEntity cdk) {
-        // 验证课程存在
-        try {
-            courseDomainService.getCourseById(cdk.getTargetId());
-        } catch (BusinessException e) {
-            throw new BusinessException(SubscriptionErrorCode.COURSE_NOT_FOUND_FOR_CDK);
-        }
-        
-        // 标记CDK已使用
-        cdkDomainService.markCDKAsUsed(cdk.getCode(), userId);
-        
-        // 课程CDK激活成功（权限处理留给将来的权限领域）
-        return new CDKActivationResult(true, "课程激活成功", null, "课程权限");
+        return subscription;
     }
     
     private UserSubscriptionEntity createSubscription(String userId, SubscriptionPlanEntity plan, String cdkCode) {
@@ -144,25 +88,5 @@ public class SubscriptionDomainService {
                 .orderByDesc(UserSubscriptionEntity::getCreateTime);
         
         return userSubscriptionRepository.selectPage(page, queryWrapper);
-    }
-    
-    // CDK激活结果内部类
-    public static class CDKActivationResult {
-        private final boolean success;
-        private final String message;
-        private final UserSubscriptionEntity subscription;
-        private final String targetName;
-        
-        public CDKActivationResult(boolean success, String message, UserSubscriptionEntity subscription, String targetName) {
-            this.success = success;
-            this.message = message;
-            this.subscription = subscription;
-            this.targetName = targetName;
-        }
-        
-        public boolean isSuccess() { return success; }
-        public String getMessage() { return message; }
-        public UserSubscriptionEntity getSubscription() { return subscription; }
-        public String getTargetName() { return targetName; }
     }
 }

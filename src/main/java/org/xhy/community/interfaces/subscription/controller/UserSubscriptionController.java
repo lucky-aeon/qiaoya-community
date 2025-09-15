@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 import org.xhy.community.application.subscription.dto.UserSubscriptionDTO;
-import org.xhy.community.application.subscription.dto.CDKActivationResultDTO;
 import org.xhy.community.application.subscription.service.UserSubscriptionAppService;
 import org.xhy.community.infrastructure.config.ApiResponse;
 import org.xhy.community.infrastructure.config.UserContext;
@@ -33,10 +32,10 @@ public class UserSubscriptionController {
      * @return CDK激活结果
      */
     @PostMapping("/activate-cdk")
-    public ApiResponse<CDKActivationResultDTO> activateCDK(@Valid @RequestBody ActivateCDKRequest request) {
+    public ApiResponse<Void> activateCDK(@Valid @RequestBody ActivateCDKRequest request) {
         String userId = UserContext.getCurrentUserId();
-        CDKActivationResultDTO result = userSubscriptionAppService.activateCDK(userId, request);
-        return ApiResponse.success(result);
+        userSubscriptionAppService.activateCDK(userId, request);
+        return ApiResponse.success("激活成功");
     }
     
     /**
