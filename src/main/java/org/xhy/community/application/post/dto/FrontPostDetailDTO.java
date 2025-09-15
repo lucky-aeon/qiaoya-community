@@ -14,6 +14,7 @@ public class FrontPostDetailDTO {
     private String summary;
     private String coverImage;
     private String authorName;
+    private String authorId;
     private String categoryName;
     private Integer likeCount;
     private Integer viewCount;
@@ -59,4 +60,20 @@ public class FrontPostDetailDTO {
     
     public LocalDateTime getPublishTime() { return publishTime; }
     public void setPublishTime(LocalDateTime publishTime) { this.publishTime = publishTime; }
+
+    public String getAuthorId() {
+        return authorId;
+    }
+
+    public void setAuthorId(String authorId) {
+        this.authorId = authorId;
+    }
+
+    public Boolean getTop() {
+        return isTop;
+    }
+
+    public void setTop(Boolean top) {
+        isTop = top;
+    }
 }
