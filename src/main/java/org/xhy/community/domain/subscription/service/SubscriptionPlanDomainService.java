@@ -13,6 +13,7 @@ import org.xhy.community.application.subscription.dto.SimpleSubscriptionPlanDTO;
 import org.xhy.community.application.subscription.assembler.SubscriptionPlanAssembler;
 import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.infrastructure.exception.SubscriptionPlanErrorCode;
+import org.xhy.community.domain.subscription.query.SubscriptionPlanQuery;
 
 import java.util.stream.Collectors;
 
@@ -54,12 +55,12 @@ public class SubscriptionPlanDomainService {
         subscriptionPlanRepository.deleteById(id);
     }
     
-    public IPage<SubscriptionPlanEntity> getPagedSubscriptionPlans(int pageNum, int pageSize, String name, Integer level) {
-        Page<SubscriptionPlanEntity> page = new Page<>(pageNum, pageSize);
+    public IPage<SubscriptionPlanEntity> getPagedSubscriptionPlans(SubscriptionPlanQuery query) {
+        Page<SubscriptionPlanEntity> page = new Page<>(query.getPageNum(), query.getPageSize());
         LambdaQueryWrapper<SubscriptionPlanEntity> queryWrapper = new LambdaQueryWrapper<>();
         
-        queryWrapper.like(StringUtils.hasText(name), SubscriptionPlanEntity::getName, name)
-                   .eq(level != null, SubscriptionPlanEntity::getLevel, level);
+        queryWrapper.like(StringUtils.hasText(query.getName()), SubscriptionPlanEntity::getName, query.getName())
+                   .eq(query.getLevel() != null, SubscriptionPlanEntity::getLevel, query.getLevel());
         
         queryWrapper.orderByDesc(SubscriptionPlanEntity::getCreateTime);
         

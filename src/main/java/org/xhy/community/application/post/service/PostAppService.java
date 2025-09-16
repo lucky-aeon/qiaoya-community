@@ -14,6 +14,7 @@ import org.xhy.community.application.post.dto.PublicPostDTO;
 import org.xhy.community.domain.common.valueobject.AccessLevel;
 import org.xhy.community.domain.post.entity.CategoryEntity;
 import org.xhy.community.domain.post.entity.PostEntity;
+import org.xhy.community.domain.post.query.PostQuery;
 import org.xhy.community.domain.post.service.CategoryDomainService;
 import org.xhy.community.domain.post.service.PostDomainService;
 import org.xhy.community.domain.post.valueobject.PostStatus;
@@ -75,13 +76,8 @@ public class PostAppService {
     }
     
     public IPage<PostDTO> getUserPosts(String authorId, PostQueryRequest request) {
-        IPage<PostEntity> entityPage = postDomainService.getUserPosts(
-            authorId, 
-            request.getPageNum(), 
-            request.getPageSize(), 
-            request.getStatus(),
-            AccessLevel.USER
-        );
+        PostQuery query = PostAssembler.fromUserRequest(request, authorId);
+        IPage<PostEntity> entityPage = postDomainService.queryPosts(query);
         
         // 转换为DTO分页结果
         Page<PostDTO> dtoPage = new Page<>(entityPage.getCurrent(), entityPage.getSize(), entityPage.getTotal());
@@ -110,11 +106,8 @@ public class PostAppService {
     }
     
     public IPage<FrontPostDTO> queryAppPosts(AppPostQueryRequest request) {
-        IPage<PostEntity> entityPage = postDomainService.queryAppPosts(
-            request.getPageNum(),
-            request.getPageSize(),
-            request.getCategoryType()
-        );
+        PostQuery query = PostAssembler.fromAppRequest(request);
+        IPage<PostEntity> entityPage = postDomainService.queryAppPosts(query);
         
         List<PostEntity> posts = entityPage.getRecords();
         if (posts.isEmpty()) {

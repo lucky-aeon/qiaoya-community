@@ -4,8 +4,10 @@ import org.springframework.beans.BeanUtils;
 import org.xhy.community.application.post.dto.CategoryDTO;
 import org.xhy.community.application.post.dto.CategoryTreeDTO;
 import org.xhy.community.domain.post.entity.CategoryEntity;
+import org.xhy.community.domain.post.query.CategoryQuery;
 import org.xhy.community.interfaces.post.request.CreateCategoryRequest;
 import org.xhy.community.interfaces.post.request.UpdateCategoryRequest;
+import org.xhy.community.interfaces.post.request.CategoryQueryRequest;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,6 +15,17 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public class CategoryAssembler {
+    
+    public static CategoryQuery fromRequest(CategoryQueryRequest request) {
+        if (request == null) {
+            return null;
+        }
+        
+        CategoryQuery query = new CategoryQuery(request.getPageNum(), request.getPageSize());
+        query.setType(request.getType());
+        query.setParentId(request.getParentId());
+        return query;
+    }
     
     public static CategoryDTO toDTO(CategoryEntity entity) {
         if (entity == null) {

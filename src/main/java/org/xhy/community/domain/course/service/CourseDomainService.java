@@ -4,15 +4,15 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.xhy.community.domain.course.entity.CourseEntity;
 import org.xhy.community.domain.course.repository.CourseRepository;
-import org.xhy.community.domain.course.valueobject.CourseStatus;
 import org.xhy.community.application.course.dto.SimpleCourseDTO;
 import org.xhy.community.application.course.assembler.CourseAssembler;
 import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.infrastructure.exception.CourseErrorCode;
+import org.xhy.community.domain.course.query.CourseQuery;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -48,10 +48,11 @@ public class CourseDomainService {
         return course;
     }
     
-    public IPage<CourseEntity> getPagedCourses(int pageNum, int pageSize) {
-        Page<CourseEntity> page = new Page<>(pageNum, pageSize);
+    public IPage<CourseEntity> getPagedCourses(CourseQuery query) {
+        Page<CourseEntity> page = new Page<>(query.getPageNum(), query.getPageSize());
         
         LambdaQueryWrapper<CourseEntity> queryWrapper = new LambdaQueryWrapper<CourseEntity>()
+                .like(StringUtils.hasText(query.getTitle()), CourseEntity::getTitle, query.getTitle())
                 .orderByDesc(CourseEntity::getCreateTime);
         
         return courseRepository.selectPage(page, queryWrapper);

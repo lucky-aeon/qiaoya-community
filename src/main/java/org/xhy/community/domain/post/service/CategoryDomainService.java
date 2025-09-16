@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.xhy.community.domain.post.query.CategoryQuery;
 import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.domain.post.entity.CategoryEntity;
 import org.xhy.community.infrastructure.exception.PostErrorCode;
@@ -120,13 +121,15 @@ public class CategoryDomainService {
         categoryRepository.deleteById(categoryId);
     }
     
-    public IPage<CategoryEntity> getPagedCategories(Integer pageNum, Integer pageSize, CategoryType type, String parentId) {
-        Page<CategoryEntity> page = new Page<>(pageNum, pageSize);
+    public IPage<CategoryEntity> queryCategories(CategoryQuery query) {
+        Page<CategoryEntity> page = new Page<>(query.getPageNum(), query.getPageSize());
         
         LambdaQueryWrapper<CategoryEntity> queryWrapper = new LambdaQueryWrapper<CategoryEntity>()
-            .eq(type != null, CategoryEntity::getType, type)
-            .eq(StringUtils.hasText(parentId), CategoryEntity::getParentId, parentId)
-            .isNull(!StringUtils.hasText(parentId), CategoryEntity::getParentId)
+            .eq(query.getType() != null, CategoryEntity::getType, query.getType())
+            .eq(StringUtils.hasText(query.getParentId()), CategoryEntity::getParentId, query.getParentId())
+            .isNull(!StringUtils.hasText(query.getParentId()), CategoryEntity::getParentId)
+            .eq(query.getIsActive() != null, CategoryEntity::getIsActive, query.getIsActive())
+            .like(StringUtils.hasText(query.getName()), CategoryEntity::getName, query.getName())
             .orderByAsc(CategoryEntity::getSortOrder)
             .orderByDesc(CategoryEntity::getCreateTime);
         

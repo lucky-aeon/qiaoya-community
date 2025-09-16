@@ -6,6 +6,7 @@ import org.xhy.community.application.subscription.assembler.SubscriptionPlanAsse
 import org.xhy.community.application.subscription.dto.SubscriptionPlanDTO;
 import org.xhy.community.domain.subscription.entity.SubscriptionPlanEntity;
 import org.xhy.community.domain.subscription.entity.SubscriptionPlanCourseEntity;
+import org.xhy.community.domain.subscription.query.SubscriptionPlanQuery;
 import org.xhy.community.domain.subscription.service.SubscriptionPlanDomainService;
 import org.xhy.community.interfaces.subscription.request.CreateSubscriptionPlanRequest;
 import org.xhy.community.interfaces.subscription.request.SubscriptionPlanQueryRequest;
@@ -46,9 +47,8 @@ public class AdminSubscriptionPlanAppService {
     }
     
     public IPage<SubscriptionPlanDTO> getPagedSubscriptionPlans(SubscriptionPlanQueryRequest request) {
-        IPage<SubscriptionPlanEntity> entityPage = subscriptionPlanDomainService.getPagedSubscriptionPlans(
-            request.getPageNum(), request.getPageSize(), request.getName(), request.getLevel()
-        );
+        SubscriptionPlanQuery query = SubscriptionPlanAssembler.fromRequest(request);
+        IPage<SubscriptionPlanEntity> entityPage = subscriptionPlanDomainService.getPagedSubscriptionPlans(query);
         
         return entityPage.convert(SubscriptionPlanAssembler::toDTO);
     }

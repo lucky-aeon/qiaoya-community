@@ -9,6 +9,7 @@ import org.xhy.community.domain.comment.repository.CommentRepository;
 import org.xhy.community.domain.comment.valueobject.BusinessType;
 import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.infrastructure.exception.CommentErrorCode;
+import org.xhy.community.domain.comment.query.CommentQuery;
 
 import java.util.List;
 
@@ -128,15 +129,15 @@ public class CommentDomainService {
         );
     }
     
-    public IPage<CommentEntity> getUserRelatedComments(String userId, Integer pageNum, Integer pageSize) {
-        Page<CommentEntity> page = new Page<>(pageNum, pageSize);
+    public IPage<CommentEntity> getUserRelatedComments(CommentQuery query) {
+        Page<CommentEntity> page = new Page<>(query.getPageNum(), query.getPageSize());
         
         // 查询与用户相关的评论：用户发表的评论 + 回复给用户的评论
         LambdaQueryWrapper<CommentEntity> queryWrapper = new LambdaQueryWrapper<CommentEntity>()
                 .and(wrapper -> wrapper
-                    .eq(CommentEntity::getCommentUserId, userId)  // 用户发表的评论
+                    .eq(CommentEntity::getCommentUserId, query.getUserId())  // 用户发表的评论
                     .or()
-                    .eq(CommentEntity::getReplyUserId, userId)    // 回复给用户的评论
+                    .eq(CommentEntity::getReplyUserId, query.getUserId())    // 回复给用户的评论
                 )
                 .orderByDesc(CommentEntity::getCreateTime);
         

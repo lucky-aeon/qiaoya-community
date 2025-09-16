@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.xhy.community.domain.cdk.entity.CDKEntity;
 import org.xhy.community.domain.cdk.event.CDKActivatedEvent;
 import org.xhy.community.domain.cdk.repository.CDKRepository;
@@ -12,6 +13,7 @@ import org.xhy.community.domain.cdk.valueobject.CDKType;
 import org.xhy.community.domain.cdk.valueobject.CDKStatus;
 import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.infrastructure.exception.CDKErrorCode;
+import org.xhy.community.domain.cdk.query.CDKQuery;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -94,13 +96,14 @@ public class CDKDomainService {
         cdkRepository.updateById(cdk);
     }
     
-    public IPage<CDKEntity> getPagedCDKs(int pageNum, int pageSize, CDKType cdkType, String targetId, CDKStatus status) {
-        Page<CDKEntity> page = new Page<>(pageNum, pageSize);
+    public IPage<CDKEntity> getPagedCDKs(CDKQuery query) {
+        Page<CDKEntity> page = new Page<>(query.getPageNum(), query.getPageSize());
         LambdaQueryWrapper<CDKEntity> queryWrapper = new LambdaQueryWrapper<>();
         
-        queryWrapper.eq(cdkType != null, CDKEntity::getCdkType, cdkType)
-                   .eq(targetId != null, CDKEntity::getTargetId, targetId)
-                   .eq(status != null, CDKEntity::getStatus, status)
+        queryWrapper.eq(query.getCdkType() != null, CDKEntity::getCdkType, query.getCdkType())
+                   .eq(StringUtils.hasText(query.getTargetId()), CDKEntity::getTargetId, query.getTargetId())
+                   .eq(query.getStatus() != null, CDKEntity::getStatus, query.getStatus())
+                   .like(StringUtils.hasText(query.getCode()), CDKEntity::getCode, query.getCode())
                    .orderByDesc(CDKEntity::getCreateTime);
         
         return cdkRepository.selectPage(page, queryWrapper);

@@ -1,10 +1,12 @@
 package org.xhy.community.application.course.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.stereotype.Service;
 import org.xhy.community.application.course.assembler.CourseAssembler;
 import org.xhy.community.application.course.dto.CourseDTO;
 import org.xhy.community.domain.course.entity.CourseEntity;
+import org.xhy.community.domain.course.query.CourseQuery;
 import org.xhy.community.domain.course.service.CourseDomainService;
 import org.xhy.community.domain.course.valueobject.CourseStatus;
 import org.xhy.community.interfaces.course.request.CreateCourseRequest;
@@ -48,12 +50,8 @@ public class AdminCourseAppService {
     }
     
     public IPage<CourseDTO> getPagedCourses(CourseQueryRequest request) {
-        IPage<CourseEntity> coursePage;
-
-        coursePage = courseDomainService.getPagedCourses(
-                request.getPageNum(),
-                request.getPageSize()
-        );
+        CourseQuery query = CourseAssembler.fromPageRequest(request.getPageNum(), request.getPageSize());
+        IPage<CourseEntity> coursePage = courseDomainService.getPagedCourses(query);
         
         return coursePage.convert(CourseAssembler::toDTO);
     }

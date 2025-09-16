@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.xhy.community.domain.subscription.entity.UserSubscriptionEntity;
 import org.xhy.community.domain.subscription.repository.UserSubscriptionRepository;
 import org.xhy.community.domain.subscription.valueobject.SubscriptionStatus;
@@ -11,6 +12,7 @@ import org.xhy.community.domain.subscription.service.SubscriptionPlanDomainServi
 import org.xhy.community.domain.subscription.entity.SubscriptionPlanEntity;
 import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.infrastructure.exception.SubscriptionErrorCode;
+import org.xhy.community.domain.subscription.query.SubscriptionQuery;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -80,11 +82,11 @@ public class SubscriptionDomainService {
         return userSubscriptionRepository.selectList(queryWrapper);
     }
     
-    public IPage<UserSubscriptionEntity> getPagedUserSubscriptions(String userId, int pageNum, int pageSize) {
-        Page<UserSubscriptionEntity> page = new Page<>(pageNum, pageSize);
+    public IPage<UserSubscriptionEntity> getPagedUserSubscriptions(SubscriptionQuery query) {
+        Page<UserSubscriptionEntity> page = new Page<>(query.getPageNum(), query.getPageSize());
         LambdaQueryWrapper<UserSubscriptionEntity> queryWrapper = 
             new LambdaQueryWrapper<UserSubscriptionEntity>()
-                .eq(UserSubscriptionEntity::getUserId, userId)
+                .eq(StringUtils.hasText(query.getUserId()), UserSubscriptionEntity::getUserId, query.getUserId())
                 .orderByDesc(UserSubscriptionEntity::getCreateTime);
         
         return userSubscriptionRepository.selectPage(page, queryWrapper);

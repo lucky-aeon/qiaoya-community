@@ -11,6 +11,7 @@ import org.xhy.community.interfaces.comment.request.CreateReplyCommentRequest;
 import org.xhy.community.interfaces.comment.request.CommentQueryRequest;
 import org.xhy.community.interfaces.comment.request.CreateCommentRequest;
 import org.xhy.community.interfaces.comment.request.BusinessCommentQueryRequest;
+import org.xhy.community.domain.comment.query.CommentQuery;
 
 import java.util.List;
 import java.util.Map;
@@ -50,9 +51,10 @@ public class UserCommentAppService {
     }
     
     public IPage<CommentDTO> getUserRelatedComments(CommentQueryRequest request, String userId) {
-        IPage<CommentEntity> commentPage = commentDomainService.getUserRelatedComments(
-            userId, request.getPageNum(), request.getPageSize()
-        );
+        CommentQuery query = new CommentQuery(request.getPageNum(), request.getPageSize());
+        query.setUserId(userId);
+        
+        IPage<CommentEntity> commentPage = commentDomainService.getUserRelatedComments(query);
         
         return commentPage.convert(CommentAssembler::toDTO);
     }

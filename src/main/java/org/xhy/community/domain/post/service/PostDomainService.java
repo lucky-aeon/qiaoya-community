@@ -5,13 +5,14 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+import org.xhy.community.domain.post.query.PostQuery;
 import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.domain.common.valueobject.AccessLevel;
 import org.xhy.community.domain.post.entity.CategoryEntity;
 import org.xhy.community.domain.post.entity.PostEntity;
 import org.xhy.community.infrastructure.exception.PostErrorCode;
 import org.xhy.community.domain.post.repository.PostRepository;
-import org.xhy.community.domain.post.valueobject.CategoryType;
 import org.xhy.community.domain.post.valueobject.PostStatus;
 
 import java.time.LocalDateTime;
@@ -205,12 +206,14 @@ public class PostDomainService {
         }
     }
     
-    public IPage<PostEntity> getUserPosts(String authorId, Integer pageNum, Integer pageSize, PostStatus status, AccessLevel accessLevel) {
-        Page<PostEntity> page = new Page<>(pageNum, pageSize);
+    public IPage<PostEntity> queryPosts(PostQuery query) {
+        Page<PostEntity> page = new Page<>(query.getPageNum(), query.getPageSize());
         
         LambdaQueryWrapper<PostEntity> queryWrapper = new LambdaQueryWrapper<PostEntity>()
-                .eq(accessLevel == AccessLevel.USER && authorId != null, PostEntity::getAuthorId, authorId)
-                .eq(status != null, PostEntity::getStatus, status)
+                .eq(query.getAccessLevel() == AccessLevel.USER && StringUtils.hasText(query.getAuthorId()), PostEntity::getAuthorId, query.getAuthorId())
+                .eq(query.getStatus() != null, PostEntity::getStatus, query.getStatus())
+                .eq(StringUtils.hasText(query.getCategoryId()), PostEntity::getCategoryId, query.getCategoryId())
+                .like(StringUtils.hasText(query.getTitle()), PostEntity::getTitle, query.getTitle())
                 .orderByDesc(PostEntity::getCreateTime);
         
         return postRepository.selectPage(page, queryWrapper);
@@ -231,25 +234,25 @@ public class PostDomainService {
         postRepository.updateById(post);
     }
     
-    public IPage<PostEntity> queryAppPosts(Integer page, Integer size, CategoryType categoryType) {
-        Page<PostEntity> pageQuery = new Page<>(page, size);
+    public IPage<PostEntity> queryAppPosts(org.xhy.community.domain.post.query.PostQuery query) {
+        Page<PostEntity> pageQuery = new Page<>(query.getPageNum(), query.getPageSize());
         
         LambdaQueryWrapper<PostEntity> queryWrapper = new LambdaQueryWrapper<PostEntity>()
                 .eq(PostEntity::getStatus, PostStatus.PUBLISHED)
                 .orderByDesc(PostEntity::getCreateTime);
         
         // 如果指定了分类类型，需要关联查询分类表
-        if (categoryType != null) {
+        if (query.getCategoryType() != null) {
             // 先查询符合条件的分类ID列表
             LambdaQueryWrapper<CategoryEntity> categoryWrapper = new LambdaQueryWrapper<CategoryEntity>()
-                    .eq(CategoryEntity::getType, categoryType)
+                    .eq(CategoryEntity::getType, query.getCategoryType())
                     .eq(CategoryEntity::getIsActive, true)
                     .select(CategoryEntity::getId);
             
             java.util.List<CategoryEntity> categories = categoryDomainService.getCategories(categoryWrapper);
             if (categories.isEmpty()) {
                 // 如果没有找到符合条件的分类，返回空结果
-                return new Page<>(page, size, 0);
+                return new Page<>(query.getPageNum(), query.getPageSize(), 0);
             }
             
             java.util.List<String> categoryIds = categories.stream()

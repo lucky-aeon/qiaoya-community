@@ -14,6 +14,7 @@ import org.xhy.community.infrastructure.config.AliyunOssProperties;
 import org.xhy.community.infrastructure.config.UserContext;
 import org.xhy.community.interfaces.resource.request.OssCallbackRequest;
 import org.xhy.community.interfaces.resource.request.ResourceQueryRequest;
+import org.xhy.community.domain.resource.query.ResourceQuery;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -77,12 +78,11 @@ public class ResourceAppService {
             }
         }
         
-        IPage<ResourceEntity> page = resourceDomainService.getUserResources(
-                userId, 
-                request.getPageNum(), 
-                request.getPageSize(),
-                resourceType
-        );
+        ResourceQuery query = new ResourceQuery(request.getPageNum(), request.getPageSize());
+        query.setUserId(userId);
+        query.setResourceType(resourceType);
+        
+        IPage<ResourceEntity> page = resourceDomainService.getUserResources(query);
         
         return ResourceAssembler.toPagedResourceDTO(page);
     }

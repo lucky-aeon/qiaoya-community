@@ -5,8 +5,10 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.xhy.community.domain.user.entity.UserEntity;
 import org.xhy.community.domain.user.entity.UserCourseEntity;
+import org.xhy.community.domain.user.query.UserQuery;
 import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.infrastructure.exception.UserErrorCode;
 import org.xhy.community.domain.user.repository.UserRepository;
@@ -133,27 +135,15 @@ public class UserDomainService {
         return user;
     }
 
-    public IPage<UserEntity> getUsersByStatus(UserStatus status, int pageNum, int pageSize) {
-        Page<UserEntity> page = new Page<>(pageNum, pageSize);
-        return userRepository.selectPage(page,
-            new LambdaQueryWrapper<UserEntity>()
-                .eq(UserEntity::getStatus, status)
-                .orderByDesc(UserEntity::getCreateTime));
-    }
-
-    public IPage<UserEntity> searchUsersByName(String name, int pageNum, int pageSize) {
-        Page<UserEntity> page = new Page<>(pageNum, pageSize);
-        return userRepository.selectPage(page,
-            new LambdaQueryWrapper<UserEntity>()
-                .like(UserEntity::getName, name)
-                .orderByDesc(UserEntity::getCreateTime));
-    }
-
-    public IPage<UserEntity> getAllUsers(int pageNum, int pageSize) {
-        Page<UserEntity> page = new Page<>(pageNum, pageSize);
-        return userRepository.selectPage(page,
-            new LambdaQueryWrapper<UserEntity>()
-                .orderByDesc(UserEntity::getCreateTime));
+    public IPage<UserEntity> queryUsers(UserQuery query) {
+        Page<UserEntity> page = new Page<>(query.getPageNum(), query.getPageSize());
+        
+        LambdaQueryWrapper<UserEntity> queryWrapper = new LambdaQueryWrapper<UserEntity>()
+                .eq(query.getStatus() != null, UserEntity::getStatus, query.getStatus())
+                .like(StringUtils.hasText(query.getName()), UserEntity::getName, query.getName())
+                .orderByDesc(UserEntity::getCreateTime);
+        
+        return userRepository.selectPage(page, queryWrapper);
     }
 
     public boolean authenticateUser(String email, String password) {

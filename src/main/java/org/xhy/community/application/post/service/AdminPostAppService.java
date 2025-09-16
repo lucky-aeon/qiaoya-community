@@ -8,6 +8,7 @@ import org.xhy.community.application.post.dto.AdminPostDTO;
 import org.xhy.community.domain.common.valueobject.AccessLevel;
 import org.xhy.community.domain.post.entity.CategoryEntity;
 import org.xhy.community.domain.post.entity.PostEntity;
+import org.xhy.community.domain.post.query.PostQuery;
 import org.xhy.community.domain.post.service.CategoryDomainService;
 import org.xhy.community.domain.post.service.PostDomainService;
 import org.xhy.community.domain.user.service.UserDomainService;
@@ -46,13 +47,8 @@ public class AdminPostAppService {
      */
     public IPage<AdminPostDTO> getAdminPosts(AdminPostQueryRequest request) {
         // 使用管理员权限查询所有文章
-        IPage<PostEntity> entityPage = postDomainService.getUserPosts(
-            null,  // 管理员查询不限制用户
-            request.getPageNum(),
-            request.getPageSize(),
-            null,  // 不限制状态，查询所有状态的文章
-            AccessLevel.ADMIN
-        );
+        PostQuery query = AdminPostAssembler.fromRequest(request);
+        IPage<PostEntity> entityPage = postDomainService.queryPosts(query);
         
         List<PostEntity> posts = entityPage.getRecords();
         if (posts.isEmpty()) {

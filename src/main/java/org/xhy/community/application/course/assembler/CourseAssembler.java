@@ -4,10 +4,15 @@ import org.springframework.beans.BeanUtils;
 import org.xhy.community.application.course.dto.CourseDTO;
 import org.xhy.community.application.course.dto.SimpleCourseDTO;
 import org.xhy.community.domain.course.entity.CourseEntity;
+import org.xhy.community.domain.course.query.CourseQuery;
 import org.xhy.community.interfaces.course.request.CreateCourseRequest;
 import org.xhy.community.interfaces.course.request.UpdateCourseRequest;
 
 public class CourseAssembler {
+    
+    public static CourseQuery fromPageRequest(Integer pageNum, Integer pageSize) {
+        return new CourseQuery(pageNum, pageSize);
+    }
     
     public static CourseDTO toDTO(CourseEntity entity) {
         if (entity == null) {

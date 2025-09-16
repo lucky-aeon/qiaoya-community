@@ -11,6 +11,7 @@ import org.xhy.community.domain.subscription.service.SubscriptionPlanDomainServi
 import org.xhy.community.domain.course.service.CourseDomainService;
 import org.xhy.community.interfaces.cdk.request.CreateCDKRequest;
 import org.xhy.community.interfaces.cdk.request.CDKQueryRequest;
+import org.xhy.community.domain.cdk.query.CDKQuery;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -51,13 +52,12 @@ public class AdminCDKAppService {
     }
     
     public IPage<CDKDTO> getPagedCDKs(CDKQueryRequest request) {
-        IPage<CDKEntity> entityPage = cdkDomainService.getPagedCDKs(
-            request.getPageNum(), 
-            request.getPageSize(), 
-            request.getCdkType(), 
-            request.getTargetId(), 
-            request.getStatus()
-        );
+        CDKQuery query = new CDKQuery(request.getPageNum(), request.getPageSize());
+        query.setCdkType(request.getCdkType());
+        query.setTargetId(request.getTargetId());
+        query.setStatus(request.getStatus());
+        
+        IPage<CDKEntity> entityPage = cdkDomainService.getPagedCDKs(query);
         
         return entityPage.convert(entity -> {
             String targetName = getTargetName(entity.getCdkType(), entity.getTargetId());

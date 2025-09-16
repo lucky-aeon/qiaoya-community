@@ -11,6 +11,7 @@ import org.xhy.community.domain.resource.valueobject.ResourceType;
 import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.infrastructure.exception.ResourceErrorCode;
 import org.xhy.community.infrastructure.service.AliyunOssService;
+import org.xhy.community.domain.resource.query.ResourceQuery;
 
 import java.io.InputStream;
 import java.time.LocalDateTime;
@@ -94,13 +95,12 @@ public class ResourceDomainService {
         return resourceRepository.selectList(queryWrapper);
     }
     
-    public IPage<ResourceEntity> getUserResources(String userId, int pageNum, int pageSize, 
-                                                ResourceType resourceType) {
-        Page<ResourceEntity> page = new Page<>(pageNum, pageSize);
+    public IPage<ResourceEntity> getUserResources(ResourceQuery query) {
+        Page<ResourceEntity> page = new Page<>(query.getPageNum(), query.getPageSize());
         
         LambdaQueryWrapper<ResourceEntity> queryWrapper = new LambdaQueryWrapper<ResourceEntity>()
-                .eq(ResourceEntity::getUserId, userId)
-                .eq(resourceType != null, ResourceEntity::getResourceType, resourceType)
+                .eq(StringUtils.hasText(query.getUserId()), ResourceEntity::getUserId, query.getUserId())
+                .eq(query.getResourceType() != null, ResourceEntity::getResourceType, query.getResourceType())
                 .orderByDesc(ResourceEntity::getCreateTime);
         
         return resourceRepository.selectPage(page, queryWrapper);

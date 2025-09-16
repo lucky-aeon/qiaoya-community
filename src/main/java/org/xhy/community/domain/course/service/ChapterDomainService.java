@@ -11,6 +11,7 @@ import org.xhy.community.domain.course.repository.ChapterRepository;
 import org.xhy.community.domain.course.repository.CourseRepository;
 import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.infrastructure.exception.CourseErrorCode;
+import org.xhy.community.domain.course.query.ChapterQuery;
 
 import java.util.List;
 
@@ -65,11 +66,13 @@ public class ChapterDomainService {
         return chapterRepository.selectList(queryWrapper);
     }
     
-    public IPage<ChapterEntity> getPagedChapters(Integer pageNum, Integer pageSize, String courseId) {
-        Page<ChapterEntity> page = new Page<>(pageNum, pageSize);
+    public IPage<ChapterEntity> getPagedChapters(ChapterQuery query) {
+        Page<ChapterEntity> page = new Page<>(query.getPageNum(), query.getPageSize());
         
         LambdaQueryWrapper<ChapterEntity> queryWrapper = new LambdaQueryWrapper<ChapterEntity>()
-            .eq(StringUtils.hasText(courseId), ChapterEntity::getCourseId, courseId)
+            .eq(StringUtils.hasText(query.getCourseId()), ChapterEntity::getCourseId, query.getCourseId())
+            .like(StringUtils.hasText(query.getTitle()), ChapterEntity::getTitle, query.getTitle())
+            .orderByAsc(ChapterEntity::getSortOrder)
             .orderByDesc(ChapterEntity::getCreateTime);
         
         return chapterRepository.selectPage(page, queryWrapper);

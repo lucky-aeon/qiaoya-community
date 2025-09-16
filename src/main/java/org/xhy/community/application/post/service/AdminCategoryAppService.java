@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.xhy.community.application.post.assembler.CategoryAssembler;
 import org.xhy.community.application.post.dto.CategoryDTO;
 import org.xhy.community.domain.post.entity.CategoryEntity;
+import org.xhy.community.domain.post.query.CategoryQuery;
 import org.xhy.community.domain.post.service.CategoryDomainService;
 import org.xhy.community.interfaces.post.request.CreateCategoryRequest;
 import org.xhy.community.interfaces.post.request.UpdateCategoryRequest;
@@ -85,12 +86,8 @@ public class AdminCategoryAppService {
     }
     
     public IPage<CategoryDTO> getPagedCategories(CategoryQueryRequest request) {
-        IPage<CategoryEntity> categoryPage = categoryDomainService.getPagedCategories(
-            request.getPageNum(),
-            request.getPageSize(),
-            request.getType(),
-            request.getParentId()
-        );
+        CategoryQuery query = CategoryAssembler.fromRequest(request);
+        IPage<CategoryEntity> categoryPage = categoryDomainService.queryCategories(query);
         
         return categoryPage.convert(CategoryAssembler::toDTO);
     }

@@ -6,6 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.xhy.community.application.subscription.assembler.UserSubscriptionAssembler;
 import org.xhy.community.application.subscription.dto.UserSubscriptionDTO;
 import org.xhy.community.domain.cdk.service.CDKDomainService;
+import org.xhy.community.domain.subscription.query.SubscriptionQuery;
 import org.xhy.community.domain.subscription.service.SubscriptionDomainService;
 import org.xhy.community.domain.subscription.entity.UserSubscriptionEntity;
 import org.xhy.community.domain.subscription.service.SubscriptionPlanDomainService;
@@ -34,11 +35,8 @@ public class UserSubscriptionAppService {
     }
     
     public IPage<UserSubscriptionDTO> getSubscriptions(String userId, SubscriptionQueryRequest request) {
-        IPage<UserSubscriptionEntity> entityPage = subscriptionDomainService.getPagedUserSubscriptions(
-            userId, 
-            request.getPageNum(), 
-            request.getPageSize()
-        );
+        SubscriptionQuery query = UserSubscriptionAssembler.fromRequest(userId, request);
+        IPage<UserSubscriptionEntity> entityPage = subscriptionDomainService.getPagedUserSubscriptions(query);
         
         return entityPage.convert(entity -> {
             String planName = getPlanName(entity.getSubscriptionPlanId());
