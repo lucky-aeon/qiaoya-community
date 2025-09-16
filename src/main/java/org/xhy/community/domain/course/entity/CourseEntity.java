@@ -5,8 +5,10 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import org.xhy.community.domain.entity.BaseEntity;
 import org.xhy.community.domain.course.valueobject.CourseStatus;
 import org.xhy.community.infrastructure.converter.CourseStatusConverter;
+import org.xhy.community.infrastructure.converter.StringListConverter;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @TableName("courses")
 public class CourseEntity extends BaseEntity {
@@ -18,13 +20,15 @@ public class CourseEntity extends BaseEntity {
     private String description;
     
     /** 技术栈，JSON格式存储 */
-    private String techStack;
+    @TableField(typeHandler = StringListConverter.class)
+    private List<String> techStack;
     
     /** 项目地址 */
     private String projectUrl;
     
     /** 标签，JSON格式存储 */
-    private String tags;
+    @TableField(typeHandler = StringListConverter.class)
+    private List<String> tags;
     
     /** 课程评分，范围0.00-5.00 */
     private BigDecimal rating;
@@ -58,14 +62,14 @@ public class CourseEntity extends BaseEntity {
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
     
-    public String getTechStack() { return techStack; }
-    public void setTechStack(String techStack) { this.techStack = techStack; }
+    public List<String> getTechStack() { return techStack; }
+    public void setTechStack(List<String> techStack) { this.techStack = techStack; }
     
     public String getProjectUrl() { return projectUrl; }
     public void setProjectUrl(String projectUrl) { this.projectUrl = projectUrl; }
     
-    public String getTags() { return tags; }
-    public void setTags(String tags) { this.tags = tags; }
+    public List<String> getTags() { return tags; }
+    public void setTags(List<String> tags) { this.tags = tags; }
     
     public BigDecimal getRating() { return rating; }
     public void setRating(BigDecimal rating) { this.rating = rating; }

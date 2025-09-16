@@ -4,15 +4,16 @@ import org.xhy.community.domain.course.valueobject.CourseStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class CourseDTO {
     
     private String id;
     private String title;
     private String description;
-    private String techStack;
+    private List<String> techStack;
     private String projectUrl;
-    private String tags;
+    private List<String> tags;
     private BigDecimal rating;
     private CourseStatus status;
     private String authorId;
@@ -33,14 +34,14 @@ public class CourseDTO {
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
     
-    public String getTechStack() { return techStack; }
-    public void setTechStack(String techStack) { this.techStack = techStack; }
+    public List<String> getTechStack() { return techStack; }
+    public void setTechStack(List<String> techStack) { this.techStack = techStack; }
     
     public String getProjectUrl() { return projectUrl; }
     public void setProjectUrl(String projectUrl) { this.projectUrl = projectUrl; }
     
-    public String getTags() { return tags; }
-    public void setTags(String tags) { this.tags = tags; }
+    public List<String> getTags() { return tags; }
+    public void setTags(List<String> tags) { this.tags = tags; }
     
     public BigDecimal getRating() { return rating; }
     public void setRating(BigDecimal rating) { this.rating = rating; }

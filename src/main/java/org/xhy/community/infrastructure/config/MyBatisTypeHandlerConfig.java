@@ -26,6 +26,7 @@ import org.xhy.community.infrastructure.converter.SubscriptionStatusConverter;
 import org.xhy.community.infrastructure.converter.UserStatusConverter;
 import org.xhy.community.infrastructure.converter.CDKTypeConverter;
 import org.xhy.community.infrastructure.converter.CDKStatusConverter;
+import org.xhy.community.infrastructure.converter.StringListConverter;
 
 import jakarta.annotation.PostConstruct;
 
@@ -54,8 +55,11 @@ public class MyBatisTypeHandlerConfig {
         typeHandlerRegistry.register(SubscriptionStatus.class, new SubscriptionStatusConverter());
         typeHandlerRegistry.register(CDKType.class, new CDKTypeConverter());
         typeHandlerRegistry.register(CDKStatus.class, new CDKStatusConverter());
+        
+        // 注册集合类型处理器
+        typeHandlerRegistry.register(java.util.List.class, new StringListConverter());
 
-        log.info("手动注册类型处理器：UserStatusConverter, PostStatusConverter, CategoryTypeConverter, CourseStatusConverter, BusinessTypeConverter, ResourceTypeConverter, SubscriptionPlanStatusConverter, SubscriptionStatusConverter, CDKTypeConverter, CDKStatusConverter");
+        log.info("手动注册类型处理器：UserStatusConverter, PostStatusConverter, CategoryTypeConverter, CourseStatusConverter, BusinessTypeConverter, ResourceTypeConverter, SubscriptionPlanStatusConverter, SubscriptionStatusConverter, CDKTypeConverter, CDKStatusConverter, StringListConverter");
         log.info("已注册的类型处理器总数: {}", typeHandlerRegistry.getTypeHandlers().size());
     }
 }
