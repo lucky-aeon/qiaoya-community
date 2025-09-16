@@ -14,7 +14,7 @@ import org.xhy.community.interfaces.comment.request.BusinessCommentQueryRequest;
  * @module 评论管理
  */
 @RestController
-@RequestMapping("/api/comments")
+@RequestMapping("/api/app/comments")
 public class CommentController {
     
     private final UserCommentAppService userCommentAppService;

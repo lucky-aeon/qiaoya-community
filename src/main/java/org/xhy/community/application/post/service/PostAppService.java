@@ -22,7 +22,7 @@ import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.infrastructure.config.ValidationErrorCode;
 import org.xhy.community.interfaces.post.request.CreatePostRequest;
 import org.xhy.community.interfaces.post.request.PostQueryRequest;
-import org.xhy.community.interfaces.post.request.PublicPostQueryRequest;
+import org.xhy.community.interfaces.post.request.AppPostQueryRequest;
 import org.xhy.community.interfaces.post.request.UpdatePostRequest;
 
 import java.util.List;
@@ -107,8 +107,8 @@ public class PostAppService {
         return PostAssembler.toDTO(updatedPost);
     }
     
-    public IPage<FrontPostDTO> queryPublicPosts(PublicPostQueryRequest request) {
-        IPage<PostEntity> entityPage = postDomainService.queryPublicPosts(
+    public IPage<FrontPostDTO> queryAppPosts(AppPostQueryRequest request) {
+        IPage<PostEntity> entityPage = postDomainService.queryAppPosts(
             request.getPageNum(),
             request.getPageSize(),
             request.getCategoryType()
@@ -153,15 +153,15 @@ public class PostAppService {
     }
     
     /**
-     * 获取公开文章详情
-     * 无需认证，只能查看已发布的文章
+     * 获取用户前台文章详情
+     * 只能查看已发布的文章
      * 
      * @param postId 文章ID
      * @return 文章详细信息，包含完整内容
      * @throws BusinessException 如果文章不存在或未发布
      */
-    public FrontPostDetailDTO getPublicPostDetail(String postId) {
-        PostEntity post = postDomainService.getPublicPostById(postId);
+    public FrontPostDetailDTO getAppPostDetail(String postId) {
+        PostEntity post = postDomainService.getAppPostById(postId);
         
         // 获取作者信息
         Set<String> authorIds = java.util.Collections.singleton(post.getAuthorId());

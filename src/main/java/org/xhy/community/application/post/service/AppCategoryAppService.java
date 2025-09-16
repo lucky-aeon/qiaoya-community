@@ -10,11 +10,11 @@ import org.xhy.community.domain.post.valueobject.CategoryType;
 import java.util.List;
 
 @Service
-public class PublicCategoryAppService {
+public class AppCategoryAppService {
     
     private final CategoryDomainService categoryDomainService;
     
-    public PublicCategoryAppService(CategoryDomainService categoryDomainService) {
+    public AppCategoryAppService(CategoryDomainService categoryDomainService) {
         this.categoryDomainService = categoryDomainService;
     }
     

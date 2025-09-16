@@ -230,7 +230,7 @@ public class PostDomainService {
         postRepository.updateById(post);
     }
     
-    public IPage<PostEntity> queryPublicPosts(Integer page, Integer size, CategoryType categoryType) {
+    public IPage<PostEntity> queryAppPosts(Integer page, Integer size, CategoryType categoryType) {
         Page<PostEntity> pageQuery = new Page<>(page, size);
         
         LambdaQueryWrapper<PostEntity> queryWrapper = new LambdaQueryWrapper<PostEntity>()
@@ -269,7 +269,7 @@ public class PostDomainService {
      * @return 文章实体
      * @throws BusinessException 如果文章不存在或未发布
      */
-    public PostEntity getPublicPostById(String postId) {
+    public PostEntity getAppPostById(String postId) {
         PostEntity post = postRepository.selectOne(
             new LambdaQueryWrapper<PostEntity>()
                 .eq(PostEntity::getId, postId)

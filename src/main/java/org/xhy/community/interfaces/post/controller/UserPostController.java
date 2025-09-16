@@ -23,7 +23,7 @@ import org.xhy.community.interfaces.post.request.UpdatePostRequest;
  */
 @RestController
 @RequestMapping("/api/user/posts")
-public class PostController {
+public class UserPostController {
     
     @Autowired
     private PostAppService postAppService;
