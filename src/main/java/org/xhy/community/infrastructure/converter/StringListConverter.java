@@ -24,7 +24,8 @@ public class StringListConverter extends BaseTypeHandler<List<String>> {
     public void setNonNullParameter(PreparedStatement ps, int i, List<String> parameter, JdbcType jdbcType) throws SQLException {
         try {
             String json = objectMapper.writeValueAsString(parameter);
-            ps.setString(i, json);
+            // 对于 PostgreSQL JSON 字段，使用 setObject 并指定 Types.OTHER
+            ps.setObject(i, json, java.sql.Types.OTHER);
         } catch (JsonProcessingException e) {
             throw new SQLException("Error converting List<String> to JSON", e);
         }

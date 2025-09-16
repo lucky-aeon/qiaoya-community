@@ -2,6 +2,7 @@ package org.xhy.community.interfaces.course.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import org.xhy.community.domain.course.valueobject.CourseStatus;
 import java.util.List;
 
 public class CreateCourseRequest {
@@ -17,6 +18,8 @@ public class CreateCourseRequest {
     private String projectUrl;
     
     private List<String> tags;
+    
+    private CourseStatus status;
     
     public CreateCourseRequest() {
     }
@@ -36,4 +39,7 @@ public class CreateCourseRequest {
     
     public List<String> getTags() { return tags; }
     public void setTags(List<String> tags) { this.tags = tags; }
+    
+    public CourseStatus getStatus() { return status; }
+    public void setStatus(CourseStatus status) { this.status = status; }
 }
