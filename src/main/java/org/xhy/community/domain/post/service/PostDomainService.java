@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.stereotype.Service;
 import org.xhy.community.infrastructure.exception.BusinessException;
+import org.xhy.community.domain.common.valueobject.AccessLevel;
 import org.xhy.community.domain.post.entity.CategoryEntity;
 import org.xhy.community.domain.post.entity.PostEntity;
 import org.xhy.community.infrastructure.exception.PostErrorCode;
@@ -204,11 +205,11 @@ public class PostDomainService {
         }
     }
     
-    public IPage<PostEntity> getUserPosts(String authorId, Integer pageNum, Integer pageSize, PostStatus status) {
+    public IPage<PostEntity> getUserPosts(String authorId, Integer pageNum, Integer pageSize, PostStatus status, AccessLevel accessLevel) {
         Page<PostEntity> page = new Page<>(pageNum, pageSize);
         
         LambdaQueryWrapper<PostEntity> queryWrapper = new LambdaQueryWrapper<PostEntity>()
-                .eq(PostEntity::getAuthorId, authorId)
+                .eq(accessLevel == AccessLevel.USER && authorId != null, PostEntity::getAuthorId, authorId)
                 .eq(status != null, PostEntity::getStatus, status)
                 .orderByDesc(PostEntity::getCreateTime);
         

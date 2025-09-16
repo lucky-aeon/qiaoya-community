@@ -11,6 +11,7 @@ import org.xhy.community.application.post.dto.FrontPostDetailDTO;
 import org.xhy.community.application.post.dto.FrontPostDTO;
 import org.xhy.community.application.post.dto.PostDTO;
 import org.xhy.community.application.post.dto.PublicPostDTO;
+import org.xhy.community.domain.common.valueobject.AccessLevel;
 import org.xhy.community.domain.post.entity.CategoryEntity;
 import org.xhy.community.domain.post.entity.PostEntity;
 import org.xhy.community.domain.post.service.CategoryDomainService;
@@ -78,7 +79,8 @@ public class PostAppService {
             authorId, 
             request.getPageNum(), 
             request.getPageSize(), 
-            request.getStatus()
+            request.getStatus(),
+            AccessLevel.USER
         );
         
         // 转换为DTO分页结果

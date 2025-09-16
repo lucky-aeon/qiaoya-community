@@ -402,4 +402,78 @@ public CourseEntity updateCourse(CourseEntity course) {
 Children like(boolean condition, R column, Object val);
 ```
 
+### 11. 权限控制设计规范
+
+#### 权限标识枚举设计
+使用枚举类型定义访问权限级别，支持扩展性和类型安全：
+
+```java
+// 位置：org.xhy.community.domain.common.valueobject.AccessLevel
+public enum AccessLevel {
+    USER,   // 普通用户权限 - 只能访问自己的数据
+    ADMIN   // 管理员权限 - 可以访问所有数据
+}
+```
+
+#### 权限控制在Domain层的优雅实现
+**设计原则：**
+- 复用现有查询逻辑，避免代码重复
+- 通过权限标识参数控制查询范围
+- Domain层根据权限标识决定是否添加用户隔离条件
+
+**实现示例：**
+```java
+// PostDomainService中的统一查询方法
+public IPage<PostEntity> getUserPosts(String authorId, Integer pageNum, Integer pageSize, 
+                                     PostStatus status, AccessLevel accessLevel) {
+    Page<PostEntity> page = new Page<>(pageNum, pageSize);
+    
+    LambdaQueryWrapper<PostEntity> queryWrapper = new LambdaQueryWrapper<PostEntity>()
+            // 关键设计：根据权限级别决定是否添加用户隔离条件
+            .eq(accessLevel == AccessLevel.USER && authorId != null, PostEntity::getAuthorId, authorId)
+            .eq(status != null, PostEntity::getStatus, status)
+            .orderByDesc(PostEntity::getCreateTime);
+    
+    return postRepository.selectPage(page, queryWrapper);
+}
+```
+
+**调用示例：**
+```java
+// 普通用户查询自己的文章
+postDomainService.getUserPosts(userId, pageNum, pageSize, status, AccessLevel.USER);
+
+// 管理员查询所有文章
+postDomainService.getUserPosts(null, pageNum, pageSize, status, AccessLevel.ADMIN);
+```
+
+#### 权限控制的优势
+1. **代码复用**: 避免为管理员和用户分别写查询方法
+2. **扩展性强**: 后续可轻松添加其他权限级别（如版主等）
+3. **类型安全**: 枚举避免布尔参数的歧义性
+4. **语义清晰**: `AccessLevel.ADMIN` 比 `true` 更直观
+5. **维护性好**: 权限逻辑集中在Domain层，便于统一管理
+
+#### 管理员接口实现模式
+遵循标准的DDD分层架构，为管理员功能创建独立的服务和控制器：
+
+**文件结构：**
+- `AdminPostController` - 管理员接口控制器（路由：`/api/admin/posts`）
+- `AdminPostAppService` - 管理员应用服务（传入 `AccessLevel.ADMIN`）
+- `AdminPostDTO` - 管理员专用DTO（包含作者名称、分类名称等扩展信息）
+- `AdminPostAssembler` - 管理员专用转换器
+
+**关联数据查询模式：**
+```java
+// 批量查询关联数据，避免N+1查询问题
+Set<String> authorIds = posts.stream().map(PostEntity::getAuthorId).collect(Collectors.toSet());
+Set<String> categoryIds = posts.stream().map(PostEntity::getCategoryId).collect(Collectors.toSet());
+
+Map<String, String> authorNames = userDomainService.getUserNameMapByIds(authorIds);
+Map<String, String> categoryNames = categoryService.getCategoryNameMapByIds(categoryIds);
+
+// 在Assembler中组装完整的DTO
+List<AdminPostDTO> dtos = AdminPostAssembler.toDTOList(posts, authorNames, categoryNames);
+```
+
 - 
