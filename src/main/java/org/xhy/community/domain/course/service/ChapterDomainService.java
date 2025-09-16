@@ -77,4 +77,17 @@ public class ChapterDomainService {
         
         return chapterRepository.selectPage(page, queryWrapper);
     }
+    
+    public void batchUpdateChapterOrder(List<String> chapterIds) {
+        int totalCount = chapterIds.size();
+        for (int i = 0; i < chapterIds.size(); i++) {
+            String chapterId = chapterIds.get(i);
+            int sortOrder = totalCount - i;
+            
+            ChapterEntity chapter = new ChapterEntity();
+            chapter.setId(chapterId);
+            chapter.setSortOrder(sortOrder);
+            chapterRepository.updateById(chapter);
+        }
+    }
 }

@@ -9,6 +9,7 @@ import org.xhy.community.domain.course.service.ChapterDomainService;
 import org.xhy.community.interfaces.course.request.CreateChapterRequest;
 import org.xhy.community.interfaces.course.request.UpdateChapterRequest;
 import org.xhy.community.interfaces.course.request.ChapterQueryRequest;
+import org.xhy.community.interfaces.course.request.BatchUpdateChapterOrderRequest;
 import org.xhy.community.domain.course.query.ChapterQuery;
 
 import java.util.List;
@@ -62,5 +63,9 @@ public class AdminChapterAppService {
         IPage<ChapterEntity> chapterPage = chapterDomainService.getPagedChapters(query);
         
         return chapterPage.convert(ChapterAssembler::toDTO);
+    }
+    
+    public void batchUpdateChapterOrder(BatchUpdateChapterOrderRequest request) {
+        chapterDomainService.batchUpdateChapterOrder(request.getChapterIds());
     }
 }

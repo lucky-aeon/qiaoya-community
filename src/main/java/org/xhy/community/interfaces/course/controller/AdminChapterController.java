@@ -10,6 +10,7 @@ import org.xhy.community.infrastructure.config.UserContext;
 import org.xhy.community.interfaces.course.request.CreateChapterRequest;
 import org.xhy.community.interfaces.course.request.UpdateChapterRequest;
 import org.xhy.community.interfaces.course.request.ChapterQueryRequest;
+import org.xhy.community.interfaces.course.request.BatchUpdateChapterOrderRequest;
 
 import java.util.List;
 
@@ -113,5 +114,20 @@ public class AdminChapterController {
     public ApiResponse<IPage<ChapterDTO>> getChapters(ChapterQueryRequest request) {
         IPage<ChapterDTO> chapters = adminChapterAppService.getPagedChapters(request);
         return ApiResponse.success(chapters);
+    }
+    
+    /**
+     * 批量更新章节顺序
+     * 管理员通过拖拽调整章节顺序，前端传递排好序的章节ID列表
+     * 后端根据数组顺序设置sortOrder，按从大到小存储
+     * 需要管理员权限认证
+     * 
+     * @param request 批量更新章节顺序请求参数，包含排好序的章节ID列表
+     * @return 更新操作结果
+     */
+    @PutMapping("/order")
+    public ApiResponse<Void> batchUpdateChapterOrder(@Valid @RequestBody BatchUpdateChapterOrderRequest request) {
+        adminChapterAppService.batchUpdateChapterOrder(request);
+        return ApiResponse.success();
     }
 }
