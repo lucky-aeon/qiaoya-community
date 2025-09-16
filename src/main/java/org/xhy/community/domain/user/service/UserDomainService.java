@@ -6,22 +6,29 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.xhy.community.domain.user.entity.UserEntity;
+import org.xhy.community.domain.user.entity.UserCourseEntity;
 import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.infrastructure.exception.UserErrorCode;
 import org.xhy.community.domain.user.repository.UserRepository;
+import org.xhy.community.domain.user.repository.UserCourseRepository;
 import org.xhy.community.domain.user.valueobject.UserStatus;
 
 import java.util.Collection;
 import java.util.Random;
+import java.util.List;
 
 @Service
 public class UserDomainService {
 
     private final UserRepository userRepository;
+    private final UserCourseRepository userCourseRepository;
     private final BCryptPasswordEncoder passwordEncoder;
 
-    public UserDomainService(UserRepository userRepository, BCryptPasswordEncoder passwordEncoder) {
+    public UserDomainService(UserRepository userRepository, 
+                           UserCourseRepository userCourseRepository,
+                           BCryptPasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.userCourseRepository = userCourseRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -183,5 +190,88 @@ public class UserDomainService {
                     UserEntity::getId,
                     UserEntity::getName
                 ));
+    }
+    
+    // ==================== 用户课程权限管理方法 ====================
+    
+    /**
+     * 授予用户课程权限
+     * 
+     * @param userId 用户ID
+     * @param courseId 课程ID
+     */
+    public void grantCourseToUser(String userId, String courseId) {
+
+        // 检查是否已存在权限，避免重复添加
+        if (hasUserCourse(userId, courseId)) {
+            return;
+        }
+        
+        UserCourseEntity userCourse = new UserCourseEntity(userId, courseId);
+        userCourseRepository.insert(userCourse);
+    }
+    
+    /**
+     * 检查用户是否拥有课程权限
+     * 
+     * @param userId 用户ID
+     * @param courseId 课程ID
+     * @return 是否拥有权限
+     */
+    public boolean hasUserCourse(String userId, String courseId) {
+        LambdaQueryWrapper<UserCourseEntity> queryWrapper = 
+            new LambdaQueryWrapper<UserCourseEntity>()
+                .eq(UserCourseEntity::getUserId, userId)
+                .eq(UserCourseEntity::getCourseId, courseId);
+        
+        return userCourseRepository.exists(queryWrapper);
+    }
+    
+    /**
+     * 获取用户拥有的所有课程ID列表
+     * 
+     * @param userId 用户ID
+     * @return 课程ID列表
+     */
+    public List<String> getUserCourses(String userId) {
+        LambdaQueryWrapper<UserCourseEntity> queryWrapper = 
+            new LambdaQueryWrapper<UserCourseEntity>()
+                .eq(UserCourseEntity::getUserId, userId)
+                .select(UserCourseEntity::getCourseId);
+        
+        return userCourseRepository.selectObjs(queryWrapper)
+                .stream()
+                .map(Object::toString)
+                .toList();
+    }
+    
+    /**
+     * 移除用户的课程权限
+     * 
+     * @param userId 用户ID
+     * @param courseId 课程ID
+     */
+    public void removeUserCourse(String userId, String courseId) {
+        LambdaQueryWrapper<UserCourseEntity> queryWrapper = 
+            new LambdaQueryWrapper<UserCourseEntity>()
+                .eq(UserCourseEntity::getUserId, userId)
+                .eq(UserCourseEntity::getCourseId, courseId);
+        
+        userCourseRepository.delete(queryWrapper);
+    }
+    
+    /**
+     * 获取用户的所有课程权限实体
+     * 
+     * @param userId 用户ID
+     * @return 用户课程权限实体列表
+     */
+    public List<UserCourseEntity> getUserCourseEntities(String userId) {
+        LambdaQueryWrapper<UserCourseEntity> queryWrapper = 
+            new LambdaQueryWrapper<UserCourseEntity>()
+                .eq(UserCourseEntity::getUserId, userId)
+                .orderByDesc(UserCourseEntity::getCreateTime);
+        
+        return userCourseRepository.selectList(queryWrapper);
     }
 }

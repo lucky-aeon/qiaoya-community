@@ -5,26 +5,30 @@ import org.springframework.stereotype.Component;
 import org.xhy.community.domain.cdk.event.CDKActivatedEvent;
 import org.xhy.community.domain.cdk.valueobject.CDKType;
 import org.xhy.community.domain.course.service.CourseDomainService;
+import org.xhy.community.domain.user.service.UserDomainService;
 
 @Component
 public class CourseCDKEventListener {
     
     private final CourseDomainService courseDomainService;
+    private final UserDomainService userDomainService;
     
-    public CourseCDKEventListener(CourseDomainService courseDomainService) {
+    public CourseCDKEventListener(CourseDomainService courseDomainService,
+                                UserDomainService userDomainService) {
         this.courseDomainService = courseDomainService;
+        this.userDomainService = userDomainService;
     }
     
     @EventListener
     public void handleCDKActivated(CDKActivatedEvent event) {
         if (event.getCdkType() == CDKType.COURSE) {
             // 处理课程CDK激活逻辑
-            // 验证课程存在
+            
+            // 1. 验证课程存在
             courseDomainService.getCourseById(event.getTargetId());
             
-            // TODO: 实现课程权限授予逻辑
-            // 当前只做课程存在性验证，实际的权限授予留给将来的权限领域实现
-            // courseDomainService.grantCourseAccess(event.getUserId(), event.getTargetId());
+            // 2. 授予用户课程权限
+            userDomainService.grantCourseToUser(event.getUserId(), event.getTargetId());
         }
     }
 }
