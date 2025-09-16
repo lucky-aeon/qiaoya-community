@@ -92,8 +92,14 @@ public class UserDomainService {
         switch (status) {
             case ACTIVE -> user.activate();
             case INACTIVE -> user.deactivate();
-            case BANNED -> user.ban();
         }
+        userRepository.updateById(user);
+        return user;
+    }
+    
+    public UserEntity toggleUserStatus(String userId) {
+        UserEntity user = getUserById(userId);
+        user.toggleStatus();
         userRepository.updateById(user);
         return user;
     }
@@ -141,6 +147,7 @@ public class UserDomainService {
         LambdaQueryWrapper<UserEntity> queryWrapper = new LambdaQueryWrapper<UserEntity>()
                 .eq(query.getStatus() != null, UserEntity::getStatus, query.getStatus())
                 .like(StringUtils.hasText(query.getName()), UserEntity::getName, query.getName())
+                .like(StringUtils.hasText(query.getEmail()), UserEntity::getEmail, query.getEmail())
                 .orderByDesc(UserEntity::getCreateTime);
         
         return userRepository.selectPage(page, queryWrapper);

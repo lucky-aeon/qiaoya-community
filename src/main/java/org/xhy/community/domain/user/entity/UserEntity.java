@@ -71,8 +71,8 @@ public class UserEntity extends BaseEntity {
         this.status = UserStatus.INACTIVE;
     }
     
-    public void ban() {
-        this.status = UserStatus.BANNED;
+    public void toggleStatus() {
+        this.status = (this.status == UserStatus.ACTIVE) ? UserStatus.INACTIVE : UserStatus.ACTIVE;
     }
     
     public void updateEmailNotificationSettings(Boolean emailNotificationEnabled) {

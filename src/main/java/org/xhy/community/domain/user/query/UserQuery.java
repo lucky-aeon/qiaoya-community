@@ -7,6 +7,7 @@ public class UserQuery extends BasePageQuery {
     
     private UserStatus status;
     private String name;
+    private String email;
 
     public UserQuery() {
     }
@@ -29,6 +30,14 @@ public class UserQuery extends BasePageQuery {
     
     public void setName(String name) {
         this.name = name;
+    }
+    
+    public String getEmail() {
+        return email;
+    }
+    
+    public void setEmail(String email) {
+        this.email = email;
     }
     
 }
