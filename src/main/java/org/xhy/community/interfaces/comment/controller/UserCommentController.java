@@ -40,7 +40,7 @@ public class UserCommentController {
         String currentUserId = UserContext.getCurrentUserId();
         
         CommentDTO comment = userCommentAppService.createComment(request, currentUserId);
-        return ApiResponse.success(comment);
+        return ApiResponse.success("发布评论成功",comment);
     }
     
     /**
@@ -59,7 +59,7 @@ public class UserCommentController {
         request.setParentCommentId(commentId);
         
         CommentDTO comment = userCommentAppService.replyComment(request, currentUserId);
-        return ApiResponse.success(comment);
+        return ApiResponse.success("已回复评论",comment);
     }
     
     /**
@@ -74,7 +74,7 @@ public class UserCommentController {
     public ApiResponse<Void> deleteComment(@PathVariable String commentId) {
         String currentUserId = UserContext.getCurrentUserId();
         userCommentAppService.deleteComment(commentId, currentUserId);
-        return ApiResponse.success();
+        return ApiResponse.success("删除成功");
     }
     
     /**

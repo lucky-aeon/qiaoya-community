@@ -45,7 +45,7 @@ public class UserPostController {
     public ApiResponse<PostDTO> createPost(@Valid @RequestBody CreatePostRequest request) {
         String currentUserId = UserContext.getCurrentUserId();
         PostDTO post = postAppService.createPost(request, currentUserId);
-        return ApiResponse.success(post);
+        return ApiResponse.success(post.getStatus() == PostStatus.PUBLISHED ? "发布成功" : "保存草稿",post);
     }
     
     /**
@@ -66,7 +66,7 @@ public class UserPostController {
     public ApiResponse<PostDTO> updatePost(@PathVariable String id, @Valid @RequestBody UpdatePostRequest request) {
         String currentUserId = UserContext.getCurrentUserId();
         PostDTO post = postAppService.updatePost(id, request, currentUserId);
-        return ApiResponse.success(post);
+        return ApiResponse.success(post.getStatus() == PostStatus.PUBLISHED ? "发布成功" : "保存草稿",post);
     }
     
     /**
@@ -116,7 +116,7 @@ public class UserPostController {
     public ApiResponse<Void> deletePost(@PathVariable String id) {
         String currentUserId = UserContext.getCurrentUserId();
         postAppService.deletePost(id, currentUserId);
-        return ApiResponse.success();
+        return ApiResponse.success("删除成功");
     }
     
     /**
@@ -145,6 +145,6 @@ public class UserPostController {
         }
         
         PostDTO post = postAppService.changePostStatus(id, targetStatus, currentUserId);
-        return ApiResponse.success(post);
+        return ApiResponse.success("修改成功",post);
     }
 }
