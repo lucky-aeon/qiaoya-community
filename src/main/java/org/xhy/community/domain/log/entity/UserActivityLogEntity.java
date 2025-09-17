@@ -27,12 +27,6 @@ public class UserActivityLogEntity  {
     private String userId;
     
     /**
-     * 用户邮箱
-     */
-    @TableField("email")
-    private String email;
-    
-    /**
      * 活动类型
      */
     @TableField("activity_type")
@@ -80,6 +74,50 @@ public class UserActivityLogEntity  {
     @TableField("updated_at")
     private LocalDateTime updatedAt;
     
+    // ==================== 业务扩展字段（新增） ====================
+    
+    /**
+     * 目标类型（如POST、COURSE、USER等）
+     */
+    @TableField("target_type")
+    private String targetType;
+    
+    /**
+     * 目标对象ID
+     */
+    @TableField("target_id")
+    private String targetId;
+    
+    /**
+     * HTTP请求方法
+     */
+    @TableField("request_method")
+    private String requestMethod;
+    
+    /**
+     * 请求路径
+     */
+    @TableField("request_path")
+    private String requestPath;
+    
+    /**
+     * 执行时间（毫秒）
+     */
+    @TableField("execution_time_ms")
+    private Integer executionTimeMs;
+    
+    /**
+     * 会话ID
+     */
+    @TableField("session_id")
+    private String sessionId;
+    
+    /**
+     * 扩展上下文数据（JSON格式）
+     */
+    @TableField("context_data")
+    private String contextData;
+    
     // Getters and Setters
     public String getUserId() {
         return userId;
@@ -87,14 +125,6 @@ public class UserActivityLogEntity  {
     
     public void setUserId(String userId) {
         this.userId = userId;
-    }
-    
-    public String getEmail() {
-        return email;
-    }
-    
-    public void setEmail(String email) {
-        this.email = email;
     }
     
     public ActivityType getActivityType() {
@@ -167,5 +197,63 @@ public class UserActivityLogEntity  {
 
     public void setId(String id) {
         this.id = id;
+    }
+    
+    // ==================== 业务扩展字段的Getter/Setter（新增） ====================
+    
+    public String getTargetType() {
+        return targetType;
+    }
+    
+    public void setTargetType(String targetType) {
+        this.targetType = targetType;
+    }
+    
+    public String getTargetId() {
+        return targetId;
+    }
+    
+    public void setTargetId(String targetId) {
+        this.targetId = targetId;
+    }
+    
+    public String getRequestMethod() {
+        return requestMethod;
+    }
+    
+    public void setRequestMethod(String requestMethod) {
+        this.requestMethod = requestMethod;
+    }
+    
+    public String getRequestPath() {
+        return requestPath;
+    }
+    
+    public void setRequestPath(String requestPath) {
+        this.requestPath = requestPath;
+    }
+    
+    public Integer getExecutionTimeMs() {
+        return executionTimeMs;
+    }
+    
+    public void setExecutionTimeMs(Integer executionTimeMs) {
+        this.executionTimeMs = executionTimeMs;
+    }
+    
+    public String getSessionId() {
+        return sessionId;
+    }
+    
+    public void setSessionId(String sessionId) {
+        this.sessionId = sessionId;
+    }
+    
+    public String getContextData() {
+        return contextData;
+    }
+    
+    public void setContextData(String contextData) {
+        this.contextData = contextData;
     }
 }

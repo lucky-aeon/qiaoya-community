@@ -11,6 +11,8 @@ import org.xhy.community.infrastructure.config.UserContext;
 import org.xhy.community.interfaces.course.request.CreateCourseRequest;
 import org.xhy.community.interfaces.course.request.UpdateCourseRequest;
 import org.xhy.community.interfaces.course.request.CourseQueryRequest;
+import org.xhy.community.infrastructure.annotation.ActivityLog;
+import org.xhy.community.domain.common.valueobject.ActivityType;
 
 /**
  * 管理员课程管理控制器
@@ -34,6 +36,7 @@ public class AdminCourseController {
      * @return 创建成功的课程信息
      */
     @PostMapping
+    @ActivityLog(ActivityType.CREATE_COURSE)
     public ApiResponse<CourseDTO> createCourse(@Valid @RequestBody CreateCourseRequest request) {
         String currentUserId = UserContext.getCurrentUserId();
         CourseDTO course = adminCourseAppService.createCourse(request, currentUserId);
@@ -48,6 +51,7 @@ public class AdminCourseController {
      * @return 更新后的课程信息
      */
     @PutMapping("/{id}")
+    @ActivityLog(ActivityType.ADMIN_UPDATE_COURSE)
     public ApiResponse<CourseDTO> updateCourse(@PathVariable String id, 
                                               @Valid @RequestBody UpdateCourseRequest request) {
         CourseDTO course = adminCourseAppService.updateCourse(id, request);
@@ -61,6 +65,7 @@ public class AdminCourseController {
      * @return 课程详情
      */
     @GetMapping("/{id}")
+    @ActivityLog(ActivityType.VIEW_COURSE)
     public ApiResponse<CourseDTO> getCourse(@PathVariable String id) {
         CourseDTO course = adminCourseAppService.getCourseById(id);
         return ApiResponse.success(course);
@@ -73,6 +78,7 @@ public class AdminCourseController {
      * @return 空响应
      */
     @DeleteMapping("/{id}")
+    @ActivityLog(ActivityType.DELETE_COURSE)
     public ApiResponse<Void> deleteCourse(@PathVariable String id) {
         adminCourseAppService.deleteCourse(id);
         return ApiResponse.success();

@@ -1,149 +1,1076 @@
-# 用户活动日志系统设计文档
+# 用户活动日志系统扩展设计文档
 
 ## 1. 概述
 
-基于现有MySQL表结构，设计一套用户活动日志系统，采用AOP + 异步处理方式实现，支持用户行为追踪和API请求日志记录。
+基于项目中已有的用户活动日志系统，进行功能扩展以支持更丰富的用户行为追踪。现有系统专门记录用户认证相关活动（登录、注册等），本方案在保持现有架构的基础上，扩展支持业务操作追踪（如查看文章、发表文章等）。
 
-## 2. 数据库设计
+## 1.1 现有系统分析
 
-### 2.1 表结构转换（MySQL → PostgreSQL）
+**已有完整实现：**
+- 数据库表：`user_activity_logs`（V15迁移脚本）
+- 完整DDD架构：Domain、Application、Infrastructure、Interface层
+- AOP切面：`UserActivityLogAspect` + `@LogUserActivity`注解
+- 异步处理：专用线程池`userActivityLogExecutor`
+- 管理员查询接口：`AdminUserActivityLogController`
 
-**原MySQL表分析：**
-- 偏向于API请求日志记录
-- 使用自增ID和MySQL特定语法
-- 缺少业务语义化字段
+**现有活动类型：**
+- 认证相关：LOGIN_SUCCESS、LOGIN_FAILED、REGISTER_SUCCESS、REGISTER_FAILED
+- 账户管理：LOGOUT、CHANGE_PASSWORD、RESET_PASSWORD
 
-**转换后的PostgreSQL表结构：**
+**扩展目标：**
+在现有基础上增加业务操作追踪，如内容浏览、创作、互动等行为。
+
+## 2. 活动类型扩展设计
+
+### 2.1 现有ActivityType枚举分析
+
+**当前类型（7种）：**
+```java
+public enum ActivityType {
+    LOGIN_SUCCESS("登录成功"),
+    LOGIN_FAILED("登录失败"),
+    REGISTER_SUCCESS("注册成功"),
+    REGISTER_FAILED("注册失败"),
+    LOGOUT("用户登出"),
+    CHANGE_PASSWORD("修改密码"),
+    RESET_PASSWORD("重置密码");
+}
+```
+
+### 2.2 扩展后的ActivityType设计
+
+**扩展原则：**
+- 保持现有类型不变，确保向后兼容
+- 按业务领域分组新增类型
+- 使用语义化命名，便于理解和维护
+
+**扩展后的完整枚举：**
+```java
+public enum ActivityType {
+    // ==================== 认证相关（现有） ====================
+    LOGIN_SUCCESS("登录成功"),
+    LOGIN_FAILED("登录失败"),
+    REGISTER_SUCCESS("注册成功"),
+    REGISTER_FAILED("注册失败"),
+    LOGOUT("用户登出"),
+    CHANGE_PASSWORD("修改密码"),
+    RESET_PASSWORD("重置密码"),
+    
+    // ==================== 内容浏览 ====================
+    VIEW_POST("查看文章"),
+    VIEW_COURSE("查看课程"),
+    VIEW_USER_PROFILE("查看用户资料"),
+    SEARCH_CONTENT("搜索内容"),
+    
+    // ==================== 内容创作 ====================
+    CREATE_POST("发表文章"),
+    UPDATE_POST("编辑文章"),
+    DELETE_POST("删除文章"),
+    CREATE_COURSE("创建课程"),
+    UPDATE_COURSE("编辑课程"),
+    DELETE_COURSE("删除课程"),
+    
+    // ==================== 社交互动 ====================
+    LIKE_POST("点赞文章"),
+    UNLIKE_POST("取消点赞文章"),
+    COMMENT_POST("评论文章"),
+    DELETE_COMMENT("删除评论"),
+    FOLLOW_USER("关注用户"),
+    UNFOLLOW_USER("取消关注用户"),
+    SHARE_POST("分享文章"),
+    
+    // ==================== 学习行为 ====================
+    ENROLL_COURSE("注册课程"),
+    COMPLETE_CHAPTER("完成章节"),
+    START_LEARNING("开始学习"),
+    
+    // ==================== 管理操作 ====================
+    ADMIN_LOGIN("管理员登录"),
+    ADMIN_UPDATE_USER("管理员更新用户"),
+    ADMIN_DELETE_POST("管理员删除文章"),
+    ADMIN_UPDATE_COURSE("管理员更新课程");
+    
+    private final String description;
+    
+    ActivityType(String description) {
+        this.description = description;
+    }
+    
+    public String getDescription() {
+        return description;
+    }
+    
+    /**
+     * 获取活动类型的分类
+     */
+    public ActivityCategory getCategory() {
+        switch (this) {
+            case LOGIN_SUCCESS:
+            case LOGIN_FAILED:
+            case REGISTER_SUCCESS:
+            case REGISTER_FAILED:
+            case LOGOUT:
+            case CHANGE_PASSWORD:
+            case RESET_PASSWORD:
+                return ActivityCategory.AUTHENTICATION;
+                
+            case VIEW_POST:
+            case VIEW_COURSE:
+            case VIEW_USER_PROFILE:
+            case SEARCH_CONTENT:
+                return ActivityCategory.BROWSING;
+                
+            case CREATE_POST:
+            case UPDATE_POST:
+            case DELETE_POST:
+            case CREATE_COURSE:
+            case UPDATE_COURSE:
+            case DELETE_COURSE:
+                return ActivityCategory.CONTENT_CREATION;
+                
+            case LIKE_POST:
+            case UNLIKE_POST:
+            case COMMENT_POST:
+            case DELETE_COMMENT:
+            case FOLLOW_USER:
+            case UNFOLLOW_USER:
+            case SHARE_POST:
+                return ActivityCategory.SOCIAL_INTERACTION;
+                
+            case ENROLL_COURSE:
+            case COMPLETE_CHAPTER:
+            case START_LEARNING:
+                return ActivityCategory.LEARNING;
+                
+            case ADMIN_LOGIN:
+            case ADMIN_UPDATE_USER:
+            case ADMIN_DELETE_POST:
+            case ADMIN_UPDATE_COURSE:
+                return ActivityCategory.ADMINISTRATION;
+                
+            default:
+                return ActivityCategory.OTHER;
+        }
+    }
+}
+
+/**
+ * 活动分类枚举
+ */
+public enum ActivityCategory {
+    AUTHENTICATION("认证相关"),
+    BROWSING("内容浏览"),
+    CONTENT_CREATION("内容创作"),
+    SOCIAL_INTERACTION("社交互动"),
+    LEARNING("学习行为"),
+    ADMINISTRATION("管理操作"),
+    OTHER("其他");
+    
+    private final String description;
+    
+    ActivityCategory(String description) {
+        this.description = description;
+    }
+    
+    public String getDescription() {
+        return description;
+    }
+}
+```
+
+## 3. 数据库表结构扩展设计
+
+### 3.1 现有表结构分析
+
+**当前表字段（V15迁移脚本）：**
 ```sql
 CREATE TABLE user_activity_logs (
-    id BIGSERIAL PRIMARY KEY,
-    user_id VARCHAR(36) NOT NULL,                    -- 用户ID（UUID）
-    activity_type VARCHAR(50) NOT NULL,              -- 活动类型
-    request_method VARCHAR(10),                      -- HTTP方法
-    request_path VARCHAR(500) NOT NULL,              -- 请求路径
-    request_body TEXT,                               -- 请求体
-    response_data VARCHAR(1000),                     -- 响应摘要
-    ip_address INET,                                 -- IP地址
-    user_agent TEXT,                                 -- 用户代理
-    platform VARCHAR(50),                           -- 平台信息
-    execution_time_ms INTEGER,                       -- 执行时间（毫秒）
-    status VARCHAR(20) DEFAULT 'SUCCESS',            -- 执行状态
-    error_message VARCHAR(500),                      -- 错误信息
-    session_id VARCHAR(64),                          -- 会话ID
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    
-    -- 索引优化
-    INDEX idx_user_time (user_id, created_at),
-    INDEX idx_activity_type (activity_type),
-    INDEX idx_status (status)
+    id VARCHAR(36) PRIMARY KEY,
+    user_id VARCHAR(36),              -- 关联用户ID，登录失败时可能为NULL
+    email VARCHAR(255) NOT NULL,      -- 用户邮箱
+    activity_type VARCHAR(50) NOT NULL, -- 活动类型
+    browser VARCHAR(500),             -- 浏览器信息
+    equipment VARCHAR(100),           -- 设备信息
+    ip VARCHAR(45) NOT NULL,          -- IP地址
+    user_agent TEXT,                  -- 完整的User-Agent信息
+    failure_reason VARCHAR(500),      -- 失败原因，成功时为NULL
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted BOOLEAN NOT NULL DEFAULT FALSE
 );
 ```
 
-### 2.2 字段映射关系
+### 3.2 扩展方案设计
 
-| MySQL字段 | PostgreSQL字段 | 说明 |
-|-----------|----------------|------|
-| id | id | 改为BIGSERIAL |
-| user_id | user_id | 改为VARCHAR(36)支持UUID |
-| request_info | request_path | 语义更清晰 |
-| request_method | request_method | 保持不变 |
-| request_body | request_body | 改为TEXT类型 |
-| response_data | response_data | 保持不变 |
-| ip | ip_address | 使用INET类型 |
-| exec_at | execution_time_ms | 改为整型毫秒 |
-| created_at | created_at | 增加时区支持 |
-| platform | platform | 保持不变 |
-| user_agent | user_agent | 保持不变 |
-| - | activity_type | 新增业务类型 |
-| - | status | 新增执行状态 |
-| - | error_message | 新增错误信息 |
-| - | session_id | 新增会话追踪 |
+**方案一：原地扩展（推荐）**
+在现有表基础上添加新字段，保持向后兼容：
 
-### 2.3 FlyWay迁移脚本示例
 ```sql
--- V16__Create_user_activity_logs_table.sql
-CREATE TABLE user_activity_logs (
-    id BIGSERIAL PRIMARY KEY,
+-- V16__Extend_user_activity_logs_table.sql
+-- 为支持更丰富的业务操作，扩展用户活动日志表
+
+-- 添加业务相关字段
+ALTER TABLE user_activity_logs 
+ADD COLUMN target_type VARCHAR(50),          -- 目标类型：POST、COURSE、USER等
+ADD COLUMN target_id VARCHAR(36),            -- 目标对象ID
+ADD COLUMN request_method VARCHAR(10),       -- HTTP请求方法
+ADD COLUMN request_path VARCHAR(500),        -- 请求路径
+ADD COLUMN execution_time_ms INTEGER,        -- 执行时间（毫秒）
+ADD COLUMN session_id VARCHAR(64),           -- 会话ID
+ADD COLUMN context_data JSONB;               -- 扩展上下文数据（JSON格式）
+
+-- 为新字段添加索引
+CREATE INDEX idx_user_activity_logs_target ON user_activity_logs(target_type, target_id);
+CREATE INDEX idx_user_activity_logs_session ON user_activity_logs(session_id);
+CREATE INDEX idx_user_activity_logs_request_path ON user_activity_logs(request_path);
+
+-- 添加字段注释
+COMMENT ON COLUMN user_activity_logs.target_type IS '目标类型：POST、COURSE、USER等';
+COMMENT ON COLUMN user_activity_logs.target_id IS '目标对象ID';
+COMMENT ON COLUMN user_activity_logs.request_method IS 'HTTP请求方法：GET、POST等';
+COMMENT ON COLUMN user_activity_logs.request_path IS '请求路径';
+COMMENT ON COLUMN user_activity_logs.execution_time_ms IS '接口执行时间（毫秒）';
+COMMENT ON COLUMN user_activity_logs.session_id IS '用户会话ID';
+COMMENT ON COLUMN user_activity_logs.context_data IS '扩展上下文数据，JSON格式存储';
+```
+
+**方案二：分表设计（备选）**
+如果业务差异过大，可考虑分表：
+
+```sql
+-- 认证活动日志表（现有表保持不变）
+user_activity_logs
+
+-- 业务活动日志表（新表）
+CREATE TABLE business_activity_logs (
+    id VARCHAR(36) PRIMARY KEY,
     user_id VARCHAR(36) NOT NULL,
     activity_type VARCHAR(50) NOT NULL,
+    target_type VARCHAR(50),
+    target_id VARCHAR(36),
     request_method VARCHAR(10),
-    request_path VARCHAR(500) NOT NULL,
-    request_body TEXT,
-    response_data VARCHAR(1000),
-    ip_address INET,
-    user_agent TEXT,
-    platform VARCHAR(50),
+    request_path VARCHAR(500),
     execution_time_ms INTEGER,
-    status VARCHAR(20) DEFAULT 'SUCCESS',
-    error_message VARCHAR(500),
+    ip VARCHAR(45),
+    user_agent TEXT,
     session_id VARCHAR(64),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    update_time TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    deleted BOOLEAN DEFAULT FALSE
+    context_data JSONB,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted BOOLEAN NOT NULL DEFAULT FALSE
 );
-
--- 创建索引
-CREATE INDEX idx_user_activity_logs_user_time ON user_activity_logs (user_id, created_at);
-CREATE INDEX idx_user_activity_logs_activity_type ON user_activity_logs (activity_type);
-CREATE INDEX idx_user_activity_logs_status ON user_activity_logs (status);
-CREATE INDEX idx_user_activity_logs_session ON user_activity_logs (session_id);
-
--- 添加表注释
-COMMENT ON TABLE user_activity_logs IS '用户活动日志表';
-COMMENT ON COLUMN user_activity_logs.user_id IS '用户ID';
-COMMENT ON COLUMN user_activity_logs.activity_type IS '活动类型';
-COMMENT ON COLUMN user_activity_logs.request_method IS 'HTTP请求方法';
-COMMENT ON COLUMN user_activity_logs.request_path IS '请求路径';
-COMMENT ON COLUMN user_activity_logs.execution_time_ms IS '执行时间（毫秒）';
-COMMENT ON COLUMN user_activity_logs.status IS '执行状态：SUCCESS/FAILED';
 ```
 
-## 3. 架构设计
+**推荐使用方案一**，原因：
+- 保持系统架构统一
+- 减少代码重复
+- 便于统一查询和分析
+- 现有字段对业务操作仍有意义
 
-### 3.1 整体架构
+### 3.3 扩展后的字段说明
+
+| 字段名 | 类型 | 说明 | 示例值 |
+|--------|------|------|--------|
+| **现有字段** |
+| id | VARCHAR(36) | 主键ID | uuid |
+| user_id | VARCHAR(36) | 用户ID | uuid |
+| email | VARCHAR(255) | 用户邮箱 | user@example.com |
+| activity_type | VARCHAR(50) | 活动类型 | VIEW_POST |
+| browser | VARCHAR(500) | 浏览器信息 | Chrome 120.0 |
+| equipment | VARCHAR(100) | 设备信息 | Desktop |
+| ip | VARCHAR(45) | IP地址 | 192.168.1.1 |
+| user_agent | TEXT | User-Agent | Mozilla/5.0... |
+| failure_reason | VARCHAR(500) | 失败原因 | 文章不存在 |
+| **新增字段** |
+| target_type | VARCHAR(50) | 目标类型 | POST、COURSE、USER |
+| target_id | VARCHAR(36) | 目标ID | 文章ID、课程ID等 |
+| request_method | VARCHAR(10) | HTTP方法 | GET、POST、PUT |
+| request_path | VARCHAR(500) | 请求路径 | /api/posts/123 |
+| execution_time_ms | INTEGER | 执行时间 | 150 |
+| session_id | VARCHAR(64) | 会话ID | session_abc123 |
+| context_data | JSONB | 扩展数据 | {"category": "tech"} |
+
+### 3.4 字段使用策略
+
+**认证操作（现有逻辑保持不变）：**
+- 主要使用：user_id、email、activity_type、ip、user_agent、failure_reason
+- 新字段：target_type=null、target_id=null
+
+**业务操作（新增逻辑）：**
+- 必填字段：user_id、activity_type、ip、request_method、request_path
+- 可选字段：target_type、target_id、execution_time_ms、context_data
+- 未使用字段：email可为空、failure_reason仅在失败时使用
+
+**字段复用策略：**
+- `browser`、`equipment`：所有操作通用
+- `failure_reason`：任何操作失败时都可使用
+- `user_agent`：所有HTTP请求通用
+## 4. AOP注解扩展设计
+
+### 4.1 现有注解分析
+
+**现有@LogUserActivity注解：**
+```java
+@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface LogUserActivity {
+    ActivityType successType();     // 成功时的活动类型
+    ActivityType failureType();     // 失败时的活动类型
+    boolean logSuccess() default true;
+    boolean logFailure() default true;
+}
 ```
-Controller（@ActivityLog注解）
-       ↓
-AOP切面（ActivityLogAspect）
-       ↓
-事件发布（ActivityLogEventPublisher）
-       ↓
-异步处理（ActivityLogEventListener）
-       ↓
-领域服务（UserActivityLogDomainService）
-       ↓
-数据持久化（Repository）
+
+**使用场景：** 专门用于认证操作，如登录、注册等
+
+### 4.2 扩展方案设计
+
+**方案一：新增@ActivityLog注解（推荐）**
+为业务操作创建新的注解，与现有认证注解并存。采用极简设计，通过URL自动解析目标信息：
+
+```java
+/**
+ * 业务活动日志注解
+ * 用于记录用户的业务操作行为，如查看文章、发表内容等
+ * 采用极简设计，自动从URL解析目标类型和ID
+ */
+@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+public @interface ActivityLog {
+    
+    /**
+     * 活动类型（必填）
+     */
+    ActivityType value();
+    
+    /**
+     * 是否异步处理，默认true
+     */
+    boolean async() default true;
+    
+    /**
+     * 是否记录请求体，默认true
+     */
+    boolean recordRequest() default true;
+}
 ```
 
-### 3.2 DDD分层设计
+**方案二：扩展现有注解（备选）**
+扩展@LogUserActivity注解支持更多参数：
 
-**Domain层：**
-- `ActivityType` 枚举：定义活动类型（VIEW_POST、CREATE_POST等）
-- `UserActivityLogEntity` 实体：领域实体，继承BaseEntity
-- `UserActivityLogRepository` 仓储：继承BaseMapper
-- `UserActivityLogDomainService` 领域服务：核心业务逻辑
-
-**Application层：**
-- `UserActivityLogAppService` 应用服务：业务流程编排
-- `UserActivityLogDTO` 传输对象：对外数据格式
-- `UserActivityLogAssembler` 转换器：Entity与DTO转换
-
-**Infrastructure层：**
-- `ActivityLogAspect` AOP切面：横切关注点
-- `ActivityLogEvent` 事件类：事件驱动载体
-- `ActivityLogEventPublisher` 事件发布器：事件发布
-- `ActivityLogEventListener` 事件监听器：异步处理
-
-### 3.3 文件结构规划
+```java
+@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.RUNTIME)
+public @interface LogUserActivity {
+    // 现有字段保持不变
+    ActivityType successType();
+    ActivityType failureType() default ActivityType.LOGIN_FAILED;
+    boolean logSuccess() default true;
+    boolean logFailure() default true;
+    
+    // 新增字段（兼容业务操作）
+    String targetType() default "";
+    String targetIdParam() default "";
+    boolean recordContext() default false;
+    boolean recordExecutionTime() default false;
+}
 ```
-src/main/java/org/xhy/community/
-├── domain/common/valueobject/
-│   └── ActivityType.java                    -- 活动类型枚举
-├── domain/user/
-│   ├── entity/
-│   │   └── UserActivityLogEntity.java       -- 用户活动日志实体
-│   ├── repository/
-│   │   └── UserActivityLogRepository.java   -- 仓储接口
+
+**推荐使用方案一**，原因：
+- 职责分离清晰：认证操作 vs 业务操作
+- 减少认证注解的复杂性
+- 便于独立维护和优化
+- 更好的语义表达
+- **极简设计**：只需指定活动类型，其他信息自动推断
+
+### 4.3 URL自动解析逻辑设计
+
+为了实现极简的注解使用体验，设计URL自动解析机制，从请求路径中自动提取目标类型和ID：
+
+```java
+/**
+ * URL模式解析器
+ * 自动从请求路径中解析目标类型和目标ID
+ */
+public class UrlPatternParser {
+    
+    // URL模式映射配置
+    private static final Map<Pattern, TargetTypeMapping> URL_PATTERNS = Map.of(
+        // 文章相关
+        Pattern.compile("/api/posts/(\\w+)"), new TargetTypeMapping("POST", 1),
+        Pattern.compile("/api/admin/posts/(\\w+)"), new TargetTypeMapping("POST", 1),
+        
+        // 课程相关
+        Pattern.compile("/api/courses/(\\w+)"), new TargetTypeMapping("COURSE", 1),
+        Pattern.compile("/api/admin/courses/(\\w+)"), new TargetTypeMapping("COURSE", 1),
+        
+        // 用户相关
+        Pattern.compile("/api/users/(\\w+)"), new TargetTypeMapping("USER", 1),
+        Pattern.compile("/api/admin/users/(\\w+)"), new TargetTypeMapping("USER", 1),
+        
+        // 章节相关
+        Pattern.compile("/api/courses/(\\w+)/chapters/(\\w+)"), new TargetTypeMapping("CHAPTER", 2)
+    );
+    
+    /**
+     * 从URL路径解析目标信息
+     */
+    public static TargetInfo parseFromUrl(String requestPath) {
+        for (Map.Entry<Pattern, TargetTypeMapping> entry : URL_PATTERNS.entrySet()) {
+            Matcher matcher = entry.getKey().matcher(requestPath);
+            if (matcher.matches()) {
+                TargetTypeMapping mapping = entry.getValue();
+                String targetId = matcher.group(mapping.getIdGroupIndex());
+                return new TargetInfo(mapping.getTargetType(), targetId);
+            }
+        }
+        
+        // 如果无法解析，返回null（如POST /api/posts创建操作）
+        return null;
+    }
+}
+
+/**
+ * 目标类型映射
+ */
+@Data
+@AllArgsConstructor
+public static class TargetTypeMapping {
+    private String targetType;
+    private int idGroupIndex;  // 正则表达式中ID所在的组索引
+}
+
+/**
+ * 解析结果
+ */
+@Data
+@AllArgsConstructor
+public static class TargetInfo {
+    private String type;
+    private String id;
+}
+```
+
+**解析示例：**
+- `/api/posts/abc123` → targetType="POST", targetId="abc123"
+- `/api/courses/def456` → targetType="COURSE", targetId="def456"  
+- `/api/admin/users/ghi789` → targetType="USER", targetId="ghi789"
+- `/api/posts` (POST请求) → targetType=null, targetId=null（创建操作）
+
+### 4.4 AOP切面扩展设计
+
+**新增BusinessActivityLogAspect：**
+```java
+/**
+ * 业务活动日志切面
+ * 处理@ActivityLog注解，自动解析URL并记录用户的业务操作行为
+ */
+@Aspect
+@Component
+@Order(2) // 在UserActivityLogAspect之后执行
+public class BusinessActivityLogAspect {
+    
+    private static final Logger logger = LoggerFactory.getLogger(BusinessActivityLogAspect.class);
+    private final UserActivityLogDomainService userActivityLogDomainService;
+    
+    @Around("@annotation(activityLog)")
+    public Object logBusinessActivity(ProceedingJoinPoint joinPoint, ActivityLog activityLog) throws Throwable {
+        long startTime = System.currentTimeMillis();
+        
+        // 获取HTTP请求信息
+        HttpServletRequest request = getCurrentRequest();
+        String requestPath = request.getRequestURI();
+        
+        // 自动解析目标信息
+        TargetInfo targetInfo = UrlPatternParser.parseFromUrl(requestPath);
+        
+        // 构建活动上下文
+        ActivityContext context = ActivityContext.builder()
+            .userId(getCurrentUserId())
+            .activityType(activityLog.value())
+            .targetType(targetInfo != null ? targetInfo.getType() : null)
+            .targetId(targetInfo != null ? targetInfo.getId() : null)
+            .requestMethod(request.getMethod())
+            .requestPath(requestPath)
+            .requestBody(activityLog.recordRequest() ? getRequestBody(joinPoint) : null)
+            .ipAddress(getClientIp(request))
+            .userAgent(request.getHeader("User-Agent"))
+            .sessionId(request.getSession().getId())
+            .build();
+        
+        try {
+            // 执行目标方法
+            Object result = joinPoint.proceed();
+            
+            // 记录成功日志
+            if (activityLog.async()) {
+                recordActivityAsync(context, startTime, null);
+            } else {
+                recordActivity(context, startTime, null);
+            }
+            
+            return result;
+            
+        } catch (Exception e) {
+            // 记录失败日志
+            if (activityLog.async()) {
+                recordActivityAsync(context, startTime, e.getMessage());
+            } else {
+                recordActivity(context, startTime, e.getMessage());
+            }
+            
+            throw e;
+        }
+    }
+    
+    /**
+     * 获取当前HTTP请求
+     */
+    private HttpServletRequest getCurrentRequest() {
+        RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
+        if (requestAttributes instanceof ServletRequestAttributes) {
+            return ((ServletRequestAttributes) requestAttributes).getRequest();
+        }
+        throw new IllegalStateException("No HTTP request found");
+    }
+    
+    /**
+     * 获取当前用户ID
+     */
+    private String getCurrentUserId() {
+        // 从SecurityContext或其他地方获取当前用户ID
+        // 具体实现依赖于项目的认证方式
+        return "current_user_id"; // 占位符
+    }
+    
+    /**
+     * 获取请求体内容
+     */
+    private String getRequestBody(ProceedingJoinPoint joinPoint) {
+        Object[] args = joinPoint.getArgs();
+        if (args != null && args.length > 0) {
+            // 简化处理：将第一个@RequestBody参数转为JSON
+            for (Object arg : args) {
+                if (arg != null && isRequestBodyObject(arg)) {
+                    try {
+                        return JSON.toJSONString(arg);
+                    } catch (Exception e) {
+                        logger.warn("Failed to serialize request body: {}", e.getMessage());
+                        return "Failed to serialize";
+                    }
+                }
+            }
+        }
+        return null;
+    }
+    
+    /**
+     * 判断是否为请求体对象
+     */
+    private boolean isRequestBodyObject(Object obj) {
+        String className = obj.getClass().getSimpleName();
+        return className.endsWith("Request") || className.endsWith("DTO");
+    }
+    
+    /**
+     * 获取客户端IP地址
+     */
+    private String getClientIp(HttpServletRequest request) {
+        String ip = request.getHeader("X-Forwarded-For");
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("X-Real-IP");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getRemoteAddr();
+        }
+        return ip;
+    }
+    
+    /**
+     * 异步记录活动日志
+     */
+    @Async("businessActivityExecutor")
+    protected void recordActivityAsync(ActivityContext context, long startTime, String errorMessage) {
+        recordActivity(context, startTime, errorMessage);
+    }
+    
+    /**
+     * 记录活动日志
+     */
+    private void recordActivity(ActivityContext context, long startTime, String errorMessage) {
+        try {
+            int executionTime = (int) (System.currentTimeMillis() - startTime);
+            
+            userActivityLogDomainService.recordBusinessActivity(
+                context.getUserId(),
+                context.getActivityType(),
+                context.getTargetType(),
+                context.getTargetId(),
+                context.getRequestMethod(),
+                context.getRequestPath(),
+                executionTime,
+                context.getIpAddress(),
+                context.getUserAgent(),
+                context.getSessionId(),
+                context.getRequestBody(),
+                errorMessage
+            );
+            
+            logger.debug("Successfully recorded business activity: userId={}, type={}, target={}:{}", 
+                        context.getUserId(), context.getActivityType(), 
+                        context.getTargetType(), context.getTargetId());
+                        
+        } catch (Exception e) {
+            // 日志记录失败不应该影响主业务
+            logger.error("Failed to record business activity: {}", context, e);
+        }
+    }
+}
+```
+
+### 4.5 使用示例设计
+
+**认证操作（使用现有@LogUserActivity）：**
+```java
+@RestController
+@RequestMapping("/api/auth")
+public class AuthController {
+    
+    @PostMapping("/login")
+    @LogUserActivity(
+        successType = ActivityType.LOGIN_SUCCESS,
+        failureType = ActivityType.LOGIN_FAILED
+    )
+    public ApiResponse<LoginResponseDTO> login(@RequestBody LoginRequest request) {
+        // 登录逻辑
+    }
+}
+```
+
+**业务操作（使用新@ActivityLog - 极简版）：**
+```java
+@RestController
+@RequestMapping("/api/posts")
+public class PostController {
+    
+    @GetMapping("/{postId}")
+    @ActivityLog(ActivityType.VIEW_POST)  // 极简！自动解析 targetType="POST", targetId=postId
+    public ApiResponse<PostDTO> getPostById(@PathVariable String postId) {
+        return ApiResponse.success(postAppService.getPostById(postId));
+    }
+    
+    @PostMapping
+    @ActivityLog(ActivityType.CREATE_POST)  // 创建操作，无目标ID
+    public ApiResponse<PostDTO> createPost(@RequestBody CreatePostRequest request) {
+        return ApiResponse.success(postAppService.createPost(request));
+    }
+    
+    @PutMapping("/{postId}")
+    @ActivityLog(ActivityType.UPDATE_POST)  // 自动解析 targetType="POST", targetId=postId
+    public ApiResponse<PostDTO> updatePost(@PathVariable String postId, 
+                                         @RequestBody UpdatePostRequest request) {
+        return ApiResponse.success(postAppService.updatePost(postId, request));
+    }
+    
+    @DeleteMapping("/{postId}")
+    @ActivityLog(ActivityType.DELETE_POST)
+    public ApiResponse<Void> deletePost(@PathVariable String postId) {
+        postAppService.deletePost(postId);
+        return ApiResponse.success();
+    }
+    
+    @PostMapping("/{postId}/like")
+    @ActivityLog(ActivityType.LIKE_POST)  // 自动解析目标为文章
+    public ApiResponse<Void> likePost(@PathVariable String postId) {
+        postAppService.likePost(postId);
+        return ApiResponse.success();
+    }
+}
+
+@RestController
+@RequestMapping("/api/courses")
+public class CourseController {
+    
+    @GetMapping("/{courseId}")
+    @ActivityLog(ActivityType.VIEW_COURSE)  // 自动解析 targetType="COURSE", targetId=courseId
+    public ApiResponse<CourseDTO> getCourseById(@PathVariable String courseId) {
+        return ApiResponse.success(courseAppService.getCourseById(courseId));
+    }
+    
+    @PostMapping("/{courseId}/enroll")
+    @ActivityLog(ActivityType.ENROLL_COURSE)  // 注册课程
+    public ApiResponse<Void> enrollCourse(@PathVariable String courseId) {
+        courseAppService.enrollCourse(courseId);
+        return ApiResponse.success();
+    }
+    
+    @GetMapping("/{courseId}/chapters/{chapterId}")
+    @ActivityLog(ActivityType.VIEW_CHAPTER)  // 自动解析 targetType="CHAPTER", targetId=chapterId
+    public ApiResponse<ChapterDTO> getChapter(@PathVariable String courseId,
+                                            @PathVariable String chapterId) {
+        return ApiResponse.success(chapterAppService.getChapter(chapterId));
+    }
+}
+
+@RestController
+@RequestMapping("/api/users")
+public class UserController {
+    
+    @GetMapping("/{userId}")
+    @ActivityLog(ActivityType.VIEW_USER_PROFILE)  // 查看用户资料
+    public ApiResponse<UserDTO> getUserProfile(@PathVariable String userId) {
+        return ApiResponse.success(userAppService.getUserProfile(userId));
+    }
+    
+    @PostMapping("/{userId}/follow")
+    @ActivityLog(ActivityType.FOLLOW_USER)  // 关注用户
+    public ApiResponse<Void> followUser(@PathVariable String userId) {
+        userAppService.followUser(userId);
+        return ApiResponse.success();
+    }
+}
+
+@RestController
+@RequestMapping("/api/admin")
+public class AdminController {
+    
+    @DeleteMapping("/posts/{postId}")
+    @ActivityLog(ActivityType.ADMIN_DELETE_POST)  // 管理员删除文章
+    public ApiResponse<Void> deletePost(@PathVariable String postId) {
+        adminPostAppService.deletePost(postId);
+        return ApiResponse.success();
+    }
+    
+    @PutMapping("/users/{userId}/status")
+    @ActivityLog(ActivityType.ADMIN_UPDATE_USER)  // 管理员更新用户状态
+    public ApiResponse<Void> updateUserStatus(@PathVariable String userId,
+                                            @RequestBody UpdateUserStatusRequest request) {
+        adminUserAppService.updateUserStatus(userId, request);
+        return ApiResponse.success();
+    }
+}
+```
+
+**高级用法（可选参数）：**
+```java
+@RestController
+@RequestMapping("/api/posts")
+public class PostController {
+    
+    @PostMapping
+    @ActivityLog(
+        value = ActivityType.CREATE_POST,
+        recordRequest = false,  // 不记录请求体（如果包含敏感信息）
+        async = false          // 同步处理（如果需要确保立即记录）
+    )
+    public ApiResponse<PostDTO> createSensitivePost(@RequestBody CreatePostRequest request) {
+        return ApiResponse.success(postAppService.createPost(request));
+    }
+}
+```
+
+### 4.6 配置和优化
+
+**异步配置扩展：**
+```java
+@Configuration
+@EnableAsync
+public class ActivityLogAsyncConfig {
+    
+    // 现有认证日志线程池
+    @Bean("userActivityLogExecutor")
+    public TaskExecutor userActivityLogExecutor() {
+        // 现有配置
+    }
+    
+    // 新增业务日志线程池
+    @Bean("businessActivityExecutor")
+    public TaskExecutor businessActivityExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(5);
+        executor.setMaxPoolSize(15);
+        executor.setQueueCapacity(1000);
+        executor.setThreadNamePrefix("business-activity-");
+        executor.setKeepAliveSeconds(60);
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        executor.initialize();
+        return executor;
+    }
+}
+```
+
+**Domain服务扩展：**
+```java
+@Service
+public class UserActivityLogDomainService {
+    
+    // 现有认证日志记录方法
+    public void recordActivity(String userId, String email, ActivityType activityType, 
+                              String browser, String equipment, String ip, 
+                              String userAgent, String failureReason) {
+        // 现有实现保持不变
+    }
+    
+    // 新增业务日志记录方法
+    public void recordBusinessActivity(String userId, ActivityType activityType,
+                                     String targetType, String targetId,
+                                     String requestMethod, String requestPath,
+                                     Integer executionTimeMs, String ipAddress,
+                                     String userAgent, String sessionId,
+                                     Map<String, Object> contextData, String errorMessage) {
+        
+        UserActivityLogEntity entity = new UserActivityLogEntity();
+        entity.setUserId(userId);
+        entity.setActivityType(activityType);
+        entity.setTargetType(targetType);
+        entity.setTargetId(targetId);
+        entity.setRequestMethod(requestMethod);
+        entity.setRequestPath(requestPath);
+        entity.setExecutionTimeMs(executionTimeMs);
+        entity.setIp(ipAddress);
+        entity.setUserAgent(userAgent);
+        entity.setSessionId(sessionId);
+        entity.setContextData(contextData != null ? JSON.toJSONString(contextData) : null);
+        entity.setFailureReason(errorMessage);
+        // 其他字段设为null或默认值
+        
+        userActivityLogRepository.insert(entity);
+    }
+}
+```
+
+## 5. 实体扩展设计
+
+### 5.1 UserActivityLogEntity扩展
+
+**需要添加的字段：**
+```java
+@TableName("user_activity_logs")
+public class UserActivityLogEntity {
+    // 现有字段保持不变...
+    
+    // 新增字段
+    @TableField("target_type")
+    private String targetType;
+    
+    @TableField("target_id")
+    private String targetId;
+    
+    @TableField("request_method")
+    private String requestMethod;
+    
+    @TableField("request_path")
+    private String requestPath;
+    
+    @TableField("execution_time_ms")
+    private Integer executionTimeMs;
+    
+    @TableField("session_id")
+    private String sessionId;
+    
+    @TableField("context_data")
+    private String contextData;  // JSON字符串
+    
+    // getter/setter方法...
+}
+```
+
+## 6. 实施计划
+
+### 6.1 分阶段实施
+
+**第一阶段：扩展基础架构（1周）**
+1. 扩展ActivityType枚举，添加业务操作类型
+2. 执行数据库表结构扩展（V16迁移脚本）
+3. 扩展UserActivityLogEntity实体类
+4. 扩展UserActivityLogDomainService服务方法
+
+**第二阶段：新增AOP注解（1周）**
+1. 创建@ActivityLog注解
+2. 实现BusinessActivityLogAspect切面
+3. 配置新的异步线程池
+4. 完善上下文信息提取逻辑
+
+**第三阶段：业务集成（1-2周）**
+1. 在核心接口添加@ActivityLog注解
+2. 优先级：查看文章 → 发表文章 → 课程相关 → 社交功能
+3. 测试验证和性能调优
+4. 监控和告警配置
+
+### 6.2 向后兼容保证
+
+**现有功能不受影响：**
+- 现有@LogUserActivity注解和UserActivityLogAspect保持不变
+- 认证相关日志记录逻辑完全不变
+- 新增字段都设置为可空，不影响现有数据
+
+**渐进式迁移：**
+- 新功能使用@ActivityLog注解
+- 现有认证功能继续使用@LogUserActivity
+- 长期可考虑统一到@ActivityLog（可选）
+
+### 6.3 性能优化建议
+
+**异步处理优化：**
+- 使用独立线程池避免相互影响
+- 批量写入机制提升数据库性能
+- 合理的队列大小和拒绝策略
+
+**存储优化：**
+- 定期清理90天以上的详细日志
+- 生成统计数据用于长期分析
+- 考虑冷热数据分离
+
+**监控指标：**
+- 日志写入TPS和延迟
+- 异步队列积压情况
+- 数据库性能指标
+
+## 7. 总结
+
+### 7.1 扩展方案优势
+
+**1. 保持架构一致性**
+- 复用现有DDD架构和AOP基础设施
+- 避免重复开发，降低维护成本
+- 统一的日志查询和分析能力
+
+**2. 向后兼容性强**
+- 现有认证日志功能完全不受影响
+- 渐进式扩展，风险可控
+- 新老系统和谐共存
+
+**3. 扩展性好**
+- 支持任意业务操作类型
+- 灵活的上下文数据记录
+- 便于后续数据分析和挖掘
+
+**4. 性能影响小**
+- 异步处理不影响主业务
+- 合理的线程池配置
+- 可选的功能开关
+
+### 7.2 关键设计特点
+
+**双注解并行：**
+- @LogUserActivity：专门用于认证操作
+- @ActivityLog：用于业务操作
+- 职责分离，便于维护
+
+**表结构复用：**
+- 在现有表基础上扩展字段
+- 字段复用最大化
+- 保持数据一致性
+
+**渐进式实施：**
+- 分阶段实施降低风险
+- 核心功能优先
+- 持续优化改进
+
+### 7.3 预期收益
+
+**业务价值：**
+- 全面的用户行为洞察
+- 数据驱动的产品优化
+- 精准的用户画像分析
+
+**技术价值：**
+- 统一的日志记录框架
+- 高性能的异步处理
+- 完善的监控和告警
+
+**运营价值：**
+- 热门内容识别
+- 用户活跃度分析
+- 功能使用情况统计
+
+## 8. 极简设计优势
+
+### 8.1 开发效率显著提升
+
+**注解参数大幅简化：**
+- **旧设计**：5个参数（value、description、targetType、targetIdParam、recordContext等）
+- **新设计**：1个必填参数（value），2个可选参数（async、recordRequest）
+- **效率提升**：减少80%的配置工作量
+
+**使用对比：**
+```java
+// 旧版本（复杂）
+@ActivityLog(
+    value = ActivityType.VIEW_POST,
+    description = "查看文章详情", 
+    targetType = "POST",
+    targetIdParam = "postId",
+    recordContext = true,
+    recordExecutionTime = true
+)
+
+// 新版本（极简）
+@ActivityLog(ActivityType.VIEW_POST)
+```
+
+### 8.2 维护成本降低
+
+**自动化程度高：**
+- URL解析规则集中管理，一处配置多处生效
+- 新增路由时只需更新解析规则，无需修改每个注解
+- 减少人为错误（如targetType拼写错误）
+
+**统一性保证：**
+- 相同资源类型的接口自动使用相同的targetType
+- 避免不同开发者使用不同的命名约定
+- 自动记录标准化的请求信息
+
+### 8.3 学习成本大幅降低
+
+**使用门槛极低：**
+- 新开发者只需了解ActivityType枚举
+- 无需理解复杂的参数配置
+- 注解使用方式符合直觉
+
+**推广容易：**
+- 简单的用法更容易在团队中推广
+- 减少培训成本和上手时间
+- 提高开发团队的接受度
+
+### 8.4 功能完整性保持
+
+**信息记录完整：**
+- 自动记录所有关键信息（用户、时间、URL、参数等）
+- 支持目标对象的自动识别和关联
+- 保持与复杂版本相同的功能水平
+
+**灵活性依然存在：**
+- 通过可选参数支持特殊需求
+- URL解析规则支持复杂的路径模式
+- 可以根据需要扩展解析逻辑
+
+### 8.5 扩展性和可维护性
+
+**规则配置化：**
+- URL解析规则可以外部化配置
+- 支持正则表达式的复杂匹配
+- 可以动态调整解析策略
+
+**架构清晰：**
+- 职责分离：注解负责标识，解析器负责提取信息
+- 模块化设计：各组件独立可测试
+- 易于扩展新的资源类型和路径模式
+
+### 8.6 性能影响最小
+
+**解析开销可控：**
+- URL解析仅在有@ActivityLog注解的方法中触发
+- 正则匹配性能良好，缓存机制可进一步优化
+- 异步处理确保不影响主业务
+
+**内存使用优化：**
+- 编译时确定的解析规则，运行时内存占用小
+- 减少注解参数减少了内存开销
+- 智能的请求体记录避免不必要的序列化
+
+通过这套扩展方案，既保持了现有系统的稳定性，又为平台提供了强大的用户行为分析能力，为业务决策和产品优化提供有力支撑。
 │   └── service/
 │       └── UserActivityLogDomainService.java -- 领域服务
 ├── application/user/

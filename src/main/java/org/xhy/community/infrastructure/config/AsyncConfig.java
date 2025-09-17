@@ -50,6 +50,43 @@ public class AsyncConfig {
     }
     
     /**
+     * 配置业务活动日志专用线程池
+     * 与认证日志线程池分离，避免相互影响
+     */
+    @Bean("businessActivityExecutor")
+    public Executor businessActivityExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        
+        // 核心线程数：3个线程，业务活动比认证活动更频繁
+        executor.setCorePoolSize(3);
+        
+        // 最大线程数：高负载时最多6个线程
+        executor.setMaxPoolSize(6);
+        
+        // 队列容量：200个任务的缓冲队列，业务操作更多
+        executor.setQueueCapacity(200);
+        
+        // 线程空闲时间：60秒后回收多余线程
+        executor.setKeepAliveSeconds(60);
+        
+        // 线程名前缀：便于监控和调试
+        executor.setThreadNamePrefix("BusinessActivity-");
+        
+        // 拒绝策略：使用CallerRunsPolicy，确保重要的业务日志不丢失
+        executor.setRejectedExecutionHandler((r, executor1) -> {
+            System.err.println("Business activity log task rejected, executing in caller thread");
+            r.run(); // 在调用者线程中执行
+        });
+        
+        // 等待任务完成后再关闭线程池
+        executor.setWaitForTasksToCompleteOnShutdown(true);
+        executor.setAwaitTerminationSeconds(30);
+        
+        executor.initialize();
+        return executor;
+    }
+    
+    /**
      * 默认的异步执行器
      * 为其他异步任务提供通用的线程池
      */

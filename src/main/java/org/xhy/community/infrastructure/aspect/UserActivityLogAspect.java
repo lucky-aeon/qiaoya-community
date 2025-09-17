@@ -44,9 +44,6 @@ public class UserActivityLogAspect {
         // 提取请求上下文信息
         UserActivityContext context = HttpRequestInfoExtractor.extractUserActivityContext();
         
-        // 从方法参数中提取邮箱
-        String email = extractEmailFromArgs(joinPoint.getArgs());
-        
         try {
             // 执行目标方法
             Object result = joinPoint.proceed();
@@ -56,7 +53,6 @@ public class UserActivityLogAspect {
                 String userId = extractUserIdFromResult(result);
                 recordActivityAsync(
                     userId, 
-                    email, 
                     logUserActivity.successType(), 
                     context, 
                     null // 成功时无失败原因
@@ -70,7 +66,6 @@ public class UserActivityLogAspect {
             if (logUserActivity.logFailure()) {
                 recordActivityAsync(
                     null, // 失败时用户ID为null
-                    email, 
                     logUserActivity.failureType(), 
                     context, 
                     e.getMessage() // 异常信息作为失败原因
@@ -82,40 +77,6 @@ public class UserActivityLogAspect {
         }
     }
     
-    /**
-     * 从方法参数中提取邮箱
-     * 支持 LoginRequest 和 RegisterRequest 类型
-     */
-    private String extractEmailFromArgs(Object[] args) {
-        if (args == null || args.length == 0) {
-            logger.warn("Method arguments is null or empty");
-            return "unknown";
-        }
-        
-        for (Object arg : args) {
-            try {
-                if (arg instanceof LoginRequest) {
-                    String email = ((LoginRequest) arg).getEmail();
-                    logger.debug("Extracted email from LoginRequest: {}", email);
-                    return email != null ? email : "unknown";
-                }
-                if (arg instanceof RegisterRequest) {
-                    String email = ((RegisterRequest) arg).getEmail();
-                    logger.debug("Extracted email from RegisterRequest: {}", email);
-                    return email != null ? email : "unknown";
-                }
-            } catch (Exception e) {
-                logger.warn("Failed to extract email from argument: {}, error: {}", 
-                           arg.getClass().getSimpleName(), e.getMessage());
-            }
-        }
-        
-        logger.warn("No email found in method arguments, available types: {}", 
-                   java.util.Arrays.stream(args)
-                           .map(arg -> arg.getClass().getSimpleName())
-                           .collect(java.util.stream.Collectors.joining(", ")));
-        return "unknown";
-    }
     
     /**
      * 从方法返回结果中提取用户ID
@@ -150,12 +111,11 @@ public class UserActivityLogAspect {
      * 使用专用线程池确保日志记录不会影响主业务流程的性能
      */
     @Async("userActivityLogExecutor")
-    protected void recordActivityAsync(String userId, String email, ActivityType activityType,
+    protected void recordActivityAsync(String userId, ActivityType activityType,
                                    UserActivityContext context, String failureReason) {
         try {
             userActivityLogDomainService.recordActivity(
                 userId,
-                email,
                 activityType,
                 context.getBrowser(),
                 context.getEquipment(),
@@ -164,13 +124,13 @@ public class UserActivityLogAspect {
                 failureReason
             );
             
-            logger.debug("Successfully recorded user activity: email={}, type={}, ip={}", 
-                        email, activityType, context.getIp());
+            logger.debug("Successfully recorded user activity: userId={}, type={}, ip={}", 
+                        userId, activityType, context.getIp());
                         
         } catch (Exception e) {
             // 日志记录失败不应该影响主业务，只记录警告日志
-            logger.error("Failed to record user activity log: email={}, type={}, error={}", 
-                        email, activityType, e.getMessage(), e);
+            logger.error("Failed to record user activity log: userId={}, type={}, error={}", 
+                        userId, activityType, e.getMessage(), e);
         }
     }
 }

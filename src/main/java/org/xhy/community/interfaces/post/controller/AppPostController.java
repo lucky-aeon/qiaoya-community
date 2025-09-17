@@ -9,6 +9,8 @@ import org.xhy.community.application.post.dto.FrontPostDTO;
 import org.xhy.community.application.post.service.PostAppService;
 import org.xhy.community.infrastructure.config.ApiResponse;
 import org.xhy.community.interfaces.post.request.AppPostQueryRequest;
+import org.xhy.community.infrastructure.annotation.ActivityLog;
+import org.xhy.community.domain.common.valueobject.ActivityType;
 
 /**
  * 用户前台文章控制器
@@ -56,6 +58,7 @@ public class AppPostController {
      *         - 发布时间等
      */
     @GetMapping("/{id}")
+    @ActivityLog(ActivityType.VIEW_POST)
     public ApiResponse<FrontPostDetailDTO> getPostDetail(@PathVariable String id) {
         FrontPostDetailDTO postDetail = postAppService.getAppPostDetail(id);
         return ApiResponse.success(postDetail);
