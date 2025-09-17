@@ -56,7 +56,7 @@ public class UserCommentAppService {
         
         IPage<CommentEntity> commentPage = commentDomainService.getUserRelatedComments(query);
         
-        return commentPage.convert(CommentAssembler::toDTO);
+        return commentPage.convert(this::convertCommentEntityToDTO);
     }
     
     public IPage<CommentDTO> getBusinessComments(BusinessCommentQueryRequest request) {
