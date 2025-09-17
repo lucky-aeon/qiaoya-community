@@ -1,10 +1,9 @@
-package org.xhy.community.domain.user.entity;
+package org.xhy.community.domain.log.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import org.xhy.community.domain.entity.BaseEntity;
 import org.xhy.community.domain.common.valueobject.ActivityType;
 
 import java.time.LocalDateTime;

@@ -1,17 +1,14 @@
-package org.xhy.community.interfaces.admin.request;
+package org.xhy.community.domain.log.query;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-import org.springframework.format.annotation.DateTimeFormat;
-import org.xhy.community.interfaces.common.request.PageRequest;
 import org.xhy.community.domain.common.valueobject.ActivityType;
 
 import java.time.LocalDateTime;
 
 /**
- * 查询用户活动日志请求对象
- * 继承PageRequest以支持分页查询
+ * 用户活动日志查询对象
+ * 用于Domain层的日志查询条件封装
  */
-public class QueryUserActivityLogRequest extends PageRequest {
+public class UserActivityLogQuery {
     
     /**
      * 用户邮箱（模糊查询）
@@ -26,21 +23,27 @@ public class QueryUserActivityLogRequest extends PageRequest {
     /**
      * 开始时间
      */
-    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime startTime;
     
     /**
      * 结束时间
      */
-    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime endTime;
     
     /**
      * IP地址（模糊查询）
      */
     private String ip;
+    
+    /**
+     * 页码
+     */
+    private Integer pageNum;
+    
+    /**
+     * 每页大小
+     */
+    private Integer pageSize;
     
     // Getters and Setters
     public String getEmail() {
@@ -81,5 +84,21 @@ public class QueryUserActivityLogRequest extends PageRequest {
     
     public void setIp(String ip) {
         this.ip = ip;
+    }
+    
+    public Integer getPageNum() {
+        return pageNum;
+    }
+    
+    public void setPageNum(Integer pageNum) {
+        this.pageNum = pageNum;
+    }
+    
+    public Integer getPageSize() {
+        return pageSize;
+    }
+    
+    public void setPageSize(Integer pageSize) {
+        this.pageSize = pageSize;
     }
 }

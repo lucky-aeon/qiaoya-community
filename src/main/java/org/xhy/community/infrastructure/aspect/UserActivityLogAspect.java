@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 import org.xhy.community.infrastructure.annotation.LogUserActivity;
 import org.xhy.community.infrastructure.context.UserActivityContext;
 import org.xhy.community.infrastructure.util.HttpRequestInfoExtractor;
-import org.xhy.community.domain.user.service.UserActivityLogDomainService;
+import org.xhy.community.domain.log.service.UserActivityLogDomainService;
 import org.xhy.community.domain.common.valueobject.ActivityType;
 import org.xhy.community.interfaces.user.request.LoginRequest;
 import org.xhy.community.interfaces.user.request.RegisterRequest;

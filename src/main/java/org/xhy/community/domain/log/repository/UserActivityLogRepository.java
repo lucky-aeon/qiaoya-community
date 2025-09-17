@@ -1,8 +1,8 @@
-package org.xhy.community.domain.user.repository;
+package org.xhy.community.domain.log.repository;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
-import org.xhy.community.domain.user.entity.UserActivityLogEntity;
+import org.xhy.community.domain.log.entity.UserActivityLogEntity;
 
 /**
  * 用户活动日志仓储接口

@@ -2,7 +2,7 @@ package org.xhy.community.application.user.assembler;
 
 import org.springframework.beans.BeanUtils;
 import org.xhy.community.application.user.dto.UserActivityLogDTO;
-import org.xhy.community.domain.user.entity.UserActivityLogEntity;
+import org.xhy.community.domain.log.entity.UserActivityLogEntity;
 
 import java.util.List;
 import java.util.stream.Collectors;

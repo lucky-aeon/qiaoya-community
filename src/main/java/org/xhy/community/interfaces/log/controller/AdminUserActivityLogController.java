@@ -1,12 +1,12 @@
-package org.xhy.community.interfaces.admin.controller;
+package org.xhy.community.interfaces.log.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
-import org.xhy.community.application.admin.service.AdminUserActivityLogAppService;
+import org.xhy.community.application.log.service.UserActivityLogAppService;
 import org.xhy.community.application.user.dto.UserActivityLogDTO;
 import org.xhy.community.infrastructure.config.ApiResponse;
-import org.xhy.community.interfaces.admin.request.QueryUserActivityLogRequest;
+import org.xhy.community.interfaces.log.request.QueryUserActivityLogRequest;
 
 /**
  * 管理员用户活动日志控制器
@@ -16,9 +16,9 @@ import org.xhy.community.interfaces.admin.request.QueryUserActivityLogRequest;
 @RequestMapping("/api/admin/user-activity-logs")
 public class AdminUserActivityLogController {
     
-    private final AdminUserActivityLogAppService adminUserActivityLogAppService;
+    private final UserActivityLogAppService adminUserActivityLogAppService;
     
-    public AdminUserActivityLogController(AdminUserActivityLogAppService adminUserActivityLogAppService) {
+    public AdminUserActivityLogController(UserActivityLogAppService adminUserActivityLogAppService) {
         this.adminUserActivityLogAppService = adminUserActivityLogAppService;
     }
     

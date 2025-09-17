@@ -1,26 +1,25 @@
-package org.xhy.community.application.admin.service;
+package org.xhy.community.application.log.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import org.springframework.stereotype.Service;
 import org.xhy.community.application.user.dto.UserActivityLogDTO;
 import org.xhy.community.application.user.assembler.UserActivityLogAssembler;
-import org.xhy.community.domain.user.entity.UserActivityLogEntity;
-import org.xhy.community.domain.user.service.UserActivityLogDomainService;
-import org.xhy.community.domain.common.valueobject.AccessLevel;
-import org.xhy.community.interfaces.admin.request.QueryUserActivityLogRequest;
-
-import java.util.List;
+import org.xhy.community.domain.log.entity.UserActivityLogEntity;
+import org.xhy.community.domain.log.service.UserActivityLogDomainService;
+import org.xhy.community.domain.log.query.UserActivityLogQuery;
+import org.xhy.community.application.log.assembler.UserActivityLogQueryAssembler;
+import org.xhy.community.interfaces.log.request.QueryUserActivityLogRequest;
 
 /**
  * 管理员用户活动日志应用服务
  * 提供管理员级别的用户活动日志查询功能
  */
 @Service
-public class AdminUserActivityLogAppService {
+public class UserActivityLogAppService {
     
     private final UserActivityLogDomainService userActivityLogDomainService;
     
-    public AdminUserActivityLogAppService(UserActivityLogDomainService userActivityLogDomainService) {
+    public UserActivityLogAppService(UserActivityLogDomainService userActivityLogDomainService) {
         this.userActivityLogDomainService = userActivityLogDomainService;
     }
     
@@ -31,20 +30,10 @@ public class AdminUserActivityLogAppService {
      * @return 分页查询结果
      */
     public IPage<UserActivityLogDTO> getActivityLogs(QueryUserActivityLogRequest request) {
-        // 管理员权限，传入null作为userId，可以查询所有用户的日志
-        IPage<UserActivityLogEntity> page = userActivityLogDomainService.getActivityLogs(
-            null, // 管理员查询时userId为null
-            request.getEmail(),
-            request.getActivityType(),
-            request.getStartTime(),
-            request.getEndTime(),
-            request.getIp(),
-            request.getPageNum(),
-            request.getPageSize(),
-            AccessLevel.ADMIN // 管理员权限
-        );
+        // 转换请求对象为查询对象
+        UserActivityLogQuery query = UserActivityLogQueryAssembler.toQuery(request);
         
-        List<UserActivityLogDTO> dtoList = UserActivityLogAssembler.toDTOList(page.getRecords());
+        IPage<UserActivityLogEntity> page = userActivityLogDomainService.getActivityLogs(query);
         
         // 使用 MyBatis Plus 提供的分页结果转换
         return page.convert(UserActivityLogAssembler::toDTO);

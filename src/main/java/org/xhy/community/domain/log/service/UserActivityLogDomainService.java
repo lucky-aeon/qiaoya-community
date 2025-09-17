@@ -1,13 +1,14 @@
-package org.xhy.community.domain.user.service;
+package org.xhy.community.domain.log.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.stereotype.Service;
-import org.xhy.community.domain.user.entity.UserActivityLogEntity;
-import org.xhy.community.domain.user.repository.UserActivityLogRepository;
+import org.springframework.util.StringUtils;
+import org.xhy.community.domain.log.entity.UserActivityLogEntity;
+import org.xhy.community.domain.log.repository.UserActivityLogRepository;
+import org.xhy.community.domain.log.query.UserActivityLogQuery;
 import org.xhy.community.domain.common.valueobject.ActivityType;
-import org.xhy.community.domain.common.valueobject.AccessLevel;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -56,35 +57,26 @@ public class UserActivityLogDomainService {
     }
     
     /**
-     * 分页查询用户活动日志
-     *
-     * @param userId 用户ID，管理员查询时可以为null
-     * @param email 邮箱筛选条件
-     * @param activityType 活动类型筛选条件
-     * @param startTime 开始时间
-     * @param endTime 结束时间
-     * @param ip IP地址筛选条件
-     * @param pageNum 页码
-     * @param pageSize 每页大小
-     * @param accessLevel 访问级别（用户级别或管理员级别）
+     * 分页查询用户活动日志（管理员权限）
+     * 
+     * @param query 查询条件
      * @return 分页查询结果
      */
-    public IPage<UserActivityLogEntity> getActivityLogs(String userId, String email, 
-                                                       ActivityType activityType,
-                                                       LocalDateTime startTime, LocalDateTime endTime,
-                                                       String ip, Integer pageNum, Integer pageSize,
-                                                       AccessLevel accessLevel) {
-        Page<UserActivityLogEntity> page = new Page<>(pageNum, pageSize);
+    public IPage<UserActivityLogEntity> getActivityLogs(UserActivityLogQuery query) {
+        Page<UserActivityLogEntity> page = new Page<>(query.getPageNum(), query.getPageSize());
         
         LambdaQueryWrapper<UserActivityLogEntity> queryWrapper = 
             new LambdaQueryWrapper<UserActivityLogEntity>()
-                // 权限控制：普通用户只能查看自己的日志
-                .eq(accessLevel == AccessLevel.USER && userId != null, UserActivityLogEntity::getUserId, userId)
-                .like(email != null && !email.trim().isEmpty(), UserActivityLogEntity::getEmail, email)
-                .eq(activityType != null, UserActivityLogEntity::getActivityType, activityType)
-                .ge(startTime != null, UserActivityLogEntity::getCreatedAt, startTime)
-                .le(endTime != null, UserActivityLogEntity::getCreatedAt, endTime)
-                .like(ip != null && !ip.trim().isEmpty(), UserActivityLogEntity::getIp, ip)
+                .like(StringUtils.hasText(query.getEmail()), 
+                      UserActivityLogEntity::getEmail, query.getEmail())
+                .eq(query.getActivityType() != null, 
+                    UserActivityLogEntity::getActivityType, query.getActivityType())
+                .ge(query.getStartTime() != null, 
+                    UserActivityLogEntity::getCreatedAt, query.getStartTime())
+                .le(query.getEndTime() != null, 
+                    UserActivityLogEntity::getCreatedAt, query.getEndTime())
+                .like(StringUtils.hasText(query.getIp()), 
+                      UserActivityLogEntity::getIp, query.getIp())
                 .orderByDesc(UserActivityLogEntity::getCreatedAt);
         
         return userActivityLogRepository.selectPage(page, queryWrapper);
