@@ -1,11 +1,13 @@
 package org.xhy.community.interfaces.user.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 import org.xhy.community.application.user.dto.AdminUserDTO;
 import org.xhy.community.application.user.service.AdminUserAppService;
 import org.xhy.community.infrastructure.config.ApiResponse;
 import org.xhy.community.interfaces.user.request.AdminUserQueryRequest;
+import org.xhy.community.interfaces.user.request.UpdateUserDevicesRequest;
 
 /**
  * 管理员用户管理控制器
@@ -48,5 +50,20 @@ public class AdminUserController {
     public ApiResponse<AdminUserDTO> toggleUserStatus(@PathVariable String userId) {
         AdminUserDTO user = adminUserAppService.toggleUserStatus(userId);
         return ApiResponse.success(user);
+    }
+    
+    /**
+     * 更新用户设备数量
+     * 修改用户最大并发设备数量
+     * 需要管理员权限认证
+     * 
+     * @param userId 用户ID
+     * @param request 设备数量更新请求
+     * @return 更新后的用户信息
+     */
+    @PutMapping("/{userId}/devices")
+    public ApiResponse<AdminUserDTO> updateUserDevices(@PathVariable String userId, @Valid @RequestBody UpdateUserDevicesRequest request) {
+        AdminUserDTO user = adminUserAppService.updateUserDevices(userId, request);
+        return ApiResponse.success("修改设备数量成功",user);
     }
 }
