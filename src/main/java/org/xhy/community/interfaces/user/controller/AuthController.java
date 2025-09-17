@@ -1,7 +1,6 @@
 package org.xhy.community.interfaces.user.controller;
 
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.xhy.community.application.user.dto.LoginResponseDTO;
 import org.xhy.community.application.user.dto.UserDTO;
@@ -9,6 +8,8 @@ import org.xhy.community.application.user.service.UserAppService;
 import org.xhy.community.infrastructure.config.ApiResponse;
 import org.xhy.community.interfaces.user.request.LoginRequest;
 import org.xhy.community.interfaces.user.request.RegisterRequest;
+import org.xhy.community.infrastructure.annotation.LogUserActivity;
+import org.xhy.community.domain.common.valueobject.ActivityType;
 
 /**
  * 用户认证控制器
@@ -35,6 +36,10 @@ public class AuthController {
      * @return 登录响应数据，包含JWT令牌和用户基本信息
      */
     @PostMapping("/login")
+    @LogUserActivity(
+        successType = ActivityType.LOGIN_SUCCESS,
+        failureType = ActivityType.LOGIN_FAILED
+    )
     public ApiResponse<LoginResponseDTO> login(@Valid @RequestBody LoginRequest request) {
         try {
             LoginResponseDTO loginResponse = userAppService.login(request.getEmail(), request.getPassword());
@@ -56,6 +61,10 @@ public class AuthController {
      * @return 注册成功的用户信息
      */
     @PostMapping("/register")
+    @LogUserActivity(
+        successType = ActivityType.REGISTER_SUCCESS,
+        failureType = ActivityType.REGISTER_FAILED
+    )
     public ApiResponse<UserDTO> register(@Valid @RequestBody RegisterRequest request) {
         try {
             UserDTO user = userAppService.register(
