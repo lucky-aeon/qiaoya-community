@@ -1,7 +1,7 @@
 package org.xhy.community.domain.user.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
-import org.xhy.community.domain.entity.BaseEntity;
+import org.xhy.community.domain.common.entity.BaseEntity;
 
 /**
  * 用户课程权限实体

@@ -26,8 +26,7 @@ public class CommentController {
     /**
      * 查询业务评论列表
      * 获取指定业务对象（文章、课程等）的评论列表
-     * 无需认证，公开访问
-     * 
+     *
      * @param request 业务评论查询请求参数
      * @return 分页评论列表
      */

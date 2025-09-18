@@ -1,4 +1,4 @@
-package org.xhy.community.domain.entity;
+package org.xhy.community.domain.common.entity;
 
 import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.IdType;

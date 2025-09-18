@@ -2,7 +2,7 @@ package org.xhy.community.domain.course.entity;
 
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
-import org.xhy.community.domain.entity.BaseEntity;
+import org.xhy.community.domain.common.entity.BaseEntity;
 import org.xhy.community.domain.course.valueobject.CourseStatus;
 import org.xhy.community.infrastructure.converter.CourseStatusConverter;
 import org.xhy.community.infrastructure.converter.StringListConverter;

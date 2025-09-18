@@ -1,7 +1,7 @@
 package org.xhy.community.domain.subscription.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
-import org.xhy.community.domain.entity.BaseEntity;
+import org.xhy.community.domain.common.entity.BaseEntity;
 import org.xhy.community.domain.subscription.valueobject.SubscriptionStatus;
 
 import java.time.LocalDateTime;

@@ -1,7 +1,7 @@
 package org.xhy.community.domain.course.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
-import org.xhy.community.domain.entity.BaseEntity;
+import org.xhy.community.domain.common.entity.BaseEntity;
 
 @TableName("chapters")
 public class ChapterEntity extends BaseEntity {

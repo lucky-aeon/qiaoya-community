@@ -3,7 +3,7 @@ package org.xhy.community.domain.user.entity;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import org.springframework.util.StringUtils;
-import org.xhy.community.domain.entity.BaseEntity;
+import org.xhy.community.domain.common.entity.BaseEntity;
 import org.xhy.community.domain.user.valueobject.UserStatus;
 import org.xhy.community.infrastructure.converter.UserStatusConverter;
 
