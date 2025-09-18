@@ -33,7 +33,6 @@ public class FollowController {
      * 创建关注
      */
     @PostMapping
-    @LogUserActivity("关注内容")
     public ApiResponse<FollowDTO> createFollow(@Valid @RequestBody CreateFollowRequest request) {
         FollowDTO follow = followAppService.createFollow(request.getTargetId(), request.getTargetType());
         return ApiResponse.success(follow);
@@ -43,8 +42,7 @@ public class FollowController {
      * 取消关注
      */
     @DeleteMapping("/{targetType}/{targetId}")
-    @LogUserActivity("取消关注")
-    public ApiResponse<Void> unfollow(@PathVariable FollowTargetType targetType, 
+    public ApiResponse<Void> unfollow(@PathVariable FollowTargetType targetType,
                                      @PathVariable String targetId) {
         followAppService.unfollow(targetId, targetType);
         return ApiResponse.success();

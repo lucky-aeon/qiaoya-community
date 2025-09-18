@@ -293,6 +293,7 @@ IPage<UserEntity> result = userRepository.selectPage(page,
 - 命名格式：`V{version}__{description}.sql`
 - 示例：`V1__Create_user_table.sql`
 - 语法规范是 postgre sql
+- 非高频的查询字段不要加索引
 
 ### 9. UUID主键使用规范
 
@@ -476,5 +477,3 @@ Map<String, String> categoryNames = categoryService.getCategoryNameMapByIds(cate
 // 在Assembler中组装完整的DTO
 List<AdminPostDTO> dtos = AdminPostAssembler.toDTOList(posts, authorNames, categoryNames);
 ```
-
-- 

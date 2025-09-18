@@ -115,18 +115,7 @@ public class FollowDomainService {
         return followRepository.selectPage(page, queryWrapper);
     }
     
-    /**
-     * 获取目标对象的关注者列表
-     */
-    public List<String> getFollowers(String targetId, FollowTargetType targetType) {
-        LambdaQueryWrapper<FollowEntity> queryWrapper = new LambdaQueryWrapper<FollowEntity>()
-                .eq(FollowEntity::getTargetId, targetId)
-                .eq(FollowEntity::getTargetType, targetType)
-                .eq(FollowEntity::getStatus, FollowStatus.ACTIVE)
-                .select(FollowEntity::getFollowerId);
-        
-        return followRepository.selectObjs(queryWrapper, obj -> (String) obj);
-    }
+
     
     /**
      * 获取目标对象的关注者分页列表

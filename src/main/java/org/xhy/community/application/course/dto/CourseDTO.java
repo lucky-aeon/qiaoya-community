@@ -15,6 +15,9 @@ public class CourseDTO {
     private String projectUrl;
     private List<String> tags;
     private BigDecimal rating;
+    private BigDecimal price;
+    private BigDecimal originalPrice;
+    private String coverImage;
     private CourseStatus status;
     private String authorId;
     private Integer totalReadingTime;
@@ -45,6 +48,15 @@ public class CourseDTO {
     
     public BigDecimal getRating() { return rating; }
     public void setRating(BigDecimal rating) { this.rating = rating; }
+    
+    public BigDecimal getPrice() { return price; }
+    public void setPrice(BigDecimal price) { this.price = price; }
+    
+    public BigDecimal getOriginalPrice() { return originalPrice; }
+    public void setOriginalPrice(BigDecimal originalPrice) { this.originalPrice = originalPrice; }
+    
+    public String getCoverImage() { return coverImage; }
+    public void setCoverImage(String coverImage) { this.coverImage = coverImage; }
     
     public CourseStatus getStatus() { return status; }
     public void setStatus(CourseStatus status) { this.status = status; }

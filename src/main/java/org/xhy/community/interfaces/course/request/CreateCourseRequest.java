@@ -2,7 +2,9 @@ package org.xhy.community.interfaces.course.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.DecimalMin;
 import org.xhy.community.domain.course.valueobject.CourseStatus;
+import java.math.BigDecimal;
 import java.util.List;
 
 public class CreateCourseRequest {
@@ -18,6 +20,16 @@ public class CreateCourseRequest {
     private String projectUrl;
     
     private List<String> tags;
+    
+    private BigDecimal rating;
+    
+    @DecimalMin(value = "0.00", message = "课程售价不能为负数")
+    private BigDecimal price;
+    
+    @DecimalMin(value = "0.00", message = "课程原价不能为负数")
+    private BigDecimal originalPrice;
+    
+    private String coverImage;
     
     private CourseStatus status;
     
@@ -39,6 +51,18 @@ public class CreateCourseRequest {
     
     public List<String> getTags() { return tags; }
     public void setTags(List<String> tags) { this.tags = tags; }
+    
+    public BigDecimal getRating() { return rating; }
+    public void setRating(BigDecimal rating) { this.rating = rating; }
+    
+    public BigDecimal getPrice() { return price; }
+    public void setPrice(BigDecimal price) { this.price = price; }
+    
+    public BigDecimal getOriginalPrice() { return originalPrice; }
+    public void setOriginalPrice(BigDecimal originalPrice) { this.originalPrice = originalPrice; }
+    
+    public String getCoverImage() { return coverImage; }
+    public void setCoverImage(String coverImage) { this.coverImage = coverImage; }
     
     public CourseStatus getStatus() { return status; }
     public void setStatus(CourseStatus status) { this.status = status; }

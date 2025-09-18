@@ -33,6 +33,15 @@ public class CourseEntity extends BaseEntity {
     /** 课程评分，范围0.00-5.00 */
     private BigDecimal rating;
     
+    /** 课程售价 */
+    private BigDecimal price;
+    
+    /** 课程原价 */
+    private BigDecimal originalPrice;
+    
+    /** 课程封面图片URL */
+    private String coverImage;
+    
     /** 课程状态 */
     @TableField(typeHandler = CourseStatusConverter.class)
     private CourseStatus status;
@@ -52,6 +61,8 @@ public class CourseEntity extends BaseEntity {
         this.authorId = authorId;
         this.status = CourseStatus.PENDING;
         this.rating = BigDecimal.ZERO;
+        this.price = BigDecimal.ZERO;
+        this.originalPrice = BigDecimal.ZERO;
         this.totalReadingTime = 0;
     }
     
@@ -73,6 +84,15 @@ public class CourseEntity extends BaseEntity {
     
     public BigDecimal getRating() { return rating; }
     public void setRating(BigDecimal rating) { this.rating = rating; }
+    
+    public BigDecimal getPrice() { return price; }
+    public void setPrice(BigDecimal price) { this.price = price; }
+    
+    public BigDecimal getOriginalPrice() { return originalPrice; }
+    public void setOriginalPrice(BigDecimal originalPrice) { this.originalPrice = originalPrice; }
+    
+    public String getCoverImage() { return coverImage; }
+    public void setCoverImage(String coverImage) { this.coverImage = coverImage; }
     
     public CourseStatus getStatus() { return status; }
     public void setStatus(CourseStatus status) { this.status = status; }
