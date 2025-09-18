@@ -17,6 +17,8 @@ import org.xhy.community.domain.user.valueobject.UserStatus;
 import org.xhy.community.domain.cdk.valueobject.CDKType;
 import org.xhy.community.domain.cdk.valueobject.CDKStatus;
 import org.xhy.community.domain.common.valueobject.ActivityType;
+import org.xhy.community.domain.follow.valueobject.FollowTargetType;
+import org.xhy.community.domain.follow.valueobject.FollowStatus;
 import org.xhy.community.infrastructure.converter.BusinessTypeConverter;
 import org.xhy.community.infrastructure.converter.CategoryTypeConverter;
 import org.xhy.community.infrastructure.converter.CourseStatusConverter;
@@ -28,6 +30,8 @@ import org.xhy.community.infrastructure.converter.UserStatusConverter;
 import org.xhy.community.infrastructure.converter.CDKTypeConverter;
 import org.xhy.community.infrastructure.converter.CDKStatusConverter;
 import org.xhy.community.infrastructure.converter.ActivityTypeConverter;
+import org.xhy.community.infrastructure.converter.FollowTargetTypeConverter;
+import org.xhy.community.infrastructure.converter.FollowStatusConverter;
 import org.xhy.community.infrastructure.converter.StringListConverter;
 
 import jakarta.annotation.PostConstruct;
@@ -58,11 +62,13 @@ public class MyBatisTypeHandlerConfig {
         typeHandlerRegistry.register(CDKType.class, new CDKTypeConverter());
         typeHandlerRegistry.register(CDKStatus.class, new CDKStatusConverter());
         typeHandlerRegistry.register(ActivityType.class, new ActivityTypeConverter());
+        typeHandlerRegistry.register(FollowTargetType.class, new FollowTargetTypeConverter());
+        typeHandlerRegistry.register(FollowStatus.class, new FollowStatusConverter());
         
         // 注册集合类型处理器
         typeHandlerRegistry.register(java.util.List.class, new StringListConverter());
 
-        log.info("手动注册类型处理器：UserStatusConverter, PostStatusConverter, CategoryTypeConverter, CourseStatusConverter, BusinessTypeConverter, ResourceTypeConverter, SubscriptionPlanStatusConverter, SubscriptionStatusConverter, CDKTypeConverter, CDKStatusConverter, ActivityTypeConverter, StringListConverter");
+        log.info("手动注册类型处理器：UserStatusConverter, PostStatusConverter, CategoryTypeConverter, CourseStatusConverter, BusinessTypeConverter, ResourceTypeConverter, SubscriptionPlanStatusConverter, SubscriptionStatusConverter, CDKTypeConverter, CDKStatusConverter, ActivityTypeConverter, FollowTargetTypeConverter, FollowStatusConverter, StringListConverter");
         log.info("已注册的类型处理器总数: {}", typeHandlerRegistry.getTypeHandlers().size());
     }
 }
