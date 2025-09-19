@@ -5,8 +5,10 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import org.xhy.community.domain.common.valueobject.ActivityType;
+import org.xhy.community.infrastructure.converter.MapJsonTypeHandler;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 /**
  * 用户活动日志实体
@@ -115,8 +117,8 @@ public class UserActivityLogEntity  {
     /**
      * 扩展上下文数据（JSON格式）
      */
-    @TableField("context_data")
-    private String contextData;
+    @TableField(value = "context_data", typeHandler = MapJsonTypeHandler.class)
+    private Map<String, Object> contextData;
     
     // Getters and Setters
     public String getUserId() {
@@ -249,11 +251,11 @@ public class UserActivityLogEntity  {
         this.sessionId = sessionId;
     }
     
-    public String getContextData() {
+    public Map<String, Object> getContextData() {
         return contextData;
     }
-    
-    public void setContextData(String contextData) {
+
+    public void setContextData(Map<String, Object> contextData) {
         this.contextData = contextData;
     }
 }

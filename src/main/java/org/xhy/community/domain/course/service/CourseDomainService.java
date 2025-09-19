@@ -58,9 +58,6 @@ public class CourseDomainService {
         
         LambdaQueryWrapper<CourseEntity> queryWrapper = new LambdaQueryWrapper<CourseEntity>()
                 .like(StringUtils.hasText(query.getTitle()), CourseEntity::getTitle, query.getTitle())
-                .eq(query.getIsPublished() != null, CourseEntity::getStatus, 
-                    query.getIsPublished() != null && query.getIsPublished() ? 
-                    org.xhy.community.domain.course.valueobject.CourseStatus.COMPLETED : null)
                 .orderByDesc(CourseEntity::getCreateTime);
         
         return courseRepository.selectPage(page, queryWrapper);
@@ -77,7 +74,6 @@ public class CourseDomainService {
         Page<CourseEntity> page = new Page<>(query.getPageNum(), query.getPageSize());
         
         LambdaQueryWrapper<CourseEntity> queryWrapper = new LambdaQueryWrapper<CourseEntity>()
-                .eq(CourseEntity::getStatus, org.xhy.community.domain.course.valueobject.CourseStatus.COMPLETED)
                 .like(StringUtils.hasText(query.getTitle()), CourseEntity::getTitle, query.getTitle())
                 .orderByDesc(CourseEntity::getCreateTime);
         

@@ -1,5 +1,7 @@
 package org.xhy.community.application.user.assembler;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.BeanUtils;
 import org.xhy.community.application.user.dto.UserActivityLogDTO;
 import org.xhy.community.domain.log.entity.UserActivityLogEntity;
@@ -13,7 +15,9 @@ import java.util.stream.Collectors;
  * 负责实体和DTO之间的转换
  */
 public class UserActivityLogAssembler {
-    
+
+    private static final ObjectMapper objectMapper = new ObjectMapper();
+
     /**
      * 将实体转换为DTO
      *
@@ -24,15 +28,20 @@ public class UserActivityLogAssembler {
         if (entity == null) {
             return null;
         }
-        
+
         UserActivityLogDTO dto = new UserActivityLogDTO();
         BeanUtils.copyProperties(entity, dto);
-        
+
         // 设置活动类型描述
         if (entity.getActivityType() != null) {
             dto.setActivityTypeDesc(entity.getActivityType().getDescription());
         }
-        
+
+        // 将Map<String, Object>转换为JSON字符串
+        if (entity.getContextData() != null) {
+            dto.setContextData(mapToJsonString(entity.getContextData()));
+        }
+
         return dto;
     }
     
@@ -74,5 +83,23 @@ public class UserActivityLogAssembler {
                     return dto;
                 })
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 将Map转换为JSON字符串
+     *
+     * @param map Map对象
+     * @return JSON字符串，转换失败时返回null
+     */
+    private static String mapToJsonString(Map<String, Object> map) {
+        if (map == null) {
+            return null;
+        }
+
+        try {
+            return objectMapper.writeValueAsString(map);
+        } catch (JsonProcessingException e) {
+            return null;
+        }
     }
 }

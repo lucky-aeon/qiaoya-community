@@ -6,8 +6,7 @@ public class CourseQuery extends BasePageQuery {
     
     private String title;
     private String categoryId;
-    private Boolean isPublished;
-    
+
     public CourseQuery() {
     }
     
@@ -31,11 +30,4 @@ public class CourseQuery extends BasePageQuery {
         this.categoryId = categoryId;
     }
     
-    public Boolean getIsPublished() {
-        return isPublished;
-    }
-    
-    public void setIsPublished(Boolean isPublished) {
-        this.isPublished = isPublished;
-    }
 }

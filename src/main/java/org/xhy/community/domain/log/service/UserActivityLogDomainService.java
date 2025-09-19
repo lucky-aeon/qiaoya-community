@@ -3,6 +3,9 @@ package org.xhy.community.domain.log.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.xhy.community.domain.log.entity.UserActivityLogEntity;
@@ -13,7 +16,9 @@ import org.xhy.community.domain.common.valueobject.ActivityCategory;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -22,11 +27,13 @@ import java.util.stream.Collectors;
  */
 @Service
 public class UserActivityLogDomainService {
-    
+
     private final UserActivityLogRepository userActivityLogRepository;
-    
+    private final ObjectMapper objectMapper;
+
     public UserActivityLogDomainService(UserActivityLogRepository userActivityLogRepository) {
         this.userActivityLogRepository = userActivityLogRepository;
+        this.objectMapper = new ObjectMapper();
     }
     
     /**
@@ -184,7 +191,7 @@ public class UserActivityLogDomainService {
         activityLog.setRequestPath(requestPath);
         activityLog.setExecutionTimeMs(executionTimeMs);
         activityLog.setSessionId(sessionId);
-        activityLog.setContextData(requestBody);
+        activityLog.setContextData(parseRequestBodyToMap(requestBody));
         
         // 设置网络相关字段
         activityLog.setIp(ipAddress);
@@ -207,7 +214,7 @@ public class UserActivityLogDomainService {
     /**
      * 根据活动分类获取该分类下的所有活动类型
      * 用于分类查询，将分类转换为具体的活动类型列表
-     * 
+     *
      * @param category 活动分类
      * @return 该分类下的所有活动类型列表
      */
@@ -215,9 +222,30 @@ public class UserActivityLogDomainService {
         if (category == null) {
             return Arrays.asList(ActivityType.values());
         }
-        
+
         return Arrays.stream(ActivityType.values())
                 .filter(type -> type.getCategory() == category)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 将请求体字符串解析为Map对象
+     *
+     * @param requestBody 请求体JSON字符串
+     * @return Map对象，解析失败时返回包含原始字符串的Map
+     */
+    private Map<String, Object> parseRequestBodyToMap(String requestBody) {
+        if (!StringUtils.hasText(requestBody)) {
+            return null;
+        }
+
+        try {
+            return objectMapper.readValue(requestBody, new TypeReference<Map<String, Object>>() {});
+        } catch (JsonProcessingException e) {
+            Map<String, Object> fallbackMap = new HashMap<>();
+            fallbackMap.put("raw_content", requestBody);
+            fallbackMap.put("parse_error", "Failed to parse JSON: " + e.getMessage());
+            return fallbackMap;
+        }
     }
 }

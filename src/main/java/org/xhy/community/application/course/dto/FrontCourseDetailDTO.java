@@ -1,13 +1,17 @@
 package org.xhy.community.application.course.dto;
 
-import org.xhy.community.domain.course.valueobject.CourseStatus;
 import org.xhy.community.domain.course.valueobject.CourseResource;
+import org.xhy.community.domain.course.valueobject.CourseStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
-public class CourseDTO {
+/**
+ * 前台课程详情DTO
+ * 用于前台API返回课程详细信息，包含章节列表
+ */
+public class FrontCourseDetailDTO {
     
     private String id;
     private String title;
@@ -16,18 +20,48 @@ public class CourseDTO {
     private String projectUrl;
     private List<String> tags;
     private BigDecimal rating;
-    private BigDecimal price;
-    private BigDecimal originalPrice;
-    private String coverImage;
     private CourseStatus status;
+    private String authorName;
     private String authorId;
     private Integer totalReadingTime;
+    private BigDecimal originalPrice;
+    private BigDecimal price;
     private String demoUrl;
     private List<CourseResource> resources;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
+    private List<FrontChapterDTO> chapters;
     
-    public CourseDTO() {
+    public FrontCourseDetailDTO() {}
+    
+    /**
+     * 前台章节DTO
+     * 嵌套在课程详情中的章节信息
+     */
+    public static class FrontChapterDTO {
+        private String id;
+        private String title;
+        private Integer sortOrder;
+        private Integer readingTime;
+        private LocalDateTime createTime;
+        
+        public FrontChapterDTO() {}
+        
+        // Getters and Setters
+        public String getId() { return id; }
+        public void setId(String id) { this.id = id; }
+        
+        public String getTitle() { return title; }
+        public void setTitle(String title) { this.title = title; }
+        
+        public Integer getSortOrder() { return sortOrder; }
+        public void setSortOrder(Integer sortOrder) { this.sortOrder = sortOrder; }
+        
+        public Integer getReadingTime() { return readingTime; }
+        public void setReadingTime(Integer readingTime) { this.readingTime = readingTime; }
+        
+        public LocalDateTime getCreateTime() { return createTime; }
+        public void setCreateTime(LocalDateTime createTime) { this.createTime = createTime; }
     }
     
     // Getters and Setters
@@ -52,23 +86,23 @@ public class CourseDTO {
     public BigDecimal getRating() { return rating; }
     public void setRating(BigDecimal rating) { this.rating = rating; }
     
-    public BigDecimal getPrice() { return price; }
-    public void setPrice(BigDecimal price) { this.price = price; }
-    
-    public BigDecimal getOriginalPrice() { return originalPrice; }
-    public void setOriginalPrice(BigDecimal originalPrice) { this.originalPrice = originalPrice; }
-    
-    public String getCoverImage() { return coverImage; }
-    public void setCoverImage(String coverImage) { this.coverImage = coverImage; }
-    
     public CourseStatus getStatus() { return status; }
     public void setStatus(CourseStatus status) { this.status = status; }
+    
+    public String getAuthorName() { return authorName; }
+    public void setAuthorName(String authorName) { this.authorName = authorName; }
     
     public String getAuthorId() { return authorId; }
     public void setAuthorId(String authorId) { this.authorId = authorId; }
     
     public Integer getTotalReadingTime() { return totalReadingTime; }
     public void setTotalReadingTime(Integer totalReadingTime) { this.totalReadingTime = totalReadingTime; }
+
+    public BigDecimal getOriginalPrice() { return originalPrice; }
+    public void setOriginalPrice(BigDecimal originalPrice) { this.originalPrice = originalPrice; }
+
+    public BigDecimal getPrice() { return price; }
+    public void setPrice(BigDecimal price) { this.price = price; }
 
     public String getDemoUrl() { return demoUrl; }
     public void setDemoUrl(String demoUrl) { this.demoUrl = demoUrl; }
@@ -78,7 +112,10 @@ public class CourseDTO {
 
     public LocalDateTime getCreateTime() { return createTime; }
     public void setCreateTime(LocalDateTime createTime) { this.createTime = createTime; }
-
+    
     public LocalDateTime getUpdateTime() { return updateTime; }
     public void setUpdateTime(LocalDateTime updateTime) { this.updateTime = updateTime; }
+    
+    public List<FrontChapterDTO> getChapters() { return chapters; }
+    public void setChapters(List<FrontChapterDTO> chapters) { this.chapters = chapters; }
 }

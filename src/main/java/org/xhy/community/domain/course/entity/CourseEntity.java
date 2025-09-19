@@ -3,9 +3,11 @@ package org.xhy.community.domain.course.entity;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import org.xhy.community.domain.common.entity.BaseEntity;
+import org.xhy.community.domain.course.valueobject.CourseResource;
 import org.xhy.community.domain.course.valueobject.CourseStatus;
 import org.xhy.community.infrastructure.converter.CourseStatusConverter;
-import org.xhy.community.infrastructure.converter.StringListConverter;
+import org.xhy.community.infrastructure.converter.ListElementType;
+import org.xhy.community.infrastructure.converter.UniversalListConverter;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -20,14 +22,16 @@ public class CourseEntity extends BaseEntity {
     private String description;
     
     /** 技术栈，JSON格式存储 */
-    @TableField(typeHandler = StringListConverter.class)
+    @TableField(typeHandler = UniversalListConverter.class)
+    @ListElementType(String.class)
     private List<String> techStack;
     
     /** 项目地址 */
     private String projectUrl;
     
     /** 标签，JSON格式存储 */
-    @TableField(typeHandler = StringListConverter.class)
+    @TableField(typeHandler = UniversalListConverter.class)
+    @ListElementType(String.class)
     private List<String> tags;
     
     /** 课程评分，范围0.00-5.00 */
@@ -51,6 +55,14 @@ public class CourseEntity extends BaseEntity {
     
     /** 总阅读时长（分钟） */
     private Integer totalReadingTime;
+
+    /** 项目演示地址 */
+    private String demoUrl;
+
+    /** 课程资源列表，JSON格式存储 */
+    @TableField(typeHandler = UniversalListConverter.class)
+    @ListElementType(CourseResource.class)
+    private List<CourseResource> resources;
     
     public CourseEntity() {
     }
@@ -102,4 +114,10 @@ public class CourseEntity extends BaseEntity {
     
     public Integer getTotalReadingTime() { return totalReadingTime; }
     public void setTotalReadingTime(Integer totalReadingTime) { this.totalReadingTime = totalReadingTime; }
+
+    public String getDemoUrl() { return demoUrl; }
+    public void setDemoUrl(String demoUrl) { this.demoUrl = demoUrl; }
+
+    public List<CourseResource> getResources() { return resources; }
+    public void setResources(List<CourseResource> resources) { this.resources = resources; }
 }

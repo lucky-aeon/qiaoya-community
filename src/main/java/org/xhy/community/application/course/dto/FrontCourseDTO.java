@@ -1,47 +1,41 @@
-package org.xhy.community.interfaces.course.request;
+package org.xhy.community.application.course.dto;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
-import jakarta.validation.constraints.DecimalMin;
 import org.xhy.community.domain.course.valueobject.CourseResource;
 import org.xhy.community.domain.course.valueobject.CourseStatus;
+
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
-public class CreateCourseRequest {
+/**
+ * 前台课程列表DTO
+ * 用于前台API返回课程概要信息
+ */
+public class FrontCourseDTO {
     
-    @NotBlank(message = "课程标题不能为空")
-    @Size(min = 2, max = 200, message = "课程标题长度必须在2-200字符之间")
+    private String id;
     private String title;
-    
     private String description;
-    
     private List<String> techStack;
-    
     private String projectUrl;
-    
     private List<String> tags;
-    
     private BigDecimal rating;
-    
-    @DecimalMin(value = "0.00", message = "课程售价不能为负数")
-    private BigDecimal price;
-    
-    @DecimalMin(value = "0.00", message = "课程原价不能为负数")
-    private BigDecimal originalPrice;
-    
-    private String coverImage;
-
-    private String demoUrl;
-
-    private List<CourseResource> resources;
-
     private CourseStatus status;
+    private String authorName;
+    private Integer totalReadingTime;
+    private Integer chapterCount;
+    private BigDecimal originalPrice;
+    private BigDecimal price;
+    private String demoUrl;
+    private List<CourseResource> resources;
+    private LocalDateTime createTime;
     
-    public CreateCourseRequest() {
-    }
+    public FrontCourseDTO() {}
     
     // Getters and Setters
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
+    
     public String getTitle() { return title; }
     public void setTitle(String title) { this.title = title; }
     
@@ -60,14 +54,23 @@ public class CreateCourseRequest {
     public BigDecimal getRating() { return rating; }
     public void setRating(BigDecimal rating) { this.rating = rating; }
     
-    public BigDecimal getPrice() { return price; }
-    public void setPrice(BigDecimal price) { this.price = price; }
+    public CourseStatus getStatus() { return status; }
+    public void setStatus(CourseStatus status) { this.status = status; }
     
+    public String getAuthorName() { return authorName; }
+    public void setAuthorName(String authorName) { this.authorName = authorName; }
+    
+    public Integer getTotalReadingTime() { return totalReadingTime; }
+    public void setTotalReadingTime(Integer totalReadingTime) { this.totalReadingTime = totalReadingTime; }
+    
+    public Integer getChapterCount() { return chapterCount; }
+    public void setChapterCount(Integer chapterCount) { this.chapterCount = chapterCount; }
+
     public BigDecimal getOriginalPrice() { return originalPrice; }
     public void setOriginalPrice(BigDecimal originalPrice) { this.originalPrice = originalPrice; }
-    
-    public String getCoverImage() { return coverImage; }
-    public void setCoverImage(String coverImage) { this.coverImage = coverImage; }
+
+    public BigDecimal getPrice() { return price; }
+    public void setPrice(BigDecimal price) { this.price = price; }
 
     public String getDemoUrl() { return demoUrl; }
     public void setDemoUrl(String demoUrl) { this.demoUrl = demoUrl; }
@@ -75,6 +78,6 @@ public class CreateCourseRequest {
     public List<CourseResource> getResources() { return resources; }
     public void setResources(List<CourseResource> resources) { this.resources = resources; }
 
-    public CourseStatus getStatus() { return status; }
-    public void setStatus(CourseStatus status) { this.status = status; }
+    public LocalDateTime getCreateTime() { return createTime; }
+    public void setCreateTime(LocalDateTime createTime) { this.createTime = createTime; }
 }
