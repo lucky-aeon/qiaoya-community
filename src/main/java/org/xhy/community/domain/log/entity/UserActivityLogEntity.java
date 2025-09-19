@@ -66,13 +66,13 @@ public class UserActivityLogEntity  {
      * 创建时间（重写BaseEntity中的字段以支持自定义字段名）
      */
     @TableField("created_at")
-    private LocalDateTime createdAt;
+    private LocalDateTime createTime;
     
     /**
      * 更新时间（重写BaseEntity中的字段以支持自定义字段名）
      */
     @TableField("updated_at")
-    private LocalDateTime updatedAt;
+    private LocalDateTime updateTime;
     
     // ==================== 业务扩展字段（新增） ====================
     
@@ -175,20 +175,20 @@ public class UserActivityLogEntity  {
         this.failureReason = failureReason;
     }
     
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
+    public LocalDateTime getCreateTime() {
+        return createTime;
     }
     
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
+    public void setCreateTime(LocalDateTime createTime) {
+        this.createTime = createTime;
     }
     
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
+    public LocalDateTime getUpdateTime() {
+        return updateTime;
     }
     
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
+    public void setUpdateTime(LocalDateTime updateTime) {
+        this.updateTime = updateTime;
     }
 
     public String getId() {

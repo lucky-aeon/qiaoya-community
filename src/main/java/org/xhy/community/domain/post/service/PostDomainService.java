@@ -16,6 +16,10 @@ import org.xhy.community.domain.post.repository.PostRepository;
 import org.xhy.community.domain.post.valueobject.PostStatus;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class PostDomainService {
@@ -204,6 +208,25 @@ public class PostDomainService {
             post.setCommentCount(post.getCommentCount() - 1);
             postRepository.updateById(post);
         }
+    }
+    
+    /**
+     * 批量获取文章标题映射
+     * 
+     * @param postIds 文章ID集合
+     * @return 文章ID到标题的映射
+     */
+    public Map<String, String> getPostTitleMapByIds(Collection<String> postIds) {
+        if (postIds == null || postIds.isEmpty()) {
+            return Map.of();
+        }
+        
+        List<PostEntity> posts = postRepository.selectBatchIds(postIds);
+        return posts.stream()
+                .collect(Collectors.toMap(
+                    PostEntity::getId,
+                    PostEntity::getTitle
+                ));
     }
     
     public IPage<PostEntity> queryPosts(PostQuery query) {

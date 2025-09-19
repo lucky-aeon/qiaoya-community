@@ -12,6 +12,11 @@ import org.xhy.community.infrastructure.exception.PostErrorCode;
 import org.xhy.community.domain.post.repository.CategoryRepository;
 import org.xhy.community.domain.post.valueobject.CategoryType;
 
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 @Service
 public class CategoryDomainService {
     
@@ -119,6 +124,25 @@ public class CategoryDomainService {
     
     public void deleteCategory(String categoryId) {
         categoryRepository.deleteById(categoryId);
+    }
+    
+    /**
+     * 批量获取分类名称映射
+     * 
+     * @param categoryIds 分类ID集合
+     * @return 分类ID到名称的映射
+     */
+    public Map<String, String> getCategoryNameMapByIds(Collection<String> categoryIds) {
+        if (categoryIds == null || categoryIds.isEmpty()) {
+            return Map.of();
+        }
+        
+        List<CategoryEntity> categories = categoryRepository.selectBatchIds(categoryIds);
+        return categories.stream()
+                .collect(Collectors.toMap(
+                    CategoryEntity::getId,
+                    CategoryEntity::getName
+                ));
     }
     
     public IPage<CategoryEntity> queryCategories(CategoryQuery query) {

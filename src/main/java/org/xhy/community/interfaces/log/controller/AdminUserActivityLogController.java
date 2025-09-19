@@ -1,8 +1,8 @@
 package org.xhy.community.interfaces.log.controller;
 
-import com.baomidou.mybatisplus.core.metadata.IPage;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import org.xhy.community.application.log.service.UserActivityLogAppService;
 import org.xhy.community.application.user.dto.UserActivityLogDTO;
 import org.xhy.community.infrastructure.config.ApiResponse;
@@ -10,77 +10,44 @@ import org.xhy.community.interfaces.log.request.QueryUserActivityLogRequest;
 
 /**
  * 管理员用户活动日志控制器
- * 提供管理员查看用户活动日志的接口
+ * 提供管理员查看用户活动日志的统一接口
  */
 @RestController
 @RequestMapping("/api/admin/user-activity-logs")
 public class AdminUserActivityLogController {
     
-    private final UserActivityLogAppService adminUserActivityLogAppService;
+    private final UserActivityLogAppService userActivityLogAppService;
     
-    public AdminUserActivityLogController(UserActivityLogAppService adminUserActivityLogAppService) {
-        this.adminUserActivityLogAppService = adminUserActivityLogAppService;
+    public AdminUserActivityLogController(UserActivityLogAppService userActivityLogAppService) {
+        this.userActivityLogAppService = userActivityLogAppService;
     }
     
     /**
-     * 分页查询用户活动日志
-     * 管理员可以查看所有用户的活动日志，支持多条件筛选
+     * 查询用户活动日志接口
+     * 支持详细日志查询，通过参数组合实现不同的查询需求
      *
      * @param request 查询请求参数
+     *                基础参数：
      *                - pageNum: 页码，默认1
      *                - pageSize: 每页大小，默认10
-     *                - email: 用户邮箱（模糊查询）
-     *                - activityType: 活动类型
+     *                - userId: 用户ID（精确查询）
+     *                - activityType: 活动类型（精确查询单个类型）
+     *                - activityCategory: 活动分类（分类查询该分类下所有类型）
      *                - startTime: 开始时间
      *                - endTime: 结束时间
      *                - ip: IP地址（模糊查询）
-     * @return 分页查询结果
+     *                
+     *                使用示例：
+     *                1. 查询详细日志：GET /api/admin/user-activity-logs?userId=123&pageNum=1&pageSize=20
+     *                2. 查询所有认证相关活动：GET /api/admin/user-activity-logs?activityCategory=AUTHENTICATION
+     *                3. 查询某用户登录失败：GET /api/admin/user-activity-logs?userId=123&activityType=LOGIN_FAILED
+     *                4. 查询某IP认证相关活动：GET /api/admin/user-activity-logs?ip=192.168.1.1&activityCategory=AUTHENTICATION
+     *                
+     * @return 分页日志列表 IPage<UserActivityLogDTO>
      */
     @GetMapping
     public ApiResponse<IPage<UserActivityLogDTO>> getActivityLogs(@Valid @ModelAttribute QueryUserActivityLogRequest request) {
-        try {
-            IPage<UserActivityLogDTO> result = adminUserActivityLogAppService.getActivityLogs(request);
-            return ApiResponse.success("查询成功", result);
-        } catch (Exception e) {
-            return ApiResponse.error(500, "查询失败：" + e.getMessage());
-        }
-    }
-    
-    /**
-     * 获取指定邮箱的登录失败统计
-     * 用于安全分析，检测可能的暴力破解攻击
-     *
-     * @param email 邮箱地址
-     * @param hours 统计时间范围（小时），默认24小时
-     * @return 失败次数
-     */
-    @GetMapping("/login-failures/by-email")
-    public ApiResponse<Long> getLoginFailuresByEmail(@RequestParam String email,
-                                                    @RequestParam(defaultValue = "24") int hours) {
-        try {
-            Long count = adminUserActivityLogAppService.getLoginFailureCount(email, hours);
-            return ApiResponse.success("查询成功", count);
-        } catch (Exception e) {
-            return ApiResponse.error(500, "查询失败：" + e.getMessage());
-        }
-    }
-    
-    /**
-     * 获取指定IP的登录失败统计
-     * 用于安全分析，检测可能的恶意IP攻击
-     *
-     * @param ip IP地址
-     * @param hours 统计时间范围（小时），默认24小时
-     * @return 失败次数
-     */
-    @GetMapping("/login-failures/by-ip")
-    public ApiResponse<Long> getLoginFailuresByIp(@RequestParam String ip,
-                                                 @RequestParam(defaultValue = "24") int hours) {
-        try {
-            Long count = adminUserActivityLogAppService.getLoginFailureCountByIp(ip, hours);
-            return ApiResponse.success("查询成功", count);
-        } catch (Exception e) {
-            return ApiResponse.error(500, "查询失败：" + e.getMessage());
-        }
+        IPage<UserActivityLogDTO> result = userActivityLogAppService.getActivityLogs(request);
+        return ApiResponse.success(result);
     }
 }

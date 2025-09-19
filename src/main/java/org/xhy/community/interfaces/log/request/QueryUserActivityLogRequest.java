@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.xhy.community.interfaces.common.request.PageRequest;
 import org.xhy.community.domain.common.valueobject.ActivityType;
+import org.xhy.community.domain.common.valueobject.ActivityCategory;
 
 import java.time.LocalDateTime;
 
@@ -14,14 +15,21 @@ import java.time.LocalDateTime;
 public class QueryUserActivityLogRequest extends PageRequest {
     
     /**
-     * 用户邮箱（模糊查询）
+     * 用户ID（精确查询）
      */
-    private String email;
+    private String userId;
+    
     
     /**
-     * 活动类型
+     * 活动类型（精确查询单个类型）
      */
     private ActivityType activityType;
+    
+    /**
+     * 活动分类（分类查询，查询该分类下所有类型）
+     * 与activityType互斥，不能同时指定
+     */
+    private ActivityCategory activityCategory;
     
     /**
      * 开始时间
@@ -43,12 +51,12 @@ public class QueryUserActivityLogRequest extends PageRequest {
     private String ip;
     
     // Getters and Setters
-    public String getEmail() {
-        return email;
+    public String getUserId() {
+        return userId;
     }
     
-    public void setEmail(String email) {
-        this.email = email;
+    public void setUserId(String userId) {
+        this.userId = userId;
     }
     
     public ActivityType getActivityType() {
@@ -57,6 +65,14 @@ public class QueryUserActivityLogRequest extends PageRequest {
     
     public void setActivityType(ActivityType activityType) {
         this.activityType = activityType;
+    }
+    
+    public ActivityCategory getActivityCategory() {
+        return activityCategory;
+    }
+    
+    public void setActivityCategory(ActivityCategory activityCategory) {
+        this.activityCategory = activityCategory;
     }
     
     public LocalDateTime getStartTime() {

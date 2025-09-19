@@ -1,6 +1,7 @@
 package org.xhy.community.application.user.dto;
 
 import org.xhy.community.domain.common.valueobject.ActivityType;
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 import java.time.LocalDateTime;
 
@@ -20,9 +21,9 @@ public class UserActivityLogDTO {
     private String userId;
     
     /**
-     * 用户邮箱
+     * 用户昵称
      */
-    private String email;
+    private String nickname;
     
     /**
      * 活动类型
@@ -62,7 +63,33 @@ public class UserActivityLogDTO {
     /**
      * 创建时间
      */
-    private LocalDateTime createdAt;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime createTime;
+    
+    /**
+     * 目标类型（如POST、COURSE、USER等）
+     */
+    private String targetType;
+    
+    /**
+     * 目标对象ID
+     */
+    private String targetId;
+    
+    /**
+     * 请求路径
+     */
+    private String requestPath;
+    
+    /**
+     * 扩展上下文数据（JSON格式）
+     */
+    private String contextData;
+    
+    /**
+     * 目标对象名称（根据targetType和targetId动态获取）
+     */
+    private String targetName;
     
     // Getters and Setters
     public String getId() {
@@ -81,12 +108,12 @@ public class UserActivityLogDTO {
         this.userId = userId;
     }
     
-    public String getEmail() {
-        return email;
+    public String getNickname() {
+        return nickname;
     }
     
-    public void setEmail(String email) {
-        this.email = email;
+    public void setNickname(String nickname) {
+        this.nickname = nickname;
     }
     
     public ActivityType getActivityType() {
@@ -145,11 +172,51 @@ public class UserActivityLogDTO {
         this.failureReason = failureReason;
     }
     
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
+    public LocalDateTime getCreateTime() {
+        return createTime;
     }
     
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
+    public void setCreateTime(LocalDateTime createTime) {
+        this.createTime = createTime;
+    }
+    
+    public String getTargetType() {
+        return targetType;
+    }
+    
+    public void setTargetType(String targetType) {
+        this.targetType = targetType;
+    }
+    
+    public String getTargetId() {
+        return targetId;
+    }
+    
+    public void setTargetId(String targetId) {
+        this.targetId = targetId;
+    }
+    
+    public String getRequestPath() {
+        return requestPath;
+    }
+    
+    public void setRequestPath(String requestPath) {
+        this.requestPath = requestPath;
+    }
+    
+    public String getContextData() {
+        return contextData;
+    }
+    
+    public void setContextData(String contextData) {
+        this.contextData = contextData;
+    }
+    
+    public String getTargetName() {
+        return targetName;
+    }
+    
+    public void setTargetName(String targetName) {
+        this.targetName = targetName;
     }
 }

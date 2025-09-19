@@ -5,6 +5,7 @@ import org.xhy.community.application.user.dto.UserActivityLogDTO;
 import org.xhy.community.domain.log.entity.UserActivityLogEntity;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -36,7 +37,7 @@ public class UserActivityLogAssembler {
     }
     
     /**
-     * 将实体列表转换为DTO列表
+     * 将实体列表转换为DTO列表（不包含用户昵称）
      *
      * @param entities 实体列表
      * @return DTO列表
@@ -48,6 +49,30 @@ public class UserActivityLogAssembler {
         
         return entities.stream()
                 .map(UserActivityLogAssembler::toDTO)
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * 将实体列表转换为DTO列表（包含用户昵称）
+     *
+     * @param entities 实体列表
+     * @param userNameMap 用户ID到昵称的映射
+     * @return DTO列表
+     */
+    public static List<UserActivityLogDTO> toDTOListWithUserNames(List<UserActivityLogEntity> entities, Map<String, String> userNameMap) {
+        if (entities == null || entities.isEmpty()) {
+            return List.of();
+        }
+        
+        return entities.stream()
+                .map(entity -> {
+                    UserActivityLogDTO dto = toDTO(entity);
+                    // 设置用户昵称
+                    if (dto != null && entity.getUserId() != null) {
+                        dto.setNickname(userNameMap.get(entity.getUserId()));
+                    }
+                    return dto;
+                })
                 .collect(Collectors.toList());
     }
 }

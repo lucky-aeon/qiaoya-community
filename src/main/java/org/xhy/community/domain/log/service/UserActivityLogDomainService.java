@@ -9,9 +9,12 @@ import org.xhy.community.domain.log.entity.UserActivityLogEntity;
 import org.xhy.community.domain.log.repository.UserActivityLogRepository;
 import org.xhy.community.domain.log.query.UserActivityLogQuery;
 import org.xhy.community.domain.common.valueobject.ActivityType;
+import org.xhy.community.domain.common.valueobject.ActivityCategory;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 用户活动日志领域服务
@@ -48,8 +51,8 @@ public class UserActivityLogDomainService {
         activityLog.setIp(ip);
         activityLog.setUserAgent(userAgent);
         activityLog.setFailureReason(failureReason);
-        activityLog.setCreatedAt(LocalDateTime.now());
-        activityLog.setUpdatedAt(LocalDateTime.now());
+        activityLog.setCreateTime(LocalDateTime.now());
+        activityLog.setUpdateTime(LocalDateTime.now());
         
         userActivityLogRepository.insert(activityLog);
     }
@@ -65,17 +68,23 @@ public class UserActivityLogDomainService {
         
         LambdaQueryWrapper<UserActivityLogEntity> queryWrapper = 
             new LambdaQueryWrapper<UserActivityLogEntity>()
-                // email查询现在通过context_data字段进行JSON查询 
-                // 由于复杂性，暂时移除email查询条件，如需要可以后续扩展JSON查询
+                // 根据用户ID精确查询
+                .eq(query.getUserId() != null, 
+                    UserActivityLogEntity::getUserId, query.getUserId())
+                // 精确查询单个活动类型
                 .eq(query.getActivityType() != null, 
                     UserActivityLogEntity::getActivityType, query.getActivityType())
+                // 分类查询多个活动类型（与activityType互斥）
+                .in(query.getActivityCategory() != null, 
+                    UserActivityLogEntity::getActivityType, 
+                    getActivityTypesByCategory(query.getActivityCategory()))
                 .ge(query.getStartTime() != null, 
-                    UserActivityLogEntity::getCreatedAt, query.getStartTime())
+                    UserActivityLogEntity::getCreateTime, query.getStartTime())
                 .le(query.getEndTime() != null, 
-                    UserActivityLogEntity::getCreatedAt, query.getEndTime())
+                    UserActivityLogEntity::getCreateTime, query.getEndTime())
                 .like(StringUtils.hasText(query.getIp()), 
                       UserActivityLogEntity::getIp, query.getIp())
-                .orderByDesc(UserActivityLogEntity::getCreatedAt);
+                .orderByDesc(UserActivityLogEntity::getCreateTime);
         
         return userActivityLogRepository.selectPage(page, queryWrapper);
     }
@@ -93,7 +102,7 @@ public class UserActivityLogDomainService {
             new LambdaQueryWrapper<UserActivityLogEntity>()
                 .eq(UserActivityLogEntity::getUserId, userId)
                 .eq(UserActivityLogEntity::getActivityType, ActivityType.LOGIN_FAILED)
-                .ge(startTime != null, UserActivityLogEntity::getCreatedAt, startTime);
+                .ge(startTime != null, UserActivityLogEntity::getCreateTime, startTime);
         
         return userActivityLogRepository.selectCount(queryWrapper);
     }
@@ -110,7 +119,7 @@ public class UserActivityLogDomainService {
             new LambdaQueryWrapper<UserActivityLogEntity>()
                 .eq(UserActivityLogEntity::getIp, ip)
                 .eq(UserActivityLogEntity::getActivityType, ActivityType.LOGIN_FAILED)
-                .ge(startTime != null, UserActivityLogEntity::getCreatedAt, startTime);
+                .ge(startTime != null, UserActivityLogEntity::getCreateTime, startTime);
         
         return userActivityLogRepository.selectCount(queryWrapper);
     }
@@ -127,7 +136,7 @@ public class UserActivityLogDomainService {
             new LambdaQueryWrapper<UserActivityLogEntity>()
                 .eq(UserActivityLogEntity::getUserId, userId)
                 .eq(UserActivityLogEntity::getActivityType, ActivityType.LOGIN_SUCCESS)
-                .orderByDesc(UserActivityLogEntity::getCreatedAt)
+                .orderByDesc(UserActivityLogEntity::getCreateTime)
                 .last("LIMIT " + limit);
         
         return userActivityLogRepository.selectList(queryWrapper);
@@ -189,9 +198,26 @@ public class UserActivityLogDomainService {
         activityLog.setFailureReason(errorMessage);
         
         // 设置时间字段
-        activityLog.setCreatedAt(LocalDateTime.now());
-        activityLog.setUpdatedAt(LocalDateTime.now());
+        activityLog.setCreateTime(LocalDateTime.now());
+        activityLog.setUpdateTime(LocalDateTime.now());
         
         userActivityLogRepository.insert(activityLog);
+    }
+    
+    /**
+     * 根据活动分类获取该分类下的所有活动类型
+     * 用于分类查询，将分类转换为具体的活动类型列表
+     * 
+     * @param category 活动分类
+     * @return 该分类下的所有活动类型列表
+     */
+    private List<ActivityType> getActivityTypesByCategory(ActivityCategory category) {
+        if (category == null) {
+            return Arrays.asList(ActivityType.values());
+        }
+        
+        return Arrays.stream(ActivityType.values())
+                .filter(type -> type.getCategory() == category)
+                .collect(Collectors.toList());
     }
 }
