@@ -19,6 +19,26 @@ import org.xhy.community.domain.cdk.valueobject.CDKStatus;
 import org.xhy.community.domain.common.valueobject.ActivityType;
 import org.xhy.community.domain.follow.valueobject.FollowTargetType;
 import org.xhy.community.domain.follow.valueobject.FollowStatus;
+import org.xhy.community.domain.notification.valueobject.NotificationType;
+import org.xhy.community.domain.notification.valueobject.ChannelType;
+import org.xhy.community.domain.notification.valueobject.NotificationStatus;
+import org.xhy.community.infrastructure.converter.BusinessTypeConverter;
+import org.xhy.community.infrastructure.converter.CategoryTypeConverter;
+import org.xhy.community.infrastructure.converter.CourseStatusConverter;
+import org.xhy.community.infrastructure.converter.PostStatusConverter;
+import org.xhy.community.infrastructure.converter.ResourceTypeConverter;
+import org.xhy.community.infrastructure.converter.SubscriptionPlanStatusConverter;
+import org.xhy.community.infrastructure.converter.SubscriptionStatusConverter;
+import org.xhy.community.infrastructure.converter.UserStatusConverter;
+import org.xhy.community.infrastructure.converter.CDKTypeConverter;
+import org.xhy.community.infrastructure.converter.CDKStatusConverter;
+import org.xhy.community.infrastructure.converter.ActivityTypeConverter;
+import org.xhy.community.infrastructure.converter.FollowTargetTypeConverter;
+import org.xhy.community.infrastructure.converter.FollowStatusConverter;
+import org.xhy.community.infrastructure.converter.NotificationTypeConverter;
+import org.xhy.community.infrastructure.converter.ChannelTypeConverter;
+import org.xhy.community.infrastructure.converter.NotificationStatusConverter;
+import org.xhy.community.infrastructure.converter.StringListConverter;
 import org.xhy.community.domain.course.valueobject.CourseResource;
 import org.xhy.community.infrastructure.converter.*;
 
@@ -55,6 +75,9 @@ public class MyBatisTypeHandlerConfig {
         typeHandlerRegistry.register(FollowTargetType.class, new FollowTargetTypeConverter());
         typeHandlerRegistry.register(FollowStatus.class, new FollowStatusConverter());
 
+typeHandlerRegistry.register(NotificationType.class, new NotificationTypeConverter());
+        typeHandlerRegistry.register(ChannelType.class, new ChannelTypeConverter());
+        typeHandlerRegistry.register(NotificationStatus.class, new NotificationStatusConverter());
 
         // 注册集合类型处理器
         typeHandlerRegistry.register(java.util.Map.class, new MapJsonTypeHandler());

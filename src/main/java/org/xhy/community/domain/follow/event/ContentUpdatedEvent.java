@@ -1,64 +1,64 @@
 package org.xhy.community.domain.follow.event;
 
-import org.xhy.community.domain.follow.valueobject.FollowTargetType;
-
 import java.time.LocalDateTime;
-import java.util.Map;
+import java.util.List;
 
 /**
- * 统一的内容更新事件
- * 当被关注的内容发生更新时触发
+ * 内容更新事件 - 包含关注者列表
+ * 当用户发布新内容时触发，通知其关注者
  */
 public class ContentUpdatedEvent {
     
-    /** 被更新内容的ID */
-    private final String targetId;
+    private final String authorId;        // 作者ID
+    private final String authorName;      // 作者姓名
+    private final String authorEmail;     // 作者邮箱
+    private final String contentId;       // 内容ID
+    private final String contentTitle;    // 内容标题
+    private final String contentType;     // 内容类型（文章/课程）
+    private final LocalDateTime updateTime; // 更新时间
     
-    /** 内容类型 */
-    private final FollowTargetType targetType;
+    // 包含关注者列表（由follow领域提供）
+    private final List<FollowerInfo> followers;
     
-    /** 内容作者/创建者ID */
-    private final String authorId;
-    
-    /** 更新时间 */
-    private final LocalDateTime updateTime;
-    
-    /** 扩展信息（用于存储特定类型的额外数据） */
-    private final Map<String, Object> extraData;
-    
-    public ContentUpdatedEvent(String targetId, FollowTargetType targetType, String authorId, 
-                              LocalDateTime updateTime, Map<String, Object> extraData) {
-        this.targetId = targetId;
-        this.targetType = targetType;
+    public ContentUpdatedEvent(String authorId, String authorName, String authorEmail,
+                             String contentId, String contentTitle, String contentType,
+                             List<FollowerInfo> followers) {
         this.authorId = authorId;
-        this.updateTime = updateTime;
-        this.extraData = extraData;
+        this.authorName = authorName;
+        this.authorEmail = authorEmail;
+        this.contentId = contentId;
+        this.contentTitle = contentTitle;
+        this.contentType = contentType;
+        this.followers = followers;
+        this.updateTime = LocalDateTime.now();
     }
     
-    public String getTargetId() { return targetId; }
-    public FollowTargetType getTargetType() { return targetType; }
+    // Getters
     public String getAuthorId() { return authorId; }
+    public String getAuthorName() { return authorName; }
+    public String getAuthorEmail() { return authorEmail; }
+    public String getContentId() { return contentId; }
+    public String getContentTitle() { return contentTitle; }
+    public String getContentType() { return contentType; }
     public LocalDateTime getUpdateTime() { return updateTime; }
-    public Map<String, Object> getExtraData() { return extraData; }
+    public List<FollowerInfo> getFollowers() { return followers; }
     
     /**
-     * 获取扩展数据中的特定值
+     * 关注者信息
      */
-    public Object getExtraData(String key) {
-        return extraData != null ? extraData.get(key) : null;
-    }
-    
-    /**
-     * 获取更新类型
-     */
-    public String getUpdateType() {
-        return extraData != null ? (String) extraData.get("updateType") : null;
-    }
-    
-    /**
-     * 获取更新描述
-     */
-    public String getDescription() {
-        return extraData != null ? (String) extraData.get("description") : null;
+    public static class FollowerInfo {
+        private final String followerId;      // 关注者ID
+        private final String followerName;   // 关注者姓名
+        private final String followerEmail;  // 关注者邮箱
+        
+        public FollowerInfo(String followerId, String followerName, String followerEmail) {
+            this.followerId = followerId;
+            this.followerName = followerName;
+            this.followerEmail = followerEmail;
+        }
+        
+        public String getFollowerId() { return followerId; }
+        public String getFollowerName() { return followerName; }
+        public String getFollowerEmail() { return followerEmail; }
     }
 }

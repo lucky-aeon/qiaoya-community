@@ -1,0 +1,1390 @@
+# 基于事件驱动的通知系统设计
+
+## 核心设计理念
+
+- **事件驱动架构** - 各领域抛出事件，通知领域监听和处理
+- **完全领域解耦** - 通知领域不依赖任何其他领域服务
+- **基于对象传递** - 事件包含完整信息，通过对象传递数据
+- **类型安全** - 编译时检查，避免运行时错误
+- **代码层面管理** - 模板定义在代码中，便于维护
+
+## 架构图
+
+```
+┌─────────────────┐    UserFollowedEvent    ┌─────────────────┐
+│   Follow领域    │────────────────────────→│                 │
+└─────────────────┘                         │                 │
+                                            │   Notification  │
+┌─────────────────┐    CDKActivatedEvent    │     领域        │
+│    CDK领域      │────────────────────────→│                 │
+└─────────────────┘                         │  事件监听器     │
+                                            │       ↓         │
+┌─────────────────┐ SubscriptionExpiredEvent│  发送通知       │
+│ Subscription    │────────────────────────→│                 │
+│     领域        │                         └─────────────────┘
+└─────────────────┘                                  │
+                                                     ▼
+┌─────────────────┐    CommentCreatedEvent  ┌─────────────────┐
+│   Comment领域   │────────────────────────→│   多渠道发送    │
+└─────────────────┘                         │                 │
+                                            │ - 站内消息      │
+                                            │ - 邮件          │
+                                            │ - 短信          │
+                                            └─────────────────┘
+```
+
+## 1. 各领域事件定义
+
+### 1.1 Follow领域事件
+```java
+/**
+ * 用户关注事件 - 包含完整的通知所需信息
+ */
+public class UserFollowedEvent {
+    private final String followerId;
+    private final String targetId;
+    private final FollowTargetType targetType;
+    private final LocalDateTime followTime;
+    
+    // 包含完整的业务信息，避免通知领域跨领域查询
+    private final String followerName;
+    private final String followerEmail;
+    private final String targetName;
+    private final String targetEmail;
+    
+    public UserFollowedEvent(String followerId, String targetId, FollowTargetType targetType,
+                           String followerName, String followerEmail,
+                           String targetName, String targetEmail) {
+        this.followerId = followerId;
+        this.targetId = targetId;
+        this.targetType = targetType;
+        this.followerName = followerName;
+        this.followerEmail = followerEmail;
+        this.targetName = targetName;
+        this.targetEmail = targetEmail;
+        this.followTime = LocalDateTime.now();
+    }
+    
+    // Getters...
+}
+
+/**
+ * 内容更新事件 - 包含关注者列表
+ */
+public class ContentUpdatedEvent {
+    private final String authorId;
+    private final String authorName;
+    private final String authorEmail;
+    private final String contentId;
+    private final String contentTitle;
+    private final String contentType;
+    private final LocalDateTime updateTime;
+    
+    // 包含关注者列表（由follow领域提供）
+    private final List<FollowerInfo> followers;
+    
+    public static class FollowerInfo {
+        private final String userId;
+        private final String userName;
+        private final String userEmail;
+        
+        // Constructor and getters...
+    }
+    
+    // Constructor and getters...
+}
+```
+
+### 1.2 CDK领域事件
+```java
+/**
+ * CDK激活事件 - 包含完整的用户和CDK信息
+ */
+public class CDKActivatedEvent {
+    private final String userId;
+    private final String userName;
+    private final String userEmail;
+    private final String cdkCode;
+    private final CDKType cdkType;
+    private final LocalDateTime activationTime;
+    
+    public CDKActivatedEvent(String userId, String userName, String userEmail,
+                           String cdkCode, CDKType cdkType) {
+        this.userId = userId;
+        this.userName = userName;
+        this.userEmail = userEmail;
+        this.cdkCode = cdkCode;
+        this.cdkType = cdkType;
+        this.activationTime = LocalDateTime.now();
+    }
+    
+    // Getters...
+}
+```
+
+### 1.3 Subscription领域事件
+```java
+/**
+ * 订阅过期事件 - 包含完整的用户和订阅信息
+ */
+public class SubscriptionExpiredEvent {
+    private final String userId;
+    private final String userName;
+    private final String userEmail;
+    private final String subscriptionId;
+    private final long daysRemaining;
+    private final LocalDateTime expireTime;
+    
+    public SubscriptionExpiredEvent(String userId, String userName, String userEmail,
+                                  String subscriptionId, long daysRemaining, 
+                                  LocalDateTime expireTime) {
+        this.userId = userId;
+        this.userName = userName;
+        this.userEmail = userEmail;
+        this.subscriptionId = subscriptionId;
+        this.daysRemaining = daysRemaining;
+        this.expireTime = expireTime;
+    }
+    
+    // Getters...
+}
+```
+
+### 1.4 Comment领域事件
+```java
+/**
+ * 评论创建事件 - 包含完整的评论和被评论内容信息
+ */
+public class CommentCreatedEvent {
+    private final String commentId;
+    private final String commentContent;
+    private final String commenterId;
+    private final String commenterName;
+    private final String commenterEmail;
+    
+    // 被评论的内容信息
+    private final String targetId;
+    private final String targetType; // "post" or "course"
+    private final String targetTitle;
+    private final String targetAuthorId;
+    private final String targetAuthorName;
+    private final String targetAuthorEmail;
+    
+    private final LocalDateTime commentTime;
+    
+    // Constructor and getters...
+}
+```
+
+## 2. 通知领域的纯粹设计
+
+### 2.1 纯粹的通知数据对象
+```java
+/**
+ * 通知数据基类 - 包含完整信息，不依赖其他领域
+ */
+public abstract class NotificationData {
+    protected final String recipientId;
+    protected final String recipientName;
+    protected final String recipientEmail;
+    protected final NotificationType type;
+    protected final LocalDateTime createTime;
+    
+    protected NotificationData(String recipientId, String recipientName, String recipientEmail,
+                             NotificationType type) {
+        this.recipientId = recipientId;
+        this.recipientName = recipientName;
+        this.recipientEmail = recipientEmail;
+        this.type = type;
+        this.createTime = LocalDateTime.now();
+    }
+    
+    // Getters
+    public String getRecipientId() { return recipientId; }
+    public String getRecipientName() { return recipientName; }
+    public String getRecipientEmail() { return recipientEmail; }
+    public NotificationType getType() { return type; }
+    public LocalDateTime getCreateTime() { return createTime; }
+}
+```
+
+### 2.2 具体通知数据类
+```java
+/**
+ * 新关注者通知数据 - 从事件构建，包含所有需要的信息
+ */
+public class NewFollowerNotificationData extends NotificationData {
+    private final String followerId;
+    private final String followerName;
+    
+    public NewFollowerNotificationData(String recipientId, String recipientName, String recipientEmail,
+                                     String followerId, String followerName) {
+        super(recipientId, recipientName, recipientEmail, NotificationType.NEW_FOLLOWER);
+        this.followerId = followerId;
+        this.followerName = followerName;
+    }
+    
+    public String getFollowerName() { return followerName; }
+    public String getFollowerProfileUrl() { 
+        return "https://qiaoya.com/profile/" + followerId; 
+    }
+}
+
+/**
+ * 内容更新通知数据
+ */
+public class ContentUpdateNotificationData extends NotificationData {
+    private final String authorName;
+    private final String contentTitle;
+    private final String contentType;
+    private final String contentId;
+    
+    public ContentUpdateNotificationData(String recipientId, String recipientName, String recipientEmail,
+                                       String authorName, String contentTitle, String contentType, String contentId) {
+        super(recipientId, recipientName, recipientEmail, NotificationType.FOLLOWED_USER_POST);
+        this.authorName = authorName;
+        this.contentTitle = contentTitle;
+        this.contentType = contentType;
+        this.contentId = contentId;
+    }
+    
+    public String getAuthorName() { return authorName; }
+    public String getContentTitle() { return contentTitle; }
+    public String getContentType() { return contentType; }
+    public String getContentUrl() { 
+        return "https://qiaoya.com/" + contentType.toLowerCase() + "/" + contentId; 
+    }
+}
+
+/**
+ * CDK激活通知数据
+ */
+public class CDKActivatedNotificationData extends NotificationData {
+    private final String cdkCode;
+    private final String activationTime;
+    
+    public CDKActivatedNotificationData(String recipientId, String recipientName, String recipientEmail,
+                                      String cdkCode, LocalDateTime activationTime) {
+        super(recipientId, recipientName, recipientEmail, NotificationType.CDK_ACTIVATED);
+        this.cdkCode = cdkCode;
+        this.activationTime = activationTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+    }
+    
+    public String getCdkCode() { return cdkCode; }
+    public String getActivationTime() { return activationTime; }
+}
+
+/**
+ * 订阅过期通知数据
+ */
+public class SubscriptionExpiredNotificationData extends NotificationData {
+    private final String subscriptionId;
+    private final long daysRemaining;
+    
+    public SubscriptionExpiredNotificationData(String recipientId, String recipientName, String recipientEmail,
+                                             String subscriptionId, long daysRemaining) {
+        super(recipientId, recipientName, recipientEmail, NotificationType.SUBSCRIPTION_EXPIRED);
+        this.subscriptionId = subscriptionId;
+        this.daysRemaining = daysRemaining;
+    }
+    
+    public String getSubscriptionId() { return subscriptionId; }
+    public long getDaysRemaining() { return daysRemaining; }
+    public String getRenewalUrl() { 
+        return "https://qiaoya.com/subscription/renew"; 
+    }
+}
+
+/**
+ * 评论通知数据
+ */
+public class CommentNotificationData extends NotificationData {
+    private final String commenterName;
+    private final String targetTitle;
+    private final String targetType;
+    private final String commentContent;
+    private final String targetId;
+    
+    public CommentNotificationData(String recipientId, String recipientName, String recipientEmail,
+                                 String commenterName, String targetTitle, String targetType,
+                                 String commentContent, String targetId) {
+        super(recipientId, recipientName, recipientEmail, 
+              targetType.equals("post") ? NotificationType.POST_COMMENT : NotificationType.COURSE_COMMENT);
+        this.commenterName = commenterName;
+        this.targetTitle = targetTitle;
+        this.targetType = targetType;
+        this.commentContent = commentContent;
+        this.targetId = targetId;
+    }
+    
+    public String getCommenterName() { return commenterName; }
+    public String getTargetTitle() { return targetTitle; }
+    public String getTargetType() { return targetType; }
+    public String getTargetUrl() { 
+        return "https://qiaoya.com/" + targetType + "/" + targetId; 
+    }
+    public String getTruncatedCommentContent() {
+        return commentContent.length() > 100 ? commentContent.substring(0, 100) + "..." : commentContent;
+    }
+}
+```
+
+## 3. 纯粹的通知领域服务
+
+### 3.1 核心通知服务 - 不依赖任何其他领域
+```java
+/**
+ * 纯粹的通知领域服务 - 不依赖任何其他领域
+ */
+@Service
+public class NotificationDomainService {
+    
+    private final NotificationRepository notificationRepository;
+    private final NotificationTemplateRegistry templateRegistry;
+    private final NotificationChannelRegistry channelRegistry;
+    // ✅ 不依赖任何其他领域服务
+    
+    /**
+     * 发送通知 - 所有需要的数据都在notificationData中
+     */
+    public <T extends NotificationData> void sendNotification(T notificationData) {
+        Class<T> dataType = (Class<T>) notificationData.getClass();
+        
+        // 发送站内消息
+        if (templateRegistry.hasTemplate(dataType, ChannelType.IN_APP)) {
+            sendToChannel(notificationData, ChannelType.IN_APP);
+        }
+        
+        // 发送邮件
+        if (templateRegistry.hasTemplate(dataType, ChannelType.EMAIL)) {
+            sendToChannel(notificationData, ChannelType.EMAIL);
+        }
+    }
+    
+    /**
+     * 发送到指定渠道
+     */
+    private <T extends NotificationData> void sendToChannel(T notificationData, ChannelType channelType) {
+        try {
+            Class<T> dataType = (Class<T>) notificationData.getClass();
+            
+            // 1. 获取模板
+            NotificationTemplate<T> template = templateRegistry.getTemplate(dataType, channelType);
+            if (template == null) return;
+            
+            // 2. 渲染内容
+            String title = template.renderTitle(notificationData);
+            String content = template.renderContent(notificationData);
+            
+            // 3. 创建通知记录
+            NotificationEntity notification = new NotificationEntity();
+            notification.setRecipientId(notificationData.getRecipientId());
+            notification.setType(notificationData.getType());
+            notification.setChannelType(channelType);
+            notification.setTitle(title);
+            notification.setContent(content);
+            notification.setStatus(NotificationStatus.PENDING);
+            
+            // 4. 获取渠道地址（从通知数据中获取，不查询其他领域）
+            String recipientAddress = getChannelAddress(notificationData, channelType);
+            if (recipientAddress == null) {
+                notification.markAsFailed();
+                notificationRepository.insert(notification);
+                return;
+            }
+            
+            // 5. 发送通知
+            NotificationChannel channel = channelRegistry.getChannel(channelType);
+            if (channel != null && channel.isAvailable()) {
+                NotificationMessage message = createMessage(notification, recipientAddress);
+                NotificationSendResult result = channel.send(message);
+                
+                if (result.isSuccess()) {
+                    notification.markAsSent();
+                } else {
+                    notification.markAsFailed();
+                }
+            } else {
+                notification.markAsFailed();
+            }
+            
+            // 6. 保存记录
+            notificationRepository.insert(notification);
+            
+        } catch (Exception e) {
+            log.error("发送通知失败: dataType={}, channel={}", 
+                     notificationData.getClass().getSimpleName(), channelType, e);
+        }
+    }
+    
+    /**
+     * 从通知数据中获取渠道地址 - 不依赖其他领域
+     */
+    private String getChannelAddress(NotificationData data, ChannelType channelType) {
+        switch (channelType) {
+            case IN_APP:
+                return data.getRecipientId();
+            case EMAIL:
+                return data.getRecipientEmail(); // 直接从事件数据中获取
+            case SMS:
+                // 需要在NotificationData中添加手机号字段
+                return null; // 暂不支持短信
+            default:
+                return null;
+        }
+    }
+    
+    // 其他辅助方法...
+}
+```
+
+## 3. 纯粹的通知领域服务
+
+### 3.1 核心通知服务 - 不依赖任何其他领域
+```java
+/**
+ * 纯粹的通知领域服务 - 不依赖任何其他领域
+ */
+@Service
+public class NotificationDomainService {
+    
+    private final NotificationRepository notificationRepository;
+    private final NotificationTemplateRegistry templateRegistry;
+    private final NotificationChannelRegistry channelRegistry;
+    // ✅ 不依赖任何其他领域服务
+    
+    /**
+     * 发送通知 - 所有需要的数据都在notificationData中
+     */
+    public <T extends NotificationData> void sendNotification(T notificationData) {
+        Class<T> dataType = (Class<T>) notificationData.getClass();
+        
+        // 发送站内消息
+        if (templateRegistry.hasTemplate(dataType, ChannelType.IN_APP)) {
+            sendToChannel(notificationData, ChannelType.IN_APP);
+        }
+        
+        // 发送邮件
+        if (templateRegistry.hasTemplate(dataType, ChannelType.EMAIL)) {
+            sendToChannel(notificationData, ChannelType.EMAIL);
+        }
+    }
+    
+    /**
+     * 发送到指定渠道
+     */
+    private <T extends NotificationData> void sendToChannel(T notificationData, ChannelType channelType) {
+        try {
+            Class<T> dataType = (Class<T>) notificationData.getClass();
+            
+            // 1. 获取模板
+            NotificationTemplate<T> template = templateRegistry.getTemplate(dataType, channelType);
+            if (template == null) return;
+            
+            // 2. 渲染内容
+            String title = template.renderTitle(notificationData);
+            String content = template.renderContent(notificationData);
+            
+            // 3. 创建通知记录
+            NotificationEntity notification = new NotificationEntity();
+            notification.setRecipientId(notificationData.getRecipientId());
+            notification.setType(notificationData.getType());
+            notification.setChannelType(channelType);
+            notification.setTitle(title);
+            notification.setContent(content);
+            notification.setStatus(NotificationStatus.PENDING);
+            
+            // 4. 获取渠道地址（从通知数据中获取，不查询其他领域）
+            String recipientAddress = getChannelAddress(notificationData, channelType);
+            if (recipientAddress == null) {
+                notification.markAsFailed();
+                notificationRepository.insert(notification);
+                return;
+            }
+            
+            // 5. 发送通知
+            NotificationChannel channel = channelRegistry.getChannel(channelType);
+            if (channel != null && channel.isAvailable()) {
+                NotificationMessage message = createMessage(notification, recipientAddress);
+                NotificationSendResult result = channel.send(message);
+                
+                if (result.isSuccess()) {
+                    notification.markAsSent();
+                } else {
+                    notification.markAsFailed();
+                }
+            } else {
+                notification.markAsFailed();
+            }
+            
+            // 6. 保存记录
+            notificationRepository.insert(notification);
+            
+        } catch (Exception e) {
+            log.error("发送通知失败: dataType={}, channel={}", 
+                     notificationData.getClass().getSimpleName(), channelType, e);
+        }
+    }
+    
+    /**
+     * 从通知数据中获取渠道地址 - 不依赖其他领域
+     */
+    private String getChannelAddress(NotificationData data, ChannelType channelType) {
+        switch (channelType) {
+            case IN_APP:
+                return data.getRecipientId();
+            case EMAIL:
+                return data.getRecipientEmail(); // 直接从事件数据中获取
+            case SMS:
+                // 需要在NotificationData中添加手机号字段
+                return null; // 暂不支持短信
+            default:
+                return null;
+        }
+    }
+    
+    /**
+     * 创建消息对象
+     */
+    private NotificationMessage createMessage(NotificationEntity notification, String recipientAddress) {
+        NotificationMessage message = new NotificationMessage();
+        message.setMessageId(UUID.randomUUID().toString());
+        message.setRecipientId(notification.getRecipientId());
+        message.setRecipientAddress(recipientAddress);
+        message.setTitle(notification.getTitle());
+        message.setContent(notification.getContent());
+        message.setChannelType(notification.getChannelType());
+        return message;
+    }
+    
+    /**
+     * 获取用户站内通知列表
+     */
+    public IPage<NotificationEntity> getUserNotifications(String userId, Integer pageNum, Integer pageSize) {
+        Page<NotificationEntity> page = new Page<>(pageNum, pageSize);
+        
+        LambdaQueryWrapper<NotificationEntity> queryWrapper = 
+            new LambdaQueryWrapper<NotificationEntity>()
+                .eq(NotificationEntity::getRecipientId, userId)
+                .eq(NotificationEntity::getChannelType, ChannelType.IN_APP)
+                .orderByDesc(NotificationEntity::getCreateTime);
+        
+        return notificationRepository.selectPage(page, queryWrapper);
+    }
+    
+    /**
+     * 获取未读通知数量
+     */
+    public Long getUnreadCount(String userId) {
+        LambdaQueryWrapper<NotificationEntity> queryWrapper = 
+            new LambdaQueryWrapper<NotificationEntity>()
+                .eq(NotificationEntity::getRecipientId, userId)
+                .eq(NotificationEntity::getChannelType, ChannelType.IN_APP)
+                .eq(NotificationEntity::getStatus, NotificationStatus.SENT);
+        
+        return notificationRepository.selectCount(queryWrapper);
+    }
+    
+    /**
+     * 标记通知为已读
+     */
+    public void markAsRead(String userId, String notificationId) {
+        NotificationEntity notification = notificationRepository.selectById(notificationId);
+        if (notification != null && notification.getRecipientId().equals(userId)) {
+            notification.markAsRead();
+            notificationRepository.updateById(notification);
+        }
+    }
+    
+    /**
+     * 标记所有通知为已读
+     */
+    public void markAllAsRead(String userId) {
+        LambdaUpdateWrapper<NotificationEntity> updateWrapper = 
+            new LambdaUpdateWrapper<NotificationEntity>()
+                .eq(NotificationEntity::getRecipientId, userId)
+                .eq(NotificationEntity::getChannelType, ChannelType.IN_APP)
+                .eq(NotificationEntity::getStatus, NotificationStatus.SENT)
+                .set(NotificationEntity::getStatus, NotificationStatus.READ);
+        
+        notificationRepository.update(null, updateWrapper);
+    }
+}
+```
+
+## 4. 模板定义
+
+### 2.1 模板接口
+```java
+/**
+ * 通知模板接口
+ */
+public interface NotificationTemplate<T extends NotificationData> {
+    
+    /**
+     * 渲染标题
+     */
+    String renderTitle(T data);
+    
+    /**
+     * 渲染内容
+     */
+    String renderContent(T data);
+    
+    /**
+     * 获取支持的通知数据类型
+     */
+    Class<T> getSupportedDataType();
+}
+```
+
+### 2.2 站内消息模板
+```java
+/**
+ * 站内消息模板
+ */
+public class InAppNotificationTemplates {
+    
+    /**
+     * 新关注者站内消息模板
+     */
+    public static class NewFollowerTemplate implements NotificationTemplate<NewFollowerNotificationData> {
+        
+        @Override
+        public String renderTitle(NewFollowerNotificationData data) {
+            return "新的关注者";
+        }
+        
+        @Override
+        public String renderContent(NewFollowerNotificationData data) {
+            return data.getFollowerName() + " 开始关注你了";
+        }
+        
+        @Override
+        public Class<NewFollowerNotificationData> getSupportedDataType() {
+            return NewFollowerNotificationData.class;
+        }
+    }
+    
+    /**
+     * 内容更新站内消息模板
+     */
+    public static class ContentUpdateTemplate implements NotificationTemplate<ContentUpdateNotificationData> {
+        
+        @Override
+        public String renderTitle(ContentUpdateNotificationData data) {
+            return "关注内容更新";
+        }
+        
+        @Override
+        public String renderContent(ContentUpdateNotificationData data) {
+            return data.getAuthorName() + " 发布了新的" + 
+                   data.getContentType() + "：" + data.getContentTitle();
+        }
+        
+        @Override
+        public Class<ContentUpdateNotificationData> getSupportedDataType() {
+            return ContentUpdateNotificationData.class;
+        }
+    }
+    
+    /**
+     * CDK激活站内消息模板
+     */
+    public static class CDKActivatedTemplate implements NotificationTemplate<CDKActivatedNotificationData> {
+        
+        @Override
+        public String renderTitle(CDKActivatedNotificationData data) {
+            return "CDK激活成功";
+        }
+        
+        @Override
+        public String renderContent(CDKActivatedNotificationData data) {
+            return "你的CDK码 " + data.getCdkCode() + " 已成功激活";
+        }
+        
+        @Override
+        public Class<CDKActivatedNotificationData> getSupportedDataType() {
+            return CDKActivatedNotificationData.class;
+        }
+    }
+    
+    /**
+     * 订阅过期站内消息模板
+     */
+    public static class SubscriptionExpiredTemplate implements NotificationTemplate<SubscriptionExpiredNotificationData> {
+        
+        @Override
+        public String renderTitle(SubscriptionExpiredNotificationData data) {
+            return "订阅即将过期";
+        }
+        
+        @Override
+        public String renderContent(SubscriptionExpiredNotificationData data) {
+            return "你的订阅将在 " + data.getDaysRemaining() + " 天后过期，请及时续费";
+        }
+        
+        @Override
+        public Class<SubscriptionExpiredNotificationData> getSupportedDataType() {
+            return SubscriptionExpiredNotificationData.class;
+        }
+    }
+    
+    /**
+     * 评论站内消息模板
+     */
+    public static class CommentTemplate implements NotificationTemplate<CommentNotificationData> {
+        
+        @Override
+        public String renderTitle(CommentNotificationData data) {
+            return "新的评论";
+        }
+        
+        @Override
+        public String renderContent(CommentNotificationData data) {
+            return data.getCommenterName() + " 评论了你的" + 
+                   data.getTargetType() + "：" + data.getTargetTitle();
+        }
+        
+        @Override
+        public Class<CommentNotificationData> getSupportedDataType() {
+            return CommentNotificationData.class;
+        }
+    }
+}
+```
+
+### 2.3 站外消息模板（邮件）
+```java
+/**
+ * 站外消息模板（邮件）
+ */
+public class OutAppNotificationTemplates {
+    
+    /**
+     * 新关注者邮件模板
+     */
+    public static class NewFollowerTemplate implements NotificationTemplate<NewFollowerNotificationData> {
+        
+        @Override
+        public String renderTitle(NewFollowerNotificationData data) {
+            return "敲鸭社区 - 新的关注者";
+        }
+        
+        @Override
+        public String renderContent(NewFollowerNotificationData data) {
+            return String.format(
+                "Hi %s,<br><br>" +
+                "%s 开始关注你了！<br><br>" +
+                "点击查看个人主页：<a href=\"%s\">%s</a><br><br>" +
+                "敲鸭社区团队",
+                data.getRecipientName(),
+                data.getFollowerName(),
+                data.getFollowerProfileUrl(),
+                data.getFollowerProfileUrl()
+            );
+        }
+        
+        @Override
+        public Class<NewFollowerNotificationData> getSupportedDataType() {
+            return NewFollowerNotificationData.class;
+        }
+    }
+    
+    /**
+     * 内容更新邮件模板
+     */
+    public static class ContentUpdateTemplate implements NotificationTemplate<ContentUpdateNotificationData> {
+        
+        @Override
+        public String renderTitle(ContentUpdateNotificationData data) {
+            return "敲鸭社区 - 关注内容更新";
+        }
+        
+        @Override
+        public String renderContent(ContentUpdateNotificationData data) {
+            return String.format(
+                "Hi %s,<br><br>" +
+                "%s 发布了新的%s：<br>" +
+                "<strong>%s</strong><br><br>" +
+                "点击查看：<a href=\"%s\">%s</a><br><br>" +
+                "敲鸭社区团队",
+                data.getRecipientName(),
+                data.getAuthorName(),
+                data.getContentType(),
+                data.getContentTitle(),
+                data.getContentUrl(),
+                data.getContentUrl()
+            );
+        }
+        
+        @Override
+        public Class<ContentUpdateNotificationData> getSupportedDataType() {
+            return ContentUpdateNotificationData.class;
+        }
+    }
+    
+    /**
+     * CDK激活邮件模板
+     */
+    public static class CDKActivatedTemplate implements NotificationTemplate<CDKActivatedNotificationData> {
+        
+        @Override
+        public String renderTitle(CDKActivatedNotificationData data) {
+            return "敲鸭社区 - CDK激活成功";
+        }
+        
+        @Override
+        public String renderContent(CDKActivatedNotificationData data) {
+            return String.format(
+                "Hi %s,<br><br>" +
+                "你的CDK码 <strong>%s</strong> 已成功激活！<br><br>" +
+                "激活时间：%s<br><br>" +
+                "感谢使用敲鸭社区！<br><br>" +
+                "敲鸭社区团队",
+                data.getRecipientName(),
+                data.getCdkCode(),
+                data.getActivationTime()
+            );
+        }
+        
+        @Override
+        public Class<CDKActivatedNotificationData> getSupportedDataType() {
+            return CDKActivatedNotificationData.class;
+        }
+    }
+    
+    /**
+     * 订阅过期邮件模板
+     */
+    public static class SubscriptionExpiredTemplate implements NotificationTemplate<SubscriptionExpiredNotificationData> {
+        
+        @Override
+        public String renderTitle(SubscriptionExpiredNotificationData data) {
+            return "敲鸭社区 - 订阅即将过期";
+        }
+        
+        @Override
+        public String renderContent(SubscriptionExpiredNotificationData data) {
+            return String.format(
+                "Hi %s,<br><br>" +
+                "你的订阅将在 <strong>%d</strong> 天后过期。<br><br>" +
+                "为了不影响你的学习体验，请及时续费：<br>" +
+                "<a href=\"%s\">立即续费</a><br><br>" +
+                "如有疑问，请联系客服。<br><br>" +
+                "敲鸭社区团队",
+                data.getRecipientName(),
+                data.getDaysRemaining(),
+                data.getRenewalUrl()
+            );
+        }
+        
+        @Override
+        public Class<SubscriptionExpiredNotificationData> getSupportedDataType() {
+            return SubscriptionExpiredNotificationData.class;
+        }
+    }
+    
+    /**
+     * 评论邮件模板
+     */
+    public static class CommentTemplate implements NotificationTemplate<CommentNotificationData> {
+        
+        @Override
+        public String renderTitle(CommentNotificationData data) {
+            return "敲鸭社区 - 新的评论";
+        }
+        
+        @Override
+        public String renderContent(CommentNotificationData data) {
+            return String.format(
+                "Hi %s,<br><br>" +
+                "%s 评论了你的%s「%s」：<br><br>" +
+                "<blockquote>%s</blockquote><br>" +
+                "点击查看：<a href=\"%s\">%s</a><br><br>" +
+                "敲鸭社区团队",
+                data.getRecipientName(),
+                data.getCommenterName(),
+                data.getTargetType(),
+                data.getTargetTitle(),
+                data.getTruncatedCommentContent(),
+                data.getTargetUrl(),
+                data.getTargetUrl()
+            );
+        }
+        
+        @Override
+        public Class<CommentNotificationData> getSupportedDataType() {
+            return CommentNotificationData.class;
+        }
+    }
+}
+```
+
+## 5. 模板管理服务
+
+### 3.1 模板注册器
+```java
+/**
+ * 通知模板注册器
+ */
+@Service
+public class NotificationTemplateRegistry {
+    
+    // 站内消息模板
+    private final Map<Class<? extends NotificationData>, NotificationTemplate> inAppTemplates = new HashMap<>();
+    
+    // 站外消息模板
+    private final Map<Class<? extends NotificationData>, NotificationTemplate> outAppTemplates = new HashMap<>();
+    
+    @PostConstruct
+    public void initTemplates() {
+        // 注册站内消息模板
+        registerInAppTemplate(new InAppNotificationTemplates.NewFollowerTemplate());
+        registerInAppTemplate(new InAppNotificationTemplates.ContentUpdateTemplate());
+        registerInAppTemplate(new InAppNotificationTemplates.CDKActivatedTemplate());
+        registerInAppTemplate(new InAppNotificationTemplates.SubscriptionExpiredTemplate());
+        registerInAppTemplate(new InAppNotificationTemplates.CommentTemplate());
+        
+        // 注册站外消息模板
+        registerOutAppTemplate(new OutAppNotificationTemplates.NewFollowerTemplate());
+        registerOutAppTemplate(new OutAppNotificationTemplates.ContentUpdateTemplate());
+        registerOutAppTemplate(new OutAppNotificationTemplates.CDKActivatedTemplate());
+        registerOutAppTemplate(new OutAppNotificationTemplates.SubscriptionExpiredTemplate());
+        registerOutAppTemplate(new OutAppNotificationTemplates.CommentTemplate());
+        
+        log.info("通知模板注册完成: 站内模板{}个, 站外模板{}个", 
+                inAppTemplates.size(), outAppTemplates.size());
+    }
+    
+    /**
+     * 注册站内消息模板
+     */
+    private void registerInAppTemplate(NotificationTemplate template) {
+        inAppTemplates.put(template.getSupportedDataType(), template);
+    }
+    
+    /**
+     * 注册站外消息模板
+     */
+    private void registerOutAppTemplate(NotificationTemplate template) {
+        outAppTemplates.put(template.getSupportedDataType(), template);
+    }
+    
+    /**
+     * 获取站内消息模板
+     */
+    @SuppressWarnings("unchecked")
+    public <T extends NotificationData> NotificationTemplate<T> getInAppTemplate(Class<T> dataType) {
+        return inAppTemplates.get(dataType);
+    }
+    
+    /**
+     * 获取站外消息模板
+     */
+    @SuppressWarnings("unchecked")
+    public <T extends NotificationData> NotificationTemplate<T> getOutAppTemplate(Class<T> dataType) {
+        return outAppTemplates.get(dataType);
+    }
+    
+    /**
+     * 获取模板（根据渠道类型）
+     */
+    @SuppressWarnings("unchecked")
+    public <T extends NotificationData> NotificationTemplate<T> getTemplate(Class<T> dataType, ChannelType channelType) {
+        if (channelType == ChannelType.IN_APP) {
+            return getInAppTemplate(dataType);
+        } else {
+            return getOutAppTemplate(dataType);
+        }
+    }
+    
+    /**
+     * 检查是否支持指定类型和渠道的模板
+     */
+    public boolean hasTemplate(Class<? extends NotificationData> dataType, ChannelType channelType) {
+        return getTemplate(dataType, channelType) != null;
+    }
+}
+```
+
+## 6. Application层事件监听器
+
+### 6.0 架构说明：为什么事件监听器在Application层
+
+**Application层职责：**
+- ✅ 业务流程编排
+- ✅ 事务管理  
+- ✅ 调用Domain服务完成业务操作
+- ✅ 领域对象到DTO的转换
+
+**事件监听器的实际工作：**
+1. **监听事件** - 流程编排工作
+2. **从事件提取数据** - 流程编排工作  
+3. **业务规则判断**（如不给自己发通知）- 流程编排工作
+4. **构建通知数据对象** - 流程编排工作
+5. **调用NotificationDomainService** - 调用领域服务
+
+**结论：** 事件监听器本质上是在做**流程编排**工作，应该放在Application层，而不是Domain层。
+
+**目录结构：**
+```
+application/notification/listener/
+├── FollowNotificationListener.java      # 关注事件监听器
+├── CommentNotificationListener.java     # 评论事件监听器  
+└── SubscriptionNotificationListener.java # 订阅事件监听器
+```
+
+### 6.1 关注事件监听器 - Application层流程编排
+```java
+/**
+ * 关注相关事件监听器 - Application层负责流程编排
+ * 位置：org.xhy.community.application.notification.listener.FollowNotificationListener
+ */
+@Component
+public class FollowNotificationListener {
+    
+    private final NotificationDomainService notificationDomainService;
+    
+    /**
+     * 监听新关注者事件 - Application层流程编排
+     * 职责：1. 监听事件 2. 流程编排 3. 调用Domain服务
+     */
+    @EventListener
+    @Async
+    public void handleUserFollowedEvent(UserFollowedEvent event) {
+        try {
+            // Application层流程编排：从事件构建通知数据
+            NewFollowerNotificationData notificationData = 
+                new NewFollowerNotificationData(
+                    event.getTargetId(),
+                    event.getTargetName(), 
+                    event.getTargetEmail(),
+                    event.getFollowerId(),
+                    event.getFollowerName()
+                );
+            
+            // 发送通知
+            notificationDomainService.sendNotification(notificationData);
+            
+        } catch (Exception e) {
+            log.error("处理新关注者事件失败", e);
+        }
+    }
+    
+    /**
+     * 监听内容更新事件 - Application层流程编排
+     */
+    @EventListener
+    @Async
+    public void handleContentUpdatedEvent(ContentUpdatedEvent event) {
+        try {
+            // Application层流程编排：为每个关注者创建通知数据
+            for (FollowerInfo follower : event.getFollowers()) {
+                ContentUpdateNotificationData notificationData = 
+                    new ContentUpdateNotificationData(
+                        follower.getFollowerId(),
+                        follower.getFollowerName(),
+                        follower.getFollowerEmail(),
+                        event.getAuthorName(),
+                        event.getContentTitle(),
+                        event.getContentType(),
+                        event.getContentId()
+                    );
+                
+                // 发送通知
+                notificationDomainService.sendNotification(notificationData);
+            }
+            
+        } catch (Exception e) {
+            log.error("处理内容更新事件失败", e);
+        }
+    }
+}
+}
+```
+
+### 6.2 CDK和订阅事件监听器 - Application层流程编排
+```java
+/**
+ * CDK和订阅相关事件监听器 - Application层负责流程编排
+ * 位置：org.xhy.community.application.notification.listener.SubscriptionNotificationListener
+ */
+@Component
+public class SubscriptionNotificationListener {
+    
+    private final NotificationDomainService notificationDomainService;
+    
+    /**
+     * 监听CDK激活事件 - Application层流程编排
+     */
+    @EventListener
+    @Async
+    public void handleCDKActivatedEvent(CDKActivatedEvent event) {
+        try {
+            // Application层流程编排：从事件构建通知数据
+            CDKActivatedNotificationData notificationData = 
+                new CDKActivatedNotificationData(
+                    event.getUserId(),
+                    event.getUserName(),
+                    event.getUserEmail(),
+                    event.getCdkCode(),
+                    event.getActivationTime()
+                );
+            
+            // 发送通知
+            notificationDomainService.sendNotification(notificationData);
+            
+        } catch (Exception e) {
+            log.error("处理CDK激活事件失败", e);
+        }
+    }
+    
+    /**
+     * 定时检查订阅过期 - 发送事件驱动的通知
+     */
+    @Scheduled(cron = "0 0 9 * * ?") // 每天早上9点执行
+    public void checkExpiringSubscriptions() {
+        try {
+            // 这里需要调用订阅领域服务获取即将过期的订阅，并发布事件
+            // 然后监听该事件进行通知
+            
+        } catch (Exception e) {
+            log.error("检查订阅过期状态失败", e);
+        }
+    }
+    
+    /**
+     * 监听订阅即将过期事件
+     */
+    @EventListener
+    @Async  
+    public void handleSubscriptionExpiringEvent(SubscriptionExpiringEvent event) {
+        try {
+            // 直接从事件构建通知数据
+            SubscriptionExpiredNotificationData notificationData = 
+                new SubscriptionExpiredNotificationData(
+                    event.getUserId(),
+                    event.getUserName(),
+                    event.getUserEmail(),
+                    event.getSubscriptionId(),
+                    event.getDaysRemaining()
+                );
+            
+            // 发送通知
+            notificationDomainService.sendNotification(notificationData);
+            
+        } catch (Exception e) {
+            log.error("处理订阅即将过期事件失败", e);
+        }
+    }
+}
+}
+```
+
+### 6.3 评论事件监听器 - Application层流程编排
+```java
+/**
+ * 评论相关事件监听器 - Application层负责流程编排
+ * 位置：org.xhy.community.application.notification.listener.CommentNotificationListener
+ */
+@Component
+public class CommentNotificationListener {
+    
+    private final NotificationDomainService notificationDomainService;
+    
+    /**
+     * 监听评论创建事件 - Application层流程编排
+     */
+    @EventListener
+    @Async
+    public void handleCommentCreatedEvent(CommentCreatedEvent event) {
+        try {
+            // Application层流程编排：业务规则判断
+            // 不给自己发通知
+            if (event.getCommenterId().equals(event.getTargetAuthorId())) {
+                return;
+            }
+            
+            // Application层流程编排：从事件构建通知数据
+            CommentNotificationData notificationData = 
+                new CommentNotificationData(
+                    event.getTargetAuthorId(),
+                    event.getTargetAuthorName(),
+                    event.getTargetAuthorEmail(),
+                    event.getCommenterName(),
+                    event.getTargetTitle(),
+                    event.getTargetType(),
+                    event.getCommentContent(),
+                    event.getTargetId()
+                );
+            
+            // 发送通知
+            notificationDomainService.sendNotification(notificationData);
+            
+        } catch (Exception e) {
+            log.error("处理评论事件失败", e);
+        }
+    }
+}
+}
+```
+
+## 7. 应用层服务
+
+### 7.1 用户通知应用服务
+```java
+/**
+ * 用户通知应用服务
+ */
+@Service
+public class NotificationAppService {
+    
+    private final NotificationDomainService notificationDomainService;
+    
+    /**
+     * 获取用户通知列表
+     */
+    public IPage<NotificationDTO> getUserNotifications(String userId, Integer pageNum, Integer pageSize) {
+        IPage<NotificationEntity> notifications = 
+            notificationDomainService.getUserNotifications(userId, pageNum, pageSize);
+        
+        return NotificationAssembler.toDTOPage(notifications);
+    }
+    
+    /**
+     * 获取未读通知数量
+     */
+    public Long getUnreadNotificationCount(String userId) {
+        return notificationDomainService.getUnreadCount(userId);
+    }
+    
+    /**
+     * 标记通知为已读
+     */
+    public void markNotificationAsRead(String userId, String notificationId) {
+        notificationDomainService.markAsRead(userId, notificationId);
+    }
+    
+    /**
+     * 标记所有通知为已读
+     */
+    public void markAllNotificationsAsRead(String userId) {
+        notificationDomainService.markAllAsRead(userId);
+    }
+}
+```
+
+## 8. 数据库设计
+
+### 8.1 简化的通知表
+```sql
+-- 通知记录表
+CREATE TABLE notifications (
+    id VARCHAR(36) PRIMARY KEY,
+    recipient_id VARCHAR(36) NOT NULL,
+    type VARCHAR(50) NOT NULL,
+    channel_type VARCHAR(50) NOT NULL,
+    title VARCHAR(200) NOT NULL,
+    content TEXT NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+    create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+-- 索引
+CREATE INDEX idx_notifications_recipient_channel ON notifications(recipient_id, channel_type);
+CREATE INDEX idx_notifications_type ON notifications(type);
+CREATE INDEX idx_notifications_create_time ON notifications(create_time);
+```
+
+## 9. 核心优势
+
+### 9.1 事件驱动架构优势
+1. **完全解耦** - 通知领域完全独立，不依赖任何其他领域服务
+2. **事件包含完整信息** - 避免跨领域查询，提高性能
+3. **异步处理** - 事件监听器异步执行，不影响主业务流程
+4. **易于扩展** - 新增通知类型只需添加事件和数据类
+
+### 9.2 设计优势
+1. **类型安全** - 直接使用业务对象，编译时检查
+2. **代码简洁** - 不需要手动构建变量Map
+3. **易于理解** - 通知数据结构清晰直观
+4. **模板复用** - 同一数据对象支持多种渠道模板
+
+### 9.3 使用优势
+1. **事件驱动** - 各领域发布事件，通知领域监听处理
+2. **自动渲染** - 模板自动访问对象属性
+3. **多渠道支持** - 同一数据对象支持多种渠道
+4. **性能优秀** - 无反射，无跨领域查询
+
+## 10. 实施计划
+
+### Phase 1: 事件和数据对象定义 (1天)
+- 定义各领域的事件类（UserFollowedEvent、ContentUpdatedEvent等）
+- 创建NotificationData基类和所有子类
+- 定义NotificationTemplate接口
+
+### Phase 2: 模板定义 (1天)
+- 实现所有站内消息模板
+- 实现所有站外消息模板
+- 创建NotificationTemplateRegistry
+
+### Phase 3: 核心服务和Application层事件监听器 (1天)
+- 实现纯粹的NotificationDomainService（不依赖其他领域）
+- 创建Application层事件监听器处理跨领域调用
+- 实现模板注册和获取逻辑
+
+### Phase 4: 集成测试 (0.5天)
+- 端到端测试事件驱动流程
+- 验证各种通知类型
+- 性能测试
+
+**总计：3.5天**
+
+## 11. 使用示例 - 事件驱动方式
+
+```java
+// 1. 关注领域发布事件
+@Service
+public class FollowDomainService {
+    
+    @Autowired
+    private ApplicationEventPublisher eventPublisher;
+    
+    public void followUser(String followerId, String targetId) {
+        // 执行关注逻辑...
+        
+        // 发布事件（包含完整信息，避免跨领域查询）
+        UserFollowedEvent event = new UserFollowedEvent(
+            followerId, followerName, followerEmail,
+            targetId, targetName, targetEmail,
+            LocalDateTime.now()
+        );
+        eventPublisher.publishEvent(event);
+    }
+}
+
+// 2. Application层监听事件并进行流程编排
+@Component // 位置：application.notification.listener.FollowNotificationListener
+public class FollowNotificationListener {
+    
+    private final NotificationDomainService notificationDomainService;
+    
+    @EventListener
+    @Async
+    public void handleUserFollowedEvent(UserFollowedEvent event) {
+        // Application层流程编排
+        NewFollowerNotificationData data = new NewFollowerNotificationData(
+            event.getTargetId(), event.getTargetName(), event.getTargetEmail(),
+            event.getFollowerId(), event.getFollowerName()
+        );
+        
+        // 调用Domain服务
+        notificationDomainService.sendNotification(data);
+    }
+}
+```
+
+这个设计完全基于事件驱动，**事件监听器正确放置在Application层进行流程编排**，实现了领域间的完全解耦！

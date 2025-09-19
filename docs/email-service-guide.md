@@ -1,0 +1,156 @@
+# 邮件服务配置指南
+
+## 配置步骤
+
+### 1. 阿里云Direct Mail配置
+
+在阿里云控制台完成以下配置：
+
+1. **开通邮件推送服务**
+   - 登录[阿里云控制台](https://ecs.console.aliyun.com/)
+   - 开通"邮件推送(Direct Mail)"服务
+
+2. **配置发信域名**
+   - 添加并验证您的发信域名
+   - 配置DNS记录(SPF、DKIM等)
+
+3. **创建发信地址**
+   - 在控制台创建发信地址（如：noreply@yourdomain.com）
+   - 设置SMTP密码
+
+### 2. 环境变量配置
+
+设置以下环境变量或在application.yml中配置：
+
+```bash
+# 邮件服务配置
+export ALIYUN_EMAIL_SMTP_HOST=smtpdm.aliyun.com
+export ALIYUN_EMAIL_SMTP_PORT=80
+export ALIYUN_EMAIL_USERNAME=noreply@yourdomain.com
+export ALIYUN_EMAIL_PASSWORD=your-smtp-password
+export ALIYUN_EMAIL_SENDER_NAME=敲鸭社区
+export ALIYUN_EMAIL_ENABLED=true
+```
+
+### 3. application.yml配置示例
+
+```yaml
+aliyun:
+  email:
+    smtp:
+      host: smtpdm.aliyun.com
+      port: 80  # 或465(SSL)
+      username: noreply@yourdomain.com
+      password: your-smtp-password
+      sender-name: 敲鸭社区
+      enabled: true
+```
+
+## 测试邮件发送
+
+### 1. 启动应用
+
+```bash
+mvn spring-boot:run
+```
+
+### 2. 检查启动日志
+
+查看日志中的邮件服务初始化信息：
+```
+邮件服务初始化完成: host=smtpdm.aliyun.com, port=80, username=noreply@yourdomain.com
+```
+
+### 3. 触发通知事件
+
+可以通过以下方式触发邮件通知：
+
+1. **用户关注事件**
+   - 用户A关注用户B时会触发邮件通知
+
+2. **CDK激活事件**
+   - CDK码激活时会发送邮件通知
+
+3. **评论创建事件**
+   - 发表评论时会通知被评论内容的作者
+
+### 4. 查看邮件发送日志
+
+成功发送的日志：
+```
+通知发送成功: userId=xxx, channel=EMAIL, type=USER_FOLLOWED
+```
+
+失败的日志：
+```
+邮件发送失败: to=xxx@example.com, subject=xxx, error=xxx
+```
+
+## 功能特性
+
+### 1. 支持的通知类型
+
+- ✅ **用户关注通知**: 当有用户关注时发送邮件
+- ✅ **CDK激活通知**: CDK码激活成功时发送邮件
+- ✅ **评论通知**: 收到新评论时发送邮件
+- ✅ **内容更新通知**: 关注的内容有更新时发送邮件
+
+### 2. 邮件模板
+
+- 支持HTML格式邮件
+- 自动包含完整的业务信息
+- 美观的邮件样式
+
+### 3. 错误处理
+
+- 自动重试机制
+- 详细的错误日志
+- 优雅的降级处理
+
+## 常见问题
+
+### Q1: 邮件发送失败
+**解决方案:**
+1. 检查SMTP配置是否正确
+2. 验证发信地址是否已在阿里云配置
+3. 确认SMTP密码是否正确
+4. 检查防火墙设置
+
+### Q2: 收不到邮件
+**解决方案:**
+1. 检查垃圾邮件文件夹
+2. 验证收件人邮箱地址格式
+3. 确认域名DNS配置正确
+4. 查看阿里云控制台发送统计
+
+### Q3: 邮件发送慢
+**解决方案:**
+1. 考虑使用端口465(SSL)
+2. 检查网络连接
+3. 考虑增加连接池配置
+
+## 监控和维护
+
+### 1. 日志监控
+监控以下关键日志：
+- 邮件发送成功/失败日志
+- SMTP连接异常日志
+- 模板渲染错误日志
+
+### 2. 性能监控
+- 邮件发送响应时间
+- 发送成功率统计
+- 队列积压情况
+
+### 3. 定期维护
+- 清理失败的通知记录
+- 更新邮件模板
+- 监控发送配额使用情况
+
+## 下一步扩展
+
+1. **短信通知支持**
+2. **微信/钉钉推送**
+3. **邮件发送队列优化**
+4. **模板管理后台**
+5. **用户通知偏好设置**
