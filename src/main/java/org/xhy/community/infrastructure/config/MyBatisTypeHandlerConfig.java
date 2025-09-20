@@ -38,7 +38,6 @@ import org.xhy.community.infrastructure.converter.FollowStatusConverter;
 import org.xhy.community.infrastructure.converter.NotificationTypeConverter;
 import org.xhy.community.infrastructure.converter.ChannelTypeConverter;
 import org.xhy.community.infrastructure.converter.NotificationStatusConverter;
-import org.xhy.community.infrastructure.converter.StringListConverter;
 import org.xhy.community.domain.course.valueobject.CourseResource;
 import org.xhy.community.infrastructure.converter.*;
 

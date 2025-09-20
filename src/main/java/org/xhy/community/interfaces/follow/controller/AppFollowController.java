@@ -8,6 +8,9 @@ import org.xhy.community.domain.follow.valueobject.FollowTargetType;
 import org.xhy.community.infrastructure.config.ApiResponse;
 import org.xhy.community.interfaces.follow.request.ToggleFollowRequest;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * 前台关注控制器
  * 提供前台页面的关注交互功能
@@ -27,25 +30,29 @@ public class AppFollowController {
      * 关注/取消关注切换
      * 根据当前关注状态自动切换为关注或取消关注
      * 需要JWT令牌认证
-     * 
+     *
      * @param request 关注切换请求参数
      *                - targetId: 目标对象ID，UUID格式
      *                - targetType: 目标类型（USER、POST等）
-     * @return 切换后的状态信息
+     * @return 切换后的关注状态信息
      */
     @PostMapping("/toggle")
-    public ApiResponse<FollowDTO> toggleFollow(@Valid @RequestBody ToggleFollowRequest request) {
+    public ApiResponse<Map<String, Object>> toggleFollow(@Valid @RequestBody ToggleFollowRequest request) {
         // 检查当前关注状态
         boolean isFollowing = followAppService.checkFollowStatus(request.getTargetId(), request.getTargetType());
-        
+
+        Map<String, Object> result = new HashMap<>();
+
         if (isFollowing) {
             // 如果已关注则取消关注
             followAppService.unfollow(request.getTargetId(), request.getTargetType());
-            return ApiResponse.success("取消关注成功", null);
+            result.put("isFollowing", false);
+            return ApiResponse.success("取消关注成功", result);
         } else {
             // 如果未关注则创建关注
-            FollowDTO follow = followAppService.createFollow(request.getTargetId(), request.getTargetType());
-            return ApiResponse.success("关注成功", follow);
+            followAppService.createFollow(request.getTargetId(), request.getTargetType());
+            result.put("isFollowing", true);
+            return ApiResponse.success("关注成功", result);
         }
     }
     
