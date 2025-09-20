@@ -3,11 +3,13 @@ package org.xhy.community.domain.user.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.xhy.community.domain.user.entity.UserEntity;
 import org.xhy.community.domain.user.entity.UserCourseEntity;
+import org.xhy.community.domain.user.event.UserRegisteredEvent;
 import org.xhy.community.domain.user.query.UserQuery;
 import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.infrastructure.exception.UserErrorCode;
@@ -25,13 +27,16 @@ public class UserDomainService {
     private final UserRepository userRepository;
     private final UserCourseRepository userCourseRepository;
     private final BCryptPasswordEncoder passwordEncoder;
+    private final ApplicationEventPublisher eventPublisher;
 
-    public UserDomainService(UserRepository userRepository, 
+    public UserDomainService(UserRepository userRepository,
                            UserCourseRepository userCourseRepository,
-                           BCryptPasswordEncoder passwordEncoder) {
+                           BCryptPasswordEncoder passwordEncoder,
+                           ApplicationEventPublisher eventPublisher) {
         this.userRepository = userRepository;
         this.userCourseRepository = userCourseRepository;
         this.passwordEncoder = passwordEncoder;
+        this.eventPublisher = eventPublisher;
     }
 
     public String encryptPassword(String plainPassword) {
@@ -52,7 +57,12 @@ public class UserDomainService {
 
     public UserEntity registerUser(String email, String password) {
         String defaultNickname = generateDefaultNickname();
-        return createUser(defaultNickname, email, password);
+        UserEntity user = createUser(defaultNickname, email, password);
+
+        // 发布用户注册事件
+        eventPublisher.publishEvent(new UserRegisteredEvent(this, user.getId(), user.getEmail()));
+
+        return user;
     }
 
     private String generateDefaultNickname() {

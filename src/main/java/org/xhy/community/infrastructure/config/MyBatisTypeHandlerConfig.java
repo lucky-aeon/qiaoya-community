@@ -43,6 +43,8 @@ import org.xhy.community.infrastructure.converter.NotificationStatusConverter;
 import org.xhy.community.infrastructure.converter.UpdateLogStatusConverter;
 import org.xhy.community.infrastructure.converter.ChangeTypeConverter;
 import org.xhy.community.domain.course.valueobject.CourseResource;
+import org.xhy.community.domain.config.valueobject.SystemConfigType;
+import org.xhy.community.infrastructure.converter.SystemConfigTypeConverter;
 import org.xhy.community.infrastructure.converter.*;
 
 import jakarta.annotation.PostConstruct;
@@ -81,6 +83,7 @@ public class MyBatisTypeHandlerConfig {
         typeHandlerRegistry.register(NotificationType.class, new NotificationTypeConverter());
         typeHandlerRegistry.register(ChannelType.class, new ChannelTypeConverter());
         typeHandlerRegistry.register(NotificationStatus.class, new NotificationStatusConverter());
+        typeHandlerRegistry.register(SystemConfigType.class, new SystemConfigTypeConverter());
         typeHandlerRegistry.register(UpdateLogStatus.class, new UpdateLogStatusConverter());
         typeHandlerRegistry.register(ChangeType.class, new ChangeTypeConverter());
 
