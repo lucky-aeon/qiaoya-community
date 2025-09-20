@@ -81,12 +81,13 @@ public class SubscriptionDomainService {
     }
     
     public boolean checkActiveSubscriptionExists(String userId, String planId) {
-        LambdaQueryWrapper<UserSubscriptionEntity> queryWrapper = 
+        LambdaQueryWrapper<UserSubscriptionEntity> queryWrapper =
             new LambdaQueryWrapper<UserSubscriptionEntity>()
                 .eq(UserSubscriptionEntity::getUserId, userId)
                 .eq(UserSubscriptionEntity::getSubscriptionPlanId, planId)
-                .eq(UserSubscriptionEntity::getStatus, SubscriptionStatus.ACTIVE);
-        
+                .eq(UserSubscriptionEntity::getStatus, SubscriptionStatus.ACTIVE)
+                .gt(UserSubscriptionEntity::getEndTime, LocalDateTime.now());
+
         return userSubscriptionRepository.exists(queryWrapper);
     }
     
@@ -100,12 +101,13 @@ public class SubscriptionDomainService {
     }
     
     public List<UserSubscriptionEntity> getUserActiveSubscriptions(String userId) {
-        LambdaQueryWrapper<UserSubscriptionEntity> queryWrapper = 
+        LambdaQueryWrapper<UserSubscriptionEntity> queryWrapper =
             new LambdaQueryWrapper<UserSubscriptionEntity>()
                 .eq(UserSubscriptionEntity::getUserId, userId)
                 .eq(UserSubscriptionEntity::getStatus, SubscriptionStatus.ACTIVE)
+                .gt(UserSubscriptionEntity::getEndTime, LocalDateTime.now())
                 .orderByDesc(UserSubscriptionEntity::getCreateTime);
-        
+
         return userSubscriptionRepository.selectList(queryWrapper);
     }
     

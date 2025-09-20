@@ -1,4 +1,4 @@
-package org.xhy.community.infrastructure.aspect;
+package org.xhy.community.application.aspect;
 
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;

@@ -1,4 +1,4 @@
-package org.xhy.community.infrastructure.aspect;
+package org.xhy.community.application.aspect;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.aspectj.lang.ProceedingJoinPoint;
