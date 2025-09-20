@@ -22,6 +22,8 @@ import org.xhy.community.domain.follow.valueobject.FollowStatus;
 import org.xhy.community.domain.notification.valueobject.NotificationType;
 import org.xhy.community.domain.notification.valueobject.ChannelType;
 import org.xhy.community.domain.notification.valueobject.NotificationStatus;
+import org.xhy.community.domain.updatelog.valueobject.UpdateLogStatus;
+import org.xhy.community.domain.updatelog.valueobject.ChangeType;
 import org.xhy.community.infrastructure.converter.BusinessTypeConverter;
 import org.xhy.community.infrastructure.converter.CategoryTypeConverter;
 import org.xhy.community.infrastructure.converter.CourseStatusConverter;
@@ -38,6 +40,8 @@ import org.xhy.community.infrastructure.converter.FollowStatusConverter;
 import org.xhy.community.infrastructure.converter.NotificationTypeConverter;
 import org.xhy.community.infrastructure.converter.ChannelTypeConverter;
 import org.xhy.community.infrastructure.converter.NotificationStatusConverter;
+import org.xhy.community.infrastructure.converter.UpdateLogStatusConverter;
+import org.xhy.community.infrastructure.converter.ChangeTypeConverter;
 import org.xhy.community.domain.course.valueobject.CourseResource;
 import org.xhy.community.infrastructure.converter.*;
 
@@ -74,9 +78,11 @@ public class MyBatisTypeHandlerConfig {
         typeHandlerRegistry.register(FollowTargetType.class, new FollowTargetTypeConverter());
         typeHandlerRegistry.register(FollowStatus.class, new FollowStatusConverter());
 
-typeHandlerRegistry.register(NotificationType.class, new NotificationTypeConverter());
+        typeHandlerRegistry.register(NotificationType.class, new NotificationTypeConverter());
         typeHandlerRegistry.register(ChannelType.class, new ChannelTypeConverter());
         typeHandlerRegistry.register(NotificationStatus.class, new NotificationStatusConverter());
+        typeHandlerRegistry.register(UpdateLogStatus.class, new UpdateLogStatusConverter());
+        typeHandlerRegistry.register(ChangeType.class, new ChangeTypeConverter());
 
         // 注册集合类型处理器
         typeHandlerRegistry.register(java.util.Map.class, new MapJsonTypeHandler());
@@ -85,7 +91,7 @@ typeHandlerRegistry.register(NotificationType.class, new NotificationTypeConvert
         // 依赖@TableField(typeHandler = XxxConverter.class)注解来指定具体的转换器
         // CourseEntity中的字段会根据@TableField注解自动选择对应的转换器
 
-        log.info("手动注册类型处理器：UserStatusConverter, PostStatusConverter, CategoryTypeConverter, CourseStatusConverter, BusinessTypeConverter, ResourceTypeConverter, SubscriptionPlanStatusConverter, SubscriptionStatusConverter, CDKTypeConverter, CDKStatusConverter, ActivityTypeConverter, FollowTargetTypeConverter, FollowStatusConverter, MapJsonTypeHandler");
+        log.info("手动注册类型处理器：UserStatusConverter, PostStatusConverter, CategoryTypeConverter, CourseStatusConverter, BusinessTypeConverter, ResourceTypeConverter, SubscriptionPlanStatusConverter, SubscriptionStatusConverter, CDKTypeConverter, CDKStatusConverter, ActivityTypeConverter, FollowTargetTypeConverter, FollowStatusConverter, NotificationTypeConverter, ChannelTypeConverter, NotificationStatusConverter, UpdateLogStatusConverter, ChangeTypeConverter, MapJsonTypeHandler");
         log.info("已注册的类型处理器总数: {}", typeHandlerRegistry.getTypeHandlers().size());
     }
 }
