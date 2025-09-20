@@ -3,6 +3,7 @@ package org.xhy.community.application.post.assembler;
 import org.springframework.beans.BeanUtils;
 import org.xhy.community.application.post.dto.FrontPostDetailDTO;
 import org.xhy.community.domain.post.entity.PostEntity;
+import org.xhy.community.domain.user.entity.UserEntity;
 
 /**
  * 公开文章详情组装器
@@ -10,18 +11,41 @@ import org.xhy.community.domain.post.entity.PostEntity;
  */
 public class FrontPostDetailAssembler {
     
-    public static FrontPostDetailDTO toDTO(PostEntity entity, String authorName, String categoryName) {
+    public static FrontPostDetailDTO toDTO(PostEntity entity, UserEntity author, String categoryName) {
         if (entity == null) {
             return null;
         }
-        
+
         FrontPostDetailDTO dto = new FrontPostDetailDTO();
         BeanUtils.copyProperties(entity, dto);
-        
+
+        // 设置关联信息
+        if (author != null) {
+            dto.setAuthorName(author.getName());
+            dto.setAuthorAvatar(author.getAvatar());
+        }
+        dto.setCategoryName(categoryName);
+
+        return dto;
+    }
+
+    public static FrontPostDetailDTO toDTO(PostEntity entity, String authorName, String authorAvatar, String categoryName) {
+        if (entity == null) {
+            return null;
+        }
+
+        FrontPostDetailDTO dto = new FrontPostDetailDTO();
+        BeanUtils.copyProperties(entity, dto);
+
         // 设置关联信息
         dto.setAuthorName(authorName);
+        dto.setAuthorAvatar(authorAvatar);
         dto.setCategoryName(categoryName);
-        
+
         return dto;
+    }
+
+    public static FrontPostDetailDTO toDTO(PostEntity entity, String authorName, String categoryName) {
+        return toDTO(entity, authorName, null, categoryName);
     }
 }

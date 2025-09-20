@@ -8,6 +8,7 @@ import org.xhy.community.application.course.dto.FrontCourseDetailDTO;
 import org.xhy.community.domain.course.entity.CourseEntity;
 import org.xhy.community.domain.course.entity.ChapterEntity;
 import org.xhy.community.domain.course.query.CourseQuery;
+import org.xhy.community.domain.user.entity.UserEntity;
 import org.xhy.community.interfaces.course.request.CreateCourseRequest;
 import org.xhy.community.interfaces.course.request.UpdateCourseRequest;
 import org.xhy.community.interfaces.course.request.AppCourseQueryRequest;
@@ -68,49 +69,53 @@ public class CourseAssembler {
     }
     
     /**
-     * 将CourseEntity转换为前台课程列表DTO
+     * 将CourseEntity转换为前台课程列表DTO（使用UserEntity）
      */
-    public static FrontCourseDTO toFrontDTO(CourseEntity entity, String authorName, Integer chapterCount) {
+    public static FrontCourseDTO toFrontDTO(CourseEntity entity, UserEntity author, Integer chapterCount) {
         if (entity == null) {
             return null;
         }
-        
+
         FrontCourseDTO dto = new FrontCourseDTO();
         BeanUtils.copyProperties(entity, dto);
-        dto.setAuthorName(authorName);
+        if (author != null) {
+            dto.setAuthorName(author.getName());
+        }
         dto.setChapterCount(chapterCount);
         return dto;
     }
-    
+
     /**
-     * 批量转换为前台课程列表DTO
+     * 批量转换为前台课程列表DTO（使用UserEntity）
      */
-    public static List<FrontCourseDTO> toFrontDTOList(List<CourseEntity> entities, 
-                                                      Map<String, String> authorNameMap, 
+    public static List<FrontCourseDTO> toFrontDTOList(List<CourseEntity> entities,
+                                                      Map<String, UserEntity> authorMap,
                                                       Map<String, Integer> chapterCountMap) {
         if (entities == null || entities.isEmpty()) {
             return List.of();
         }
-        
+
         return entities.stream()
-                .map(entity -> toFrontDTO(entity, 
-                                        authorNameMap.get(entity.getAuthorId()),
+                .map(entity -> toFrontDTO(entity,
+                                        authorMap.get(entity.getAuthorId()),
                                         chapterCountMap.getOrDefault(entity.getId(), 0)))
                 .collect(Collectors.toList());
     }
-    
+
     /**
-     * 将CourseEntity转换为前台课程详情DTO
+     * 将CourseEntity转换为前台课程详情DTO（使用UserEntity）
      */
-    public static FrontCourseDetailDTO toFrontDetailDTO(CourseEntity entity, String authorName, List<ChapterEntity> chapters) {
+    public static FrontCourseDetailDTO toFrontDetailDTO(CourseEntity entity, UserEntity author, List<ChapterEntity> chapters) {
         if (entity == null) {
             return null;
         }
-        
+
         FrontCourseDetailDTO dto = new FrontCourseDetailDTO();
         BeanUtils.copyProperties(entity, dto);
-        dto.setAuthorName(authorName);
-        
+        if (author != null) {
+            dto.setAuthorName(author.getName());
+        }
+
         // 转换章节信息
         if (chapters != null && !chapters.isEmpty()) {
             List<FrontCourseDetailDTO.FrontChapterDTO> chapterDTOs = chapters.stream()
@@ -118,10 +123,10 @@ public class CourseAssembler {
                     .collect(Collectors.toList());
             dto.setChapters(chapterDTOs);
         }
-        
+
         return dto;
     }
-    
+
     /**
      * 将ChapterEntity转换为前台章节DTO
      */
@@ -129,12 +134,12 @@ public class CourseAssembler {
         if (entity == null) {
             return null;
         }
-        
+
         FrontCourseDetailDTO.FrontChapterDTO dto = new FrontCourseDetailDTO.FrontChapterDTO();
         BeanUtils.copyProperties(entity, dto);
         return dto;
     }
-    
+
     /**
      * 将前台查询请求转换为CourseQuery
      */

@@ -11,6 +11,7 @@ import org.xhy.community.domain.post.entity.PostEntity;
 import org.xhy.community.domain.post.query.PostQuery;
 import org.xhy.community.domain.post.service.CategoryDomainService;
 import org.xhy.community.domain.post.service.PostDomainService;
+import org.xhy.community.domain.user.entity.UserEntity;
 import org.xhy.community.domain.user.service.UserDomainService;
 import org.xhy.community.interfaces.post.request.AdminPostQueryRequest;
 
@@ -67,7 +68,7 @@ public class AdminPostAppService {
                 .collect(Collectors.toSet());
         
         // 批量查询用户和分类信息
-        Map<String, String> authorNames = userDomainService.getUserNameMapByIds(authorIds);
+        Map<String, UserEntity> authorMap = userDomainService.getUserEntityMapByIds(authorIds);
         List<CategoryEntity> categories = categoryDomainService.getCategoriesByIds(categoryIds);
         
         // 转换为Map便于查找
@@ -78,7 +79,7 @@ public class AdminPostAppService {
                 ));
         
         // 组装AdminPostDTO
-        List<AdminPostDTO> dtoList = AdminPostAssembler.toDTOList(posts, authorNames, categoryNames);
+        List<AdminPostDTO> dtoList = AdminPostAssembler.toDTOList(posts, authorMap, categoryNames);
         
         Page<AdminPostDTO> dtoPage = new Page<>(entityPage.getCurrent(), entityPage.getSize(), entityPage.getTotal());
         dtoPage.setRecords(dtoList);

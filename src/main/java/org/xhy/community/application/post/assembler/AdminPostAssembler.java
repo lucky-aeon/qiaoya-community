@@ -5,6 +5,7 @@ import org.xhy.community.application.post.dto.AdminPostDTO;
 import org.xhy.community.domain.post.entity.PostEntity;
 import org.xhy.community.domain.post.query.PostQuery;
 import org.xhy.community.domain.common.valueobject.AccessLevel;
+import org.xhy.community.domain.user.entity.UserEntity;
 import org.xhy.community.interfaces.post.request.AdminPostQueryRequest;
 
 import java.util.List;
@@ -30,43 +31,47 @@ public class AdminPostAssembler {
     }
     
     /**
-     * 将PostEntity转换为AdminPostDTO，包含作者名称和分类名称
-     * 
+     * 将PostEntity转换为AdminPostDTO，包含作者信息和分类名称
+     *
      * @param post PostEntity实体
-     * @param authorNames 作者ID到作者名称的映射
+     * @param authorMap 作者ID到作者实体的映射
      * @param categoryNames 分类ID到分类名称的映射
      * @return AdminPostDTO
      */
-    public static AdminPostDTO toDTO(PostEntity post, Map<String, String> authorNames, Map<String, String> categoryNames) {
+    public static AdminPostDTO toDTO(PostEntity post, Map<String, UserEntity> authorMap, Map<String, String> categoryNames) {
         if (post == null) {
             return null;
         }
-        
+
         AdminPostDTO dto = new AdminPostDTO();
         BeanUtils.copyProperties(post, dto);
-        
+
         // 设置作者名称和分类名称
-        dto.setAuthorName(authorNames.get(post.getAuthorId()));
+        UserEntity author = authorMap.get(post.getAuthorId());
+        if (author != null) {
+            dto.setAuthorName(author.getName());
+        }
         dto.setCategoryName(categoryNames.get(post.getCategoryId()));
-        
+
         return dto;
     }
-    
+
     /**
      * 批量转换PostEntity列表为AdminPostDTO列表
-     * 
+     *
      * @param posts PostEntity列表
-     * @param authorNames 作者ID到作者名称的映射
+     * @param authorMap 作者ID到作者实体的映射
      * @param categoryNames 分类ID到分类名称的映射
      * @return AdminPostDTO列表
      */
-    public static List<AdminPostDTO> toDTOList(List<PostEntity> posts, Map<String, String> authorNames, Map<String, String> categoryNames) {
+    public static List<AdminPostDTO> toDTOList(List<PostEntity> posts, Map<String, UserEntity> authorMap, Map<String, String> categoryNames) {
         if (posts == null) {
             return null;
         }
-        
+
         return posts.stream()
-                .map(post -> toDTO(post, authorNames, categoryNames))
+                .map(post -> toDTO(post, authorMap, categoryNames))
                 .toList();
     }
+
 }

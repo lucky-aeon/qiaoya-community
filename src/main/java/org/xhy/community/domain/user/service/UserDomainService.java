@@ -176,19 +176,19 @@ public class UserDomainService {
     }
     
 
-    public java.util.Map<String, String> getUserNameMapByIds(Collection<String> userIds) {
+    public java.util.Map<String, UserEntity> getUserEntityMapByIds(Collection<String> userIds) {
         if (userIds == null || userIds.isEmpty()) {
             return java.util.Collections.emptyMap();
         }
-        
+
         java.util.List<UserEntity> users = userRepository.selectBatchIds(userIds);
         return users.stream()
                 .collect(java.util.stream.Collectors.toMap(
                     UserEntity::getId,
-                    UserEntity::getName
+                    user -> user
                 ));
     }
-    
+
     // ==================== 用户课程权限管理方法 ====================
     
     /**

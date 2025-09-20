@@ -14,6 +14,7 @@ public class FrontPostDetailDTO {
     private String summary;
     private String coverImage;
     private String authorName;
+    private String authorAvatar;
     private String authorId;
     private String categoryName;
     private Integer likeCount;
@@ -42,7 +43,10 @@ public class FrontPostDetailDTO {
     
     public String getAuthorName() { return authorName; }
     public void setAuthorName(String authorName) { this.authorName = authorName; }
-    
+
+    public String getAuthorAvatar() { return authorAvatar; }
+    public void setAuthorAvatar(String authorAvatar) { this.authorAvatar = authorAvatar; }
+
     public String getCategoryName() { return categoryName; }
     public void setCategoryName(String categoryName) { this.categoryName = categoryName; }
     

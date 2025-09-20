@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.xhy.community.application.user.dto.UserActivityLogDTO;
 import org.xhy.community.application.user.assembler.UserActivityLogAssembler;
 import org.xhy.community.domain.user.service.UserDomainService;
+import org.xhy.community.domain.user.entity.UserEntity;
 import org.xhy.community.domain.post.service.PostDomainService;
 import org.xhy.community.domain.course.service.CourseDomainService;
 import org.xhy.community.domain.post.service.CategoryDomainService;
@@ -70,7 +71,7 @@ public class UserActivityLogAppService {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
                 
-        Map<String, String> userNameMap = userDomainService.getUserNameMapByIds(userIds);
+        Map<String, UserEntity> userMap = userDomainService.getUserEntityMapByIds(userIds);
         
         // 批量获取目标对象名称
         Map<String, String> targetNameMap = getTargetNameMap(page.getRecords());
@@ -81,7 +82,10 @@ public class UserActivityLogAppService {
             if (dto != null) {
                 // 设置用户昵称
                 if (entity.getUserId() != null) {
-                    dto.setNickname(userNameMap.get(entity.getUserId()));
+                    UserEntity user = userMap.get(entity.getUserId());
+                    if (user != null) {
+                        dto.setNickname(user.getName());
+                    }
                 }
                 // 设置目标对象名称
                 if (entity.getTargetId() != null) {
@@ -141,7 +145,11 @@ public class UserActivityLogAppService {
             case "POST" -> postDomainService.getPostTitleMapByIds(targetIds);
             case "COURSE" -> courseDomainService.getCourseTitleMapByIds(targetIds);
             case "CATEGORY" -> categoryDomainService.getCategoryNameMapByIds(targetIds);
-            case "USER" -> userDomainService.getUserNameMapByIds(targetIds);
+            case "USER" -> userDomainService.getUserEntityMapByIds(targetIds).entrySet().stream()
+                    .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry -> entry.getValue().getName()
+                    ));
             default -> Map.of(); // 不支持的类型返回空Map
         };
     }

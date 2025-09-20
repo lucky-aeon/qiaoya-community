@@ -6,6 +6,7 @@ import org.xhy.community.application.comment.assembler.CommentAssembler;
 import org.xhy.community.application.comment.dto.CommentDTO;
 import org.xhy.community.domain.comment.entity.CommentEntity;
 import org.xhy.community.domain.comment.service.CommentDomainService;
+import org.xhy.community.domain.user.entity.UserEntity;
 import org.xhy.community.domain.user.service.UserDomainService;
 import org.xhy.community.interfaces.comment.request.CreateReplyCommentRequest;
 import org.xhy.community.interfaces.comment.request.CommentQueryRequest;
@@ -88,10 +89,18 @@ public class UserCommentAppService {
         }
         
         if (!userIds.isEmpty()) {
-            Map<String, String> userNameMap = userDomainService.getUserNameMapByIds(userIds);
-            dto.setCommentUserName(userNameMap.get(dto.getCommentUserId()));
+            Map<String, UserEntity> userMap = userDomainService.getUserEntityMapByIds(userIds);
+
+            UserEntity commentUser = userMap.get(dto.getCommentUserId());
+            if (commentUser != null) {
+                dto.setCommentUserName(commentUser.getName());
+            }
+
             if (dto.getReplyUserId() != null) {
-                dto.setReplyUserName(userNameMap.get(dto.getReplyUserId()));
+                UserEntity replyUser = userMap.get(dto.getReplyUserId());
+                if (replyUser != null) {
+                    dto.setReplyUserName(replyUser.getName());
+                }
             }
         }
     }

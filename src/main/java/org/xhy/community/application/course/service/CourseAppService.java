@@ -9,6 +9,7 @@ import org.xhy.community.domain.course.entity.CourseEntity;
 import org.xhy.community.domain.course.entity.ChapterEntity;
 import org.xhy.community.domain.course.service.CourseDomainService;
 import org.xhy.community.domain.course.service.ChapterDomainService;
+import org.xhy.community.domain.user.entity.UserEntity;
 import org.xhy.community.domain.user.service.UserDomainService;
 import org.xhy.community.domain.course.query.CourseQuery;
 import org.xhy.community.domain.course.valueobject.CourseStatus;
@@ -66,8 +67,8 @@ public class CourseAppService {
                 .map(CourseEntity::getAuthorId)
                 .collect(Collectors.toSet());
         
-        // 批量查询作者名称
-        Map<String, String> authorNameMap = userDomainService.getUserNameMapByIds(authorIds);
+        // 批量查询作者信息
+        Map<String, UserEntity> authorMap = userDomainService.getUserEntityMapByIds(authorIds);
         
         // 提取课程ID集合
         Set<String> courseIds = coursePage.getRecords().stream()
@@ -79,8 +80,8 @@ public class CourseAppService {
         
         // 转换为前台DTO
         List<FrontCourseDTO> frontCourseDTOs = CourseAssembler.toFrontDTOList(
-                coursePage.getRecords(), 
-                authorNameMap, 
+                coursePage.getRecords(),
+                authorMap,
                 chapterCountMap
         );
         
@@ -102,13 +103,16 @@ public class CourseAppService {
         CourseEntity course = courseDomainService.getCourseById(courseId);
 
         // 获取作者信息
-        String authorName = userDomainService.getUserById(course.getAuthorId()).getName();
+        Map<String, UserEntity> authorMap = userDomainService.getUserEntityMapByIds(
+                java.util.Collections.singleton(course.getAuthorId())
+        );
+        UserEntity author = authorMap.get(course.getAuthorId());
         
         // 获取章节列表
         List<ChapterEntity> chapters = chapterDomainService.getChaptersByCourseId(courseId);
         
         // 转换为前台详情DTO
-        return CourseAssembler.toFrontDetailDTO(course, authorName, chapters);
+        return CourseAssembler.toFrontDetailDTO(course, author, chapters);
     }
     
     /**

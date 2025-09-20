@@ -126,7 +126,7 @@ public class PostAppService {
                 .collect(java.util.stream.Collectors.toSet());
         
         // 批量查询用户和分类信息
-        java.util.Map<String, String> authorNames = userDomainService.getUserNameMapByIds(authorIds);
+        java.util.Map<String, UserEntity> authorMap = userDomainService.getUserEntityMapByIds(authorIds);
         List<CategoryEntity> categories = categoryDomainService.getCategoriesByIds(categoryIds);
         
         // 转换为Map便于查找
@@ -138,7 +138,7 @@ public class PostAppService {
         
         // 组装FrontPostDTO
         List<FrontPostDTO> dtoList = posts.stream()
-                .map(post -> FrontPostAssembler.toDTO(post, authorNames, categoryNames))
+                .map(post -> FrontPostAssembler.toDTO(post, authorMap, categoryNames))
                 .toList();
         
         Page<FrontPostDTO> dtoPage = new Page<>(entityPage.getCurrent(), entityPage.getSize(), entityPage.getTotal());
@@ -160,13 +160,13 @@ public class PostAppService {
         
         // 获取作者信息
         Set<String> authorIds = java.util.Collections.singleton(post.getAuthorId());
-        Map<String, String> authorNames = userDomainService.getUserNameMapByIds(authorIds);
-        String authorName = authorNames.get(post.getAuthorId());
+        Map<String, UserEntity> authorMap = userDomainService.getUserEntityMapByIds(authorIds);
+        UserEntity author = authorMap.get(post.getAuthorId());
         
         // 获取分类信息
         CategoryEntity category = categoryDomainService.getCategoryById(post.getCategoryId());
         String categoryName = category != null ? category.getName() : null;
         
-        return FrontPostDetailAssembler.toDTO(post, authorName, categoryName);
+        return FrontPostDetailAssembler.toDTO(post, author, categoryName);
     }
 }
