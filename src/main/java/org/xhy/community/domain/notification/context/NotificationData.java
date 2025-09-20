@@ -12,14 +12,16 @@ public abstract class NotificationData {
     protected final String recipientId;     // 接收者ID
     protected final String recipientName;   // 接收者姓名
     protected final String recipientEmail;  // 接收者邮箱
+    protected final Boolean emailNotificationEnabled; // 邮箱通知开关
     protected final NotificationType type;  // 通知类型
     protected final LocalDateTime createTime; // 创建时间
     
     protected NotificationData(String recipientId, String recipientName, String recipientEmail,
-                             NotificationType type) {
+                             Boolean emailNotificationEnabled, NotificationType type) {
         this.recipientId = recipientId;
         this.recipientName = recipientName;
         this.recipientEmail = recipientEmail;
+        this.emailNotificationEnabled = emailNotificationEnabled;
         this.type = type;
         this.createTime = LocalDateTime.now();
     }
@@ -28,6 +30,7 @@ public abstract class NotificationData {
     public String getRecipientId() { return recipientId; }
     public String getRecipientName() { return recipientName; }
     public String getRecipientEmail() { return recipientEmail; }
+    public Boolean getEmailNotificationEnabled() { return emailNotificationEnabled; }
     public NotificationType getType() { return type; }
     public LocalDateTime getCreateTime() { return createTime; }
 }

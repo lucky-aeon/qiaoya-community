@@ -11,8 +11,8 @@ public class NewFollowerNotificationData extends NotificationData {
     private final String followerName;   // 关注者姓名
     
     public NewFollowerNotificationData(String recipientId, String recipientName, String recipientEmail,
-                                     String followerId, String followerName) {
-        super(recipientId, recipientName, recipientEmail, NotificationType.NEW_FOLLOWER);
+                                     Boolean emailNotificationEnabled, String followerId, String followerName) {
+        super(recipientId, recipientName, recipientEmail, emailNotificationEnabled, NotificationType.NEW_FOLLOWER);
         this.followerId = followerId;
         this.followerName = followerName;
     }

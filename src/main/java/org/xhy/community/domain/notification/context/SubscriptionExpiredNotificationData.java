@@ -11,8 +11,8 @@ public class SubscriptionExpiredNotificationData extends NotificationData {
     private final long daysRemaining;      // 剩余天数
     
     public SubscriptionExpiredNotificationData(String recipientId, String recipientName, String recipientEmail,
-                                             String subscriptionId, long daysRemaining) {
-        super(recipientId, recipientName, recipientEmail, NotificationType.SUBSCRIPTION_EXPIRED);
+                                             Boolean emailNotificationEnabled, String subscriptionId, long daysRemaining) {
+        super(recipientId, recipientName, recipientEmail, emailNotificationEnabled, NotificationType.SUBSCRIPTION_EXPIRED);
         this.subscriptionId = subscriptionId;
         this.daysRemaining = daysRemaining;
     }

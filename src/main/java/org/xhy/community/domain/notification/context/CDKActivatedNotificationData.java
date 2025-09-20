@@ -14,8 +14,8 @@ public class CDKActivatedNotificationData extends NotificationData {
     private final String activationTime;   // 激活时间（格式化后的字符串）
     
     public CDKActivatedNotificationData(String recipientId, String recipientName, String recipientEmail,
-                                      String cdkCode, LocalDateTime activationTime) {
-        super(recipientId, recipientName, recipientEmail, NotificationType.CDK_ACTIVATED);
+                                      Boolean emailNotificationEnabled, String cdkCode, LocalDateTime activationTime) {
+        super(recipientId, recipientName, recipientEmail, emailNotificationEnabled, NotificationType.CDK_ACTIVATED);
         this.cdkCode = cdkCode;
         this.activationTime = activationTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
     }

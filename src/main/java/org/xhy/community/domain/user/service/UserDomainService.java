@@ -189,6 +189,25 @@ public class UserDomainService {
                 ));
     }
 
+    /**
+     * 批量查询用户邮箱通知设置
+     *
+     * @param userIds 用户ID集合
+     * @return 用户ID到邮箱通知开关的映射
+     */
+    public java.util.Map<String, Boolean> getUserEmailSettingsByIds(java.util.Set<String> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return java.util.Collections.emptyMap();
+        }
+
+        java.util.List<UserEntity> users = userRepository.selectBatchIds(userIds);
+        return users.stream()
+                .collect(java.util.stream.Collectors.toMap(
+                    UserEntity::getId,
+                    user -> user.getEmailNotificationEnabled() != null ? user.getEmailNotificationEnabled() : false
+                ));
+    }
+
     // ==================== 用户课程权限管理方法 ====================
     
     /**

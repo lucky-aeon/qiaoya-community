@@ -13,8 +13,8 @@ public class ContentUpdateNotificationData extends NotificationData {
     private final String contentId;      // 内容ID
     
     public ContentUpdateNotificationData(String recipientId, String recipientName, String recipientEmail,
-                                       String authorName, String contentTitle, String contentType, String contentId) {
-        super(recipientId, recipientName, recipientEmail, NotificationType.FOLLOWED_USER_POST);
+                                       Boolean emailNotificationEnabled, String authorName, String contentTitle, String contentType, String contentId) {
+        super(recipientId, recipientName, recipientEmail, emailNotificationEnabled, NotificationType.FOLLOWED_USER_POST);
         this.authorName = authorName;
         this.contentTitle = contentTitle;
         this.contentType = contentType;

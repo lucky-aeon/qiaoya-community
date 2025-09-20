@@ -14,9 +14,9 @@ public class CommentNotificationData extends NotificationData {
     private final String targetId;         // 被评论内容ID
     
     public CommentNotificationData(String recipientId, String recipientName, String recipientEmail,
-                                 String commenterName, String targetTitle, String targetType,
+                                 Boolean emailNotificationEnabled, String commenterName, String targetTitle, String targetType,
                                  String commentContent, String targetId) {
-        super(recipientId, recipientName, recipientEmail, 
+        super(recipientId, recipientName, recipientEmail, emailNotificationEnabled,
               targetType.equals("post") ? NotificationType.POST_COMMENT : NotificationType.COURSE_COMMENT);
         this.commenterName = commenterName;
         this.targetTitle = targetTitle;

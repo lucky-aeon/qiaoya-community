@@ -12,11 +12,17 @@ import org.xhy.community.domain.notification.entity.NotificationEntity;
 import org.xhy.community.domain.notification.repository.NotificationRepository;
 import org.xhy.community.domain.notification.template.NotificationTemplate;
 import org.xhy.community.domain.notification.template.NotificationTemplateRegistry;
+import org.xhy.community.domain.notification.valueobject.BatchSendConfig;
+import org.xhy.community.domain.notification.valueobject.BatchSendResult;
 import org.xhy.community.domain.notification.valueobject.ChannelType;
 import org.xhy.community.domain.notification.valueobject.NotificationStatus;
 import org.xhy.community.infrastructure.email.EmailService;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * 纯粹的通知领域服务 - 不依赖任何其他领域
@@ -51,7 +57,13 @@ public class NotificationDomainService {
         
         // 发送邮件
         if (templateRegistry.hasTemplate(dataType, ChannelType.EMAIL)) {
-            sendToChannel(notificationData, ChannelType.EMAIL);
+            // 检查用户是否开启了邮箱通知
+            if (Boolean.TRUE.equals(notificationData.getEmailNotificationEnabled())) {
+                sendToChannel(notificationData, ChannelType.EMAIL);
+            } else {
+                log.info("用户已关闭邮箱通知，跳过邮件发送: userId={}, type={}",
+                        notificationData.getRecipientId(), notificationData.getType());
+            }
         }
     }
     
@@ -206,7 +218,165 @@ public class NotificationDomainService {
                 .eq(NotificationEntity::getChannelType, ChannelType.IN_APP)
                 .eq(NotificationEntity::getStatus, NotificationStatus.SENT)
                 .set(NotificationEntity::getStatus, NotificationStatus.READ);
-        
+
         notificationRepository.update(null, updateWrapper);
+    }
+
+    /**
+     * 批量发送通知 - 支持分批处理
+     */
+    public <T extends NotificationData> BatchSendResult sendBatchNotifications(
+            List<T> notifications, BatchSendConfig config) {
+
+        log.info("[批量通知] 开始处理: 总数={}, 批大小={}, 延迟={}ms",
+                notifications.size(), config.getBatchSize(), config.getDelayBetweenBatches());
+
+        BatchSendResult result = new BatchSendResult();
+        result.setTotalCount(notifications.size());
+
+        if (notifications.isEmpty()) {
+            result.complete();
+            return result;
+        }
+
+        // 将通知列表分批
+        List<List<T>> batches = partitionList(notifications, config.getBatchSize());
+        result.setBatchCount(batches.size());
+
+        for (int i = 0; i < batches.size(); i++) {
+            List<T> batch = batches.get(i);
+            int batchNumber = i + 1;
+
+            if (config.isLogDetail()) {
+                log.info("[批量通知] 处理第{}/{}批: 数量={}",
+                        batchNumber, batches.size(), batch.size());
+            }
+
+            try {
+                processBatch(batch, result, config, batchNumber);
+
+                // 批次间延迟（最后一批不需要延迟）
+                if (i < batches.size() - 1 && config.getDelayBetweenBatches() > 0) {
+                    Thread.sleep(config.getDelayBetweenBatches());
+                }
+
+            } catch (Exception e) {
+                log.error("[批量通知] 第{}批处理失败", batchNumber, e);
+                if (!config.isSkipOnError()) {
+                    break; // 遇到错误停止处理
+                }
+            }
+        }
+
+        result.complete();
+
+        log.info("[批量通知] 完成统计: 成功={}, 失败={}, 跳过={}, 耗时={}ms, 成功率={:.1f}%",
+                result.getSuccessCount(), result.getFailedCount(),
+                result.getSkippedCount(), result.getTotalTimeMs(), result.getSuccessRate());
+
+        return result;
+    }
+
+    /**
+     * 处理单批通知
+     */
+    private <T extends NotificationData> void processBatch(List<T> batch, BatchSendResult result,
+                                                          BatchSendConfig config, int batchNumber) {
+        // 按渠道分组
+        Map<ChannelType, List<T>> channelGroups = groupByChannel(batch);
+
+        // 处理站内消息
+        if (channelGroups.containsKey(ChannelType.IN_APP)) {
+            batchSaveInAppNotifications(channelGroups.get(ChannelType.IN_APP), result, config);
+        }
+
+        // 处理邮件通知
+        if (channelGroups.containsKey(ChannelType.EMAIL)) {
+            batchSendEmails(channelGroups.get(ChannelType.EMAIL), result, config, batchNumber);
+        }
+    }
+
+    /**
+     * 按渠道分组通知
+     */
+    private <T extends NotificationData> Map<ChannelType, List<T>> groupByChannel(List<T> notifications) {
+        Map<ChannelType, List<T>> channelGroups = new java.util.HashMap<>();
+
+        for (T notification : notifications) {
+            Class<T> dataType = (Class<T>) notification.getClass();
+
+            // 检查站内消息模板
+            if (templateRegistry.hasTemplate(dataType, ChannelType.IN_APP)) {
+                channelGroups.computeIfAbsent(ChannelType.IN_APP, k -> new ArrayList<>()).add(notification);
+            }
+
+            // 检查邮件模板和用户开关
+            if (templateRegistry.hasTemplate(dataType, ChannelType.EMAIL) &&
+                Boolean.TRUE.equals(notification.getEmailNotificationEnabled())) {
+                channelGroups.computeIfAbsent(ChannelType.EMAIL, k -> new ArrayList<>()).add(notification);
+            }
+        }
+
+        return channelGroups;
+    }
+
+    /**
+     * 批量保存站内消息
+     */
+    private <T extends NotificationData> void batchSaveInAppNotifications(List<T> notifications,
+                                                                         BatchSendResult result,
+                                                                         BatchSendConfig config) {
+        for (T notificationData : notifications) {
+            try {
+                sendToChannel(notificationData, ChannelType.IN_APP);
+                result.incrementSuccess();
+            } catch (Exception e) {
+                log.error("[批量通知] 站内消息保存失败: userId={}",
+                        notificationData.getRecipientId(), e);
+                result.addFailedItem(notificationData.getRecipientId(),
+                        notificationData.getRecipientEmail(), "站内消息保存失败: " + e.getMessage());
+            }
+        }
+    }
+
+    /**
+     * 批量发送邮件
+     */
+    private <T extends NotificationData> void batchSendEmails(List<T> notifications,
+                                                             BatchSendResult result,
+                                                             BatchSendConfig config,
+                                                             int batchNumber) {
+        if (config.isLogDetail()) {
+            log.info("[批量通知] 第{}批邮件发送: 数量={}", batchNumber, notifications.size());
+        }
+
+        for (T notificationData : notifications) {
+            try {
+                sendToChannel(notificationData, ChannelType.EMAIL);
+                result.incrementSuccess();
+
+                if (config.isLogDetail()) {
+                    log.debug("[批量通知] 邮件发送成功: userId={}, email={}",
+                            notificationData.getRecipientId(), notificationData.getRecipientEmail());
+                }
+
+            } catch (Exception e) {
+                log.error("[批量通知] 邮件发送失败: userId={}, email={}",
+                        notificationData.getRecipientId(), notificationData.getRecipientEmail(), e);
+                result.addFailedItem(notificationData.getRecipientId(),
+                        notificationData.getRecipientEmail(), "邮件发送失败: " + e.getMessage());
+            }
+        }
+    }
+
+    /**
+     * 将列表分批
+     */
+    private <T> List<List<T>> partitionList(List<T> list, int batchSize) {
+        List<List<T>> batches = new ArrayList<>();
+        for (int i = 0; i < list.size(); i += batchSize) {
+            batches.add(list.subList(i, Math.min(list.size(), i + batchSize)));
+        }
+        return batches;
     }
 }
