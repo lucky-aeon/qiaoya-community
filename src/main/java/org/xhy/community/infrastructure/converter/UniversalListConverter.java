@@ -3,26 +3,34 @@ package org.xhy.community.infrastructure.converter;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.PostConstruct;
 import org.apache.ibatis.type.BaseTypeHandler;
 import org.apache.ibatis.type.JdbcType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
+import org.springframework.core.type.classreading.CachingMetadataReaderFactory;
+import org.springframework.core.type.classreading.MetadataReader;
 import org.springframework.stereotype.Component;
-import org.xhy.community.domain.course.valueobject.CourseResource;
+import org.springframework.util.ClassUtils;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.sql.CallableStatement;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 通用 List 转换器
- * 根据字段上的 @ListElementType 注解动态确定元素类型进行序列化/反序列化
+ * 通过反射动态获取字段的泛型类型进行序列化/反序列化
+ * 自动扫描实体类并缓存字段的泛型类型信息
  */
 @Component
 public class UniversalListConverter extends BaseTypeHandler<List<?>> {
@@ -30,8 +38,28 @@ public class UniversalListConverter extends BaseTypeHandler<List<?>> {
     private static final Logger log = LoggerFactory.getLogger(UniversalListConverter.class);
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    @Autowired
+    private ApplicationContext applicationContext;
+
     // 缓存字段名到元素类型的映射，避免频繁反射
     private static final Map<String, Class<?>> FIELD_TYPE_CACHE = new ConcurrentHashMap<>();
+
+    // 缓存实体类信息，避免重复扫描
+    private static final Set<Class<?>> SCANNED_ENTITIES = new HashSet<>();
+
+    private static volatile boolean initialized = false;
+
+    @PostConstruct
+    public void init() {
+        if (!initialized) {
+            synchronized (UniversalListConverter.class) {
+                if (!initialized) {
+                    scanEntityClasses();
+                    initialized = true;
+                }
+            }
+        }
+    }
 
     @Override
     public void setNonNullParameter(PreparedStatement ps, int i, List<?> parameter, JdbcType jdbcType) throws SQLException {
@@ -70,20 +98,19 @@ public class UniversalListConverter extends BaseTypeHandler<List<?>> {
         }
 
         try {
-            // 尝试从缓存获取元素类型
+            // 从缓存获取元素类型
             Class<?> elementType = getElementTypeFromCache(columnName);
 
             if (elementType == String.class) {
                 List<String> result = objectMapper.readValue(json, new TypeReference<List<String>>() {});
                 log.debug("Successfully parsed JSON to List<String> for column {}: {} -> {}", columnName, json, result);
                 return result;
-            } else if (elementType == CourseResource.class) {
-                List<CourseResource> result = objectMapper.readValue(json, new TypeReference<List<CourseResource>>() {});
-                log.debug("Successfully parsed JSON to List<CourseResource> for column {}: {} -> {} items", columnName, json, result.size());
-                return result;
             } else {
-                log.warn("Unknown element type for column {}: {}, falling back to content-based parsing", columnName, elementType);
-                return parseJsonByContent(json);
+                // 动态创建TypeReference
+                List<?> result = objectMapper.readValue(json, objectMapper.getTypeFactory().constructCollectionType(List.class, elementType));
+                log.debug("Successfully parsed JSON to List<{}> for column {}: {} -> {} items",
+                    elementType.getSimpleName(), columnName, json, result.size());
+                return result;
             }
         } catch (JsonProcessingException e) {
             log.error("Failed to parse JSON for column {}: {}", columnName, json, e);
@@ -97,14 +124,8 @@ public class UniversalListConverter extends BaseTypeHandler<List<?>> {
         }
 
         try {
-            // 基于内容判断类型（fallback方案）
-            if (json.contains("\"title\"") && json.contains("\"description\"")) {
-                // 包含CourseResource的特征字段，解析为CourseResource列表
-                return objectMapper.readValue(json, new TypeReference<List<CourseResource>>() {});
-            } else {
-                // 默认解析为String列表
-                return objectMapper.readValue(json, new TypeReference<List<String>>() {});
-            }
+            // 基于内容简单判断，默认为String列表
+            return objectMapper.readValue(json, new TypeReference<List<String>>() {});
         } catch (JsonProcessingException e) {
             log.error("Failed to parse JSON by content: {}", json, e);
             throw new SQLException("Error parsing JSON to List", e);
@@ -116,49 +137,104 @@ public class UniversalListConverter extends BaseTypeHandler<List<?>> {
     }
 
     private Class<?> findElementTypeByColumnName(String columnName) {
-        try {
-            // 根据数据库列名映射到Java字段名
-            String fieldName = convertColumnNameToFieldName(columnName);
+        // 将数据库列名转换为Java字段名
+        String fieldName = convertColumnNameToFieldName(columnName);
 
-            // 从CourseEntity获取字段的@ListElementType注解
-            Class<?> entityClass = org.xhy.community.domain.course.entity.CourseEntity.class;
-            Field field = entityClass.getDeclaredField(fieldName);
-
-            ListElementType annotation = field.getAnnotation(ListElementType.class);
-            if (annotation != null) {
-                log.debug("Found @ListElementType annotation for field {}: {}", fieldName, annotation.value());
-                return annotation.value();
+        // 遍历所有已扫描的实体类，查找匹配的字段
+        for (Class<?> entityClass : SCANNED_ENTITIES) {
+            try {
+                Field field = entityClass.getDeclaredField(fieldName);
+                Class<?> elementType = getListElementType(field);
+                if (elementType != null) {
+                    log.debug("Found field {} in entity {} with element type: {}",
+                        fieldName, entityClass.getSimpleName(), elementType.getSimpleName());
+                    return elementType;
+                }
+            } catch (NoSuchFieldException e) {
+                // 字段不存在于该实体类，继续尝试下一个
             }
-        } catch (NoSuchFieldException | SecurityException e) {
-            log.warn("Could not find field annotation for column {}: {}", columnName, e.getMessage());
         }
 
-        // 默认返回String类型
+        log.warn("Could not find field type for column {}, defaulting to String", columnName);
         return String.class;
     }
 
+    /**
+     * 通用的下划线转驼峰命名转换
+     */
     private String convertColumnNameToFieldName(String columnName) {
-        // 将数据库下划线命名转换为Java驼峰命名
-        switch (columnName) {
-            case "tech_stack":
-                return "techStack";
-            case "tags":
-                return "tags";
-            case "resources":
-                return "resources";
-            default:
-                // 通用转换逻辑：tech_stack -> techStack
-                StringBuilder result = new StringBuilder();
-                boolean capitalizeNext = false;
-                for (char c : columnName.toCharArray()) {
-                    if (c == '_') {
-                        capitalizeNext = true;
-                    } else {
-                        result.append(capitalizeNext ? Character.toUpperCase(c) : c);
-                        capitalizeNext = false;
-                    }
-                }
-                return result.toString();
+        if (columnName == null || columnName.isEmpty()) {
+            return columnName;
         }
+
+        StringBuilder result = new StringBuilder();
+        boolean capitalizeNext = false;
+
+        for (char c : columnName.toCharArray()) {
+            if (c == '_') {
+                capitalizeNext = true;
+            } else {
+                result.append(capitalizeNext ? Character.toUpperCase(c) : c);
+                capitalizeNext = false;
+            }
+        }
+
+        return result.toString();
+    }
+
+    /**
+     * 扫描实体类并缓存字段信息
+     */
+    private void scanEntityClasses() {
+        try {
+            PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
+            CachingMetadataReaderFactory metadataReaderFactory = new CachingMetadataReaderFactory();
+
+            // 扫描 domain 包下的所有实体类
+            String pattern = "classpath*:org/xhy/community/domain/**/entity/*.class";
+            Resource[] resources = resolver.getResources(pattern);
+
+            for (Resource resource : resources) {
+                try {
+                    MetadataReader metadataReader = metadataReaderFactory.getMetadataReader(resource);
+                    String className = metadataReader.getClassMetadata().getClassName();
+
+                    // 只处理Entity结尾的类
+                    if (className.endsWith("Entity")) {
+                        Class<?> entityClass = ClassUtils.forName(className, this.getClass().getClassLoader());
+                        SCANNED_ENTITIES.add(entityClass);
+                        log.debug("Scanned entity class: {}", className);
+                    }
+                } catch (Exception e) {
+                    log.warn("Failed to scan entity class: {}", resource.getFilename(), e);
+                }
+            }
+
+            log.info("Scanned {} entity classes for UniversalListConverter", SCANNED_ENTITIES.size());
+        } catch (Exception e) {
+            log.error("Failed to scan entity classes", e);
+        }
+    }
+
+    /**
+     * 通过反射获取List字段的元素类型
+     */
+    private Class<?> getListElementType(Field field) {
+        Type genericType = field.getGenericType();
+
+        if (genericType instanceof ParameterizedType) {
+            ParameterizedType parameterizedType = (ParameterizedType) genericType;
+            Type rawType = parameterizedType.getRawType();
+
+            // 检查是否为List类型
+            if (rawType instanceof Class && List.class.isAssignableFrom((Class<?>) rawType)) {
+                Type[] actualTypeArguments = parameterizedType.getActualTypeArguments();
+                if (actualTypeArguments.length > 0 && actualTypeArguments[0] instanceof Class) {
+                    return (Class<?>) actualTypeArguments[0];
+                }
+            }
+        }
+
+        return null;
     }
 }

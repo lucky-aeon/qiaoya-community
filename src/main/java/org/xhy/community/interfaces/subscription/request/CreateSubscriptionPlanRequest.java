@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import jakarta.validation.Valid;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -27,8 +28,9 @@ public class CreateSubscriptionPlanRequest {
     @DecimalMin(value = "0.00", message = "价格不能为负数")
     private BigDecimal price;
     
-    @Size(max = 1000, message = "套餐描述长度不能超过1000个字符")
-    private String description;
+    @Valid
+    @Size(max = 20, message = "权益列表最多包含20项")
+    private List<@Size(min = 1, max = 200, message = "权益描述长度必须在1-200字符之间") String> benefits;
     
     public CreateSubscriptionPlanRequest() {
     }
@@ -45,6 +47,6 @@ public class CreateSubscriptionPlanRequest {
     public BigDecimal getPrice() { return price; }
     public void setPrice(BigDecimal price) { this.price = price; }
     
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
+    public List<String> getBenefits() { return benefits; }
+    public void setBenefits(List<String> benefits) { this.benefits = benefits; }
 }

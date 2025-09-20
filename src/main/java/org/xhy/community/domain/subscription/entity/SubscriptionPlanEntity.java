@@ -5,8 +5,10 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import org.xhy.community.domain.common.entity.BaseEntity;
 import org.xhy.community.domain.subscription.valueobject.SubscriptionPlanStatus;
 import org.xhy.community.infrastructure.converter.SubscriptionPlanStatusConverter;
+import org.xhy.community.infrastructure.converter.UniversalListConverter;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @TableName("subscription_plans")
 public class SubscriptionPlanEntity extends BaseEntity {
@@ -22,17 +24,18 @@ public class SubscriptionPlanEntity extends BaseEntity {
     @TableField(typeHandler = SubscriptionPlanStatusConverter.class)
     private SubscriptionPlanStatus status;
     
-    private String description;
+    @TableField(typeHandler = UniversalListConverter.class)
+    private List<String> benefits;
     
     public SubscriptionPlanEntity() {
     }
     
-    public SubscriptionPlanEntity(String name, Integer level, Integer validityMonths, BigDecimal price, String description) {
+    public SubscriptionPlanEntity(String name, Integer level, Integer validityMonths, BigDecimal price, List<String> benefits) {
         this.name = name;
         this.level = level;
         this.validityMonths = validityMonths;
         this.price = price;
-        this.description = description;
+        this.benefits = benefits;
         this.status = SubscriptionPlanStatus.ACTIVE;
     }
     
@@ -63,6 +66,6 @@ public class SubscriptionPlanEntity extends BaseEntity {
     public SubscriptionPlanStatus getStatus() { return status; }
     public void setStatus(SubscriptionPlanStatus status) { this.status = status; }
     
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
+    public List<String> getBenefits() { return benefits; }
+    public void setBenefits(List<String> benefits) { this.benefits = benefits; }
 }

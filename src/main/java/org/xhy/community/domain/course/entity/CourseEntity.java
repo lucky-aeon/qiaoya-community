@@ -6,7 +6,6 @@ import org.xhy.community.domain.common.entity.BaseEntity;
 import org.xhy.community.domain.course.valueobject.CourseResource;
 import org.xhy.community.domain.course.valueobject.CourseStatus;
 import org.xhy.community.infrastructure.converter.CourseStatusConverter;
-import org.xhy.community.infrastructure.converter.ListElementType;
 import org.xhy.community.infrastructure.converter.UniversalListConverter;
 
 import java.math.BigDecimal;
@@ -23,7 +22,6 @@ public class CourseEntity extends BaseEntity {
     
     /** 技术栈，JSON格式存储 */
     @TableField(typeHandler = UniversalListConverter.class)
-    @ListElementType(String.class)
     private List<String> techStack;
     
     /** 项目地址 */
@@ -31,7 +29,6 @@ public class CourseEntity extends BaseEntity {
     
     /** 标签，JSON格式存储 */
     @TableField(typeHandler = UniversalListConverter.class)
-    @ListElementType(String.class)
     private List<String> tags;
     
     /** 课程评分，范围0.00-5.00 */
@@ -61,7 +58,6 @@ public class CourseEntity extends BaseEntity {
 
     /** 课程资源列表，JSON格式存储 */
     @TableField(typeHandler = UniversalListConverter.class)
-    @ListElementType(CourseResource.class)
     private List<CourseResource> resources;
     
     public CourseEntity() {

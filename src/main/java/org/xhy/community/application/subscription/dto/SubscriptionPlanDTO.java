@@ -20,7 +20,7 @@ public class SubscriptionPlanDTO {
     
     private SubscriptionPlanStatus status;
     
-    private String description;
+    private List<String> benefits;
     
     private LocalDateTime createTime;
     
@@ -47,8 +47,8 @@ public class SubscriptionPlanDTO {
     public SubscriptionPlanStatus getStatus() { return status; }
     public void setStatus(SubscriptionPlanStatus status) { this.status = status; }
     
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
+    public List<String> getBenefits() { return benefits; }
+    public void setBenefits(List<String> benefits) { this.benefits = benefits; }
     
     public LocalDateTime getCreateTime() { return createTime; }
     public void setCreateTime(LocalDateTime createTime) { this.createTime = createTime; }

@@ -12,7 +12,8 @@
       "Read(/Users/xhy/course/AgentX/AgentX/src/main/java/org/xhy/infrastructure/llm/protocol/enums/**)",
       "Read(/Users/xhy/course/AgentX/AgentX/src/main/java/org/xhy/infrastructure/config/**)",
       "WebFetch(domain:help.aliyun.com)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []
