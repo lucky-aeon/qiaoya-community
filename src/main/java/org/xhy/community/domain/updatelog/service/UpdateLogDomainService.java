@@ -35,22 +35,9 @@ public class UpdateLogDomainService {
         this.updateLogChangeRepository = updateLogChangeRepository;
     }
 
-    public UpdateLogEntity createUpdateLog(UpdateLogEntity updateLog) {
-        updateLogRepository.insert(updateLog);
-        return updateLog;
-    }
 
     public UpdateLogEntity getUpdateLogById(String updateLogId) {
         return updateLogRepository.selectById(updateLogId);
-    }
-
-    public UpdateLogEntity updateUpdateLog(UpdateLogEntity updateLog) {
-        updateLogRepository.updateById(updateLog);
-        return updateLog;
-    }
-
-    public void deleteUpdateLog(String updateLogId) {
-        updateLogRepository.deleteById(updateLogId);
     }
 
     public boolean isVersionExists(String version, String excludeId) {
@@ -97,24 +84,6 @@ public class UpdateLogDomainService {
         return updateLogRepository.selectList(queryWrapper);
     }
 
-    public UpdateLogChangeEntity createUpdateLogChange(UpdateLogChangeEntity change) {
-        updateLogChangeRepository.insert(change);
-        return change;
-    }
-
-    public UpdateLogChangeEntity getUpdateLogChangeById(String changeId) {
-        return updateLogChangeRepository.selectById(changeId);
-    }
-
-    public UpdateLogChangeEntity updateUpdateLogChange(UpdateLogChangeEntity change) {
-        updateLogChangeRepository.updateById(change);
-        return change;
-    }
-
-    public void deleteUpdateLogChange(String changeId) {
-        updateLogChangeRepository.deleteById(changeId);
-    }
-
     public List<UpdateLogChangeEntity> getChangesByUpdateLogId(String updateLogId) {
         LambdaQueryWrapper<UpdateLogChangeEntity> queryWrapper = new LambdaQueryWrapper<UpdateLogChangeEntity>()
                 .eq(UpdateLogChangeEntity::getUpdateLogId, updateLogId)
@@ -123,14 +92,6 @@ public class UpdateLogDomainService {
         return updateLogChangeRepository.selectList(queryWrapper);
     }
 
-    public List<UpdateLogChangeEntity> getChangesByUpdateLogIdAndType(String updateLogId, ChangeType type) {
-        LambdaQueryWrapper<UpdateLogChangeEntity> queryWrapper = new LambdaQueryWrapper<UpdateLogChangeEntity>()
-                .eq(UpdateLogChangeEntity::getUpdateLogId, updateLogId)
-                .eq(type != null, UpdateLogChangeEntity::getType, type)
-                .orderByAsc(UpdateLogChangeEntity::getSortOrder);
-
-        return updateLogChangeRepository.selectList(queryWrapper);
-    }
 
     public void deleteChangesByUpdateLogId(String updateLogId) {
         LambdaQueryWrapper<UpdateLogChangeEntity> queryWrapper = new LambdaQueryWrapper<UpdateLogChangeEntity>()
@@ -178,8 +139,8 @@ public class UpdateLogDomainService {
                     }
                 }
             }
-            // 批量插入变更详情
-            updateLogChangeRepository.insertBatch(changes);
+            // 批量插入变更详情（使用 MyBatis-Plus 循环插入，避免手写 SQL）
+            this.updateLogChangeRepository.insert(changes);
         }
 
         return updateLog;
@@ -189,7 +150,6 @@ public class UpdateLogDomainService {
      * 更新更新日志聚合（全量替换）
      * 先删除原有变更详情，再插入新的变更详情
      */
-    @Transactional(rollbackFor = Exception.class)
     public UpdateLogEntity updateUpdateLogAggregate(UpdateLogEntity updateLog, List<UpdateLogChangeEntity> changes) {
         // 校验版本号唯一性（排除当前记录）
         if (isVersionExists(updateLog.getVersion(), updateLog.getId())) {
@@ -204,19 +164,11 @@ public class UpdateLogDomainService {
 
         // 批量创建新的变更详情
         if (!CollectionUtils.isEmpty(changes)) {
-            LocalDateTime now = LocalDateTime.now();
             for (UpdateLogChangeEntity change : changes) {
                 change.setUpdateLogId(updateLog.getId());
-                if (change.getId() == null) {
-                    change.setId(java.util.UUID.randomUUID().toString());
-                    change.setCreateTime(now);
-                    change.setUpdateTime(now);
-                    if (change.getDeleted() == null) {
-                        change.setDeleted(false);
-                    }
-                }
             }
-            updateLogChangeRepository.insertBatch(changes);
+            // 批量插入变更详情（使用 MyBatis-Plus 循环插入，避免手写 SQL）
+            this.updateLogChangeRepository.insert(changes);
         }
 
         return updateLog;
@@ -226,7 +178,6 @@ public class UpdateLogDomainService {
      * 删除更新日志聚合（级联删除）
      * 同时删除日志主体和所有变更详情
      */
-    @Transactional(rollbackFor = Exception.class)
     public void deleteUpdateLogAggregate(String updateLogId) {
         UpdateLogEntity updateLog = getUpdateLogById(updateLogId);
         if (updateLog == null) {
@@ -274,21 +225,6 @@ public class UpdateLogDomainService {
         // 更新状态
         updateLogRepository.updateById(updateLog);
         return updateLog;
-    }
-
-    /**
-     * 分页查询更新日志（支持条件筛选）
-     */
-    public IPage<UpdateLogEntity> getUpdateLogsWithConditions(UpdateLogStatus status, String version, String title, Integer pageNum, Integer pageSize) {
-        Page<UpdateLogEntity> page = new Page<>(pageNum, pageSize);
-
-        LambdaQueryWrapper<UpdateLogEntity> queryWrapper = new LambdaQueryWrapper<UpdateLogEntity>()
-                .eq(status != null, UpdateLogEntity::getStatus, status)
-                .eq(StringUtils.hasText(version), UpdateLogEntity::getVersion, version)
-                .like(StringUtils.hasText(title), UpdateLogEntity::getTitle, title)
-                .orderByDesc(UpdateLogEntity::getCreateTime);
-
-        return updateLogRepository.selectPage(page, queryWrapper);
     }
 
     /**
