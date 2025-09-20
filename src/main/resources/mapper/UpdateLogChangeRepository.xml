@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.xhy.community.domain.updatelog.repository.UpdateLogChangeRepository">
+
+    <insert id="insertBatch">
+        INSERT INTO update_log_changes (
+            id,
+            update_log_id,
+            type,
+            title,
+            description,
+            category,
+            sort_order,
+            create_time,
+            update_time,
+            deleted
+        ) VALUES
+        <foreach collection="list" item="item" separator=","><![CDATA[(
+            #{item.id},
+            #{item.updateLogId},
+            #{item.type},
+            #{item.title},
+            #{item.description},
+            #{item.category},
+            #{item.sortOrder},
+            #{item.createTime},
+            #{item.updateTime},
+            #{item.deleted}
+        )]]></foreach>
+    </insert>
+
+</mapper>
+

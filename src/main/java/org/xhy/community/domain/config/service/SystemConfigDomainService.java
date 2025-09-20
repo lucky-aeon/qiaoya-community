@@ -32,8 +32,8 @@ public class SystemConfigDomainService {
     /**
      * 更新默认套餐配置
      */
-    public void updateDefaultSubscriptionConfig(String subscriptionPlanId, Integer validityMonths, Boolean enabled) {
-        DefaultSubscriptionConfig config = new DefaultSubscriptionConfig(subscriptionPlanId, validityMonths, enabled);
+    public void updateDefaultSubscriptionConfig(String subscriptionPlanId) {
+        DefaultSubscriptionConfig config = new DefaultSubscriptionConfig(subscriptionPlanId);
         updateConfigData(SystemConfigType.DEFAULT_SUBSCRIPTION_PLAN, config);
     }
 

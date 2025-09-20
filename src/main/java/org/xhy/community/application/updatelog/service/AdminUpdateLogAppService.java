@@ -15,6 +15,7 @@ import org.xhy.community.interfaces.updatelog.request.UpdateUpdateLogRequest;
 import org.xhy.community.interfaces.updatelog.request.AdminUpdateLogQueryRequest;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -95,31 +96,33 @@ public class AdminUpdateLogAppService {
      * 支持状态、版本号、标题筛选，批量获取作者名称
      */
     public IPage<UpdateLogDTO> getUpdateLogs(AdminUpdateLogQueryRequest request) {
-        IPage<UpdateLogEntity> entityPage = updateLogDomainService.getUpdateLogsWithConditions(
-                request.getStatus(),
-                request.getVersion(),
-                request.getTitle(),
-                request.getPageNum(),
-                request.getPageSize()
-        );
+        // 使用查询对象封装参数
+        var query = UpdateLogAssembler.fromAdminQueryRequest(request);
+        IPage<UpdateLogEntity> entityPage = updateLogDomainService.queryUpdateLogs(query);
 
         List<UpdateLogEntity> updateLogs = entityPage.getRecords();
         if (updateLogs.isEmpty()) {
             return entityPage.convert(UpdateLogAssembler::toDTO);
         }
 
-        // 批量获取作者名称
+        // 批量获取作者信息
         Set<String> authorIds = updateLogs.stream()
                 .map(UpdateLogEntity::getAuthorId)
-                .filter(id -> id != null)
+                .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
-
         Map<String, UserEntity> authorNameMap = userDomainService.getUserEntityMapByIds(authorIds);
 
-        // 转换为DTO并设置作者名称
+        // 批量获取每个更新日志的变更详情（避免N+1）
+        Set<String> updateLogIds = updateLogs.stream()
+                .map(UpdateLogEntity::getId)
+                .collect(Collectors.toSet());
+        Map<String, List<UpdateLogChangeEntity>> changesMap = updateLogDomainService.getChangesByUpdateLogIds(updateLogIds);
+
+        // 组装包含变更详情的DTO
         List<UpdateLogDTO> dtoList = updateLogs.stream()
                 .map(entity -> {
-                    UpdateLogDTO dto = UpdateLogAssembler.toDTO(entity);
+                    List<UpdateLogChangeEntity> changes = changesMap.getOrDefault(entity.getId(), List.of());
+                    UpdateLogDTO dto = UpdateLogAssembler.toDTOWithChanges(entity, changes);
                     if (entity.getAuthorId() != null) {
                         dto.setAuthorName(authorNameMap.get(entity.getAuthorId()).getName());
                     }
@@ -130,7 +133,6 @@ public class AdminUpdateLogAppService {
         // 构建分页结果
         IPage<UpdateLogDTO> dtoPage = entityPage.convert(entity -> null);
         dtoPage.setRecords(dtoList);
-
         return dtoPage;
     }
 

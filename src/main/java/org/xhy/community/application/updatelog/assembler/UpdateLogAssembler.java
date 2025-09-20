@@ -6,6 +6,7 @@ import org.xhy.community.application.updatelog.dto.UpdateLogDTO;
 import org.xhy.community.application.updatelog.dto.UpdateLogChangeDTO;
 import org.xhy.community.domain.updatelog.entity.UpdateLogEntity;
 import org.xhy.community.domain.updatelog.entity.UpdateLogChangeEntity;
+import org.xhy.community.domain.updatelog.query.UpdateLogQuery;
 import org.xhy.community.interfaces.updatelog.request.CreateUpdateLogRequest;
 import org.xhy.community.interfaces.updatelog.request.UpdateUpdateLogRequest;
 import org.xhy.community.interfaces.updatelog.request.CreateChangeRequest;
@@ -136,5 +137,19 @@ public class UpdateLogAssembler {
             entities.add(entity);
         }
         return entities;
+    }
+
+    /**
+     * 从管理员查询请求转换为领域查询对象
+     */
+    public static UpdateLogQuery fromAdminQueryRequest(AdminUpdateLogQueryRequest request) {
+        if (request == null) {
+            return null;
+        }
+        UpdateLogQuery query = new UpdateLogQuery(request.getPageNum(), request.getPageSize());
+        query.setStatus(request.getStatus());
+        query.setVersion(request.getVersion());
+        query.setTitle(request.getTitle());
+        return query;
     }
 }

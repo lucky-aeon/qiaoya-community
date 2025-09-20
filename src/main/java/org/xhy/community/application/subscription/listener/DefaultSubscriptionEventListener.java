@@ -43,8 +43,7 @@ public class DefaultSubscriptionEventListener {
             // 为新用户创建系统赠送的免费订阅
             subscriptionDomainService.createSystemGiftSubscription(
                     event.getUserId(),
-                    config.getSubscriptionPlanId(),
-                    config.getValidityMonths()
+                    config.getSubscriptionPlanId()
             );
 
             log.info("成功为新用户 {} 分配默认套餐: {}", event.getUserId(), config.getSubscriptionPlanId());

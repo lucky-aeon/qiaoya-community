@@ -35,8 +35,7 @@ public class AdminSystemConfigAppService {
     public SystemConfigDTO getConfigByType(SystemConfigType type) {
         SystemConfigEntity entity = systemConfigDomainService.getConfigEntity(type);
         if (entity == null) {
-            throw new BusinessException(SystemConfigErrorCode.CONFIG_NOT_FOUND,
-                "配置类型 " + type.name() + " 不存在");
+            return new SystemConfigDTO();
         }
 
         // 如果是默认套餐配置，需要关联查询套餐名称
@@ -79,8 +78,6 @@ public class AdminSystemConfigAppService {
                     // 创建扩展的配置对象，包含套餐名称
                     DefaultSubscriptionConfigWithPlanName extendedConfig = new DefaultSubscriptionConfigWithPlanName(
                         config.getSubscriptionPlanId(),
-                        config.getValidityMonths(),
-                        config.getEnabled(),
                         plan.getName()
                     );
 
@@ -111,9 +108,8 @@ public class AdminSystemConfigAppService {
                 config = objectMapper.convertValue(configData, DefaultSubscriptionConfig.class);
             }
 
-            // 验证套餐ID是否存在（如果启用且配置了套餐ID）
-            if (config.getEnabled() != null && config.getEnabled() &&
-                config.getSubscriptionPlanId() != null && !config.getSubscriptionPlanId().trim().isEmpty()) {
+            // 验证套餐ID是否存在（如果配置了套餐ID）
+            if (config.getSubscriptionPlanId() != null && !config.getSubscriptionPlanId().trim().isEmpty()) {
 
                 try {
                     subscriptionPlanDomainService.getSubscriptionPlanById(config.getSubscriptionPlanId());
@@ -121,12 +117,6 @@ public class AdminSystemConfigAppService {
                     throw new BusinessException(SubscriptionPlanErrorCode.SUBSCRIPTION_PLAN_NOT_FOUND,
                         "指定的套餐ID不存在: " + config.getSubscriptionPlanId());
                 }
-            }
-
-            // 验证有效期
-            if (config.getValidityMonths() != null && config.getValidityMonths() <= 0) {
-                throw new BusinessException(SystemConfigErrorCode.INVALID_CONFIG_DATA,
-                    "有效期必须大于0个月");
             }
 
         } catch (Exception e) {
@@ -157,9 +147,8 @@ public class AdminSystemConfigAppService {
         public DefaultSubscriptionConfigWithPlanName() {
         }
 
-        public DefaultSubscriptionConfigWithPlanName(String subscriptionPlanId, Integer validityMonths,
-                                                    Boolean enabled, String subscriptionPlanName) {
-            super(subscriptionPlanId, validityMonths, enabled);
+        public DefaultSubscriptionConfigWithPlanName(String subscriptionPlanId, String subscriptionPlanName) {
+            super(subscriptionPlanId);
             this.subscriptionPlanName = subscriptionPlanName;
         }
 

@@ -51,10 +51,9 @@ public class SubscriptionDomainService {
      *
      * @param userId 用户ID
      * @param subscriptionPlanId 套餐ID
-     * @param validityMonths 有效期（月）
      * @return 创建的订阅记录
      */
-    public UserSubscriptionEntity createSystemGiftSubscription(String userId, String subscriptionPlanId, Integer validityMonths) {
+    public UserSubscriptionEntity createSystemGiftSubscription(String userId, String subscriptionPlanId) {
         // 验证套餐存在
         SubscriptionPlanEntity plan = subscriptionPlanDomainService.getSubscriptionPlanById(subscriptionPlanId);
 
@@ -64,9 +63,9 @@ public class SubscriptionDomainService {
             return null;
         }
 
-        // 创建系统赠送的订阅记录，cdkCode为null
+        // 创建系统赠送的订阅记录，cdkCode为null，使用套餐本身的有效期
         LocalDateTime now = LocalDateTime.now();
-        LocalDateTime endTime = now.plusMonths(validityMonths);
+        LocalDateTime endTime = now.plusMonths(plan.getValidityMonths());
 
         UserSubscriptionEntity subscription = new UserSubscriptionEntity(userId, plan.getId(), now, endTime, null);
         userSubscriptionRepository.insert(subscription);

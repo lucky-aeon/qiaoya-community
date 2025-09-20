@@ -51,6 +51,6 @@ public class AdminSystemConfigController {
             @Valid @RequestBody UpdateSystemConfigRequest request) {
         SystemConfigType configType = SystemConfigType.valueOf(type.toUpperCase());
         SystemConfigDTO config = adminSystemConfigAppService.updateConfigByType(configType, request.getData());
-        return ApiResponse.success(config);
+        return ApiResponse.success("保存成功",config);
     }
 }

@@ -11,6 +11,7 @@ import org.xhy.community.domain.updatelog.entity.UpdateLogEntity;
 import org.xhy.community.domain.updatelog.entity.UpdateLogChangeEntity;
 import org.xhy.community.domain.updatelog.repository.UpdateLogRepository;
 import org.xhy.community.domain.updatelog.repository.UpdateLogChangeRepository;
+import org.xhy.community.domain.updatelog.query.UpdateLogQuery;
 import org.xhy.community.domain.updatelog.valueobject.UpdateLogStatus;
 import org.xhy.community.domain.updatelog.valueobject.ChangeType;
 import org.xhy.community.infrastructure.exception.BusinessException;
@@ -20,6 +21,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.time.LocalDateTime;
 
 @Service
 public class UpdateLogDomainService {
@@ -67,6 +69,21 @@ public class UpdateLogDomainService {
 
         LambdaQueryWrapper<UpdateLogEntity> queryWrapper = new LambdaQueryWrapper<UpdateLogEntity>()
                 .eq(status != null, UpdateLogEntity::getStatus, status)
+                .orderByDesc(UpdateLogEntity::getCreateTime);
+
+        return updateLogRepository.selectPage(page, queryWrapper);
+    }
+
+    /**
+     * 使用查询对象的方式分页查询更新日志
+     */
+    public IPage<UpdateLogEntity> queryUpdateLogs(UpdateLogQuery query) {
+        Page<UpdateLogEntity> page = new Page<>(query.getPageNum(), query.getPageSize());
+
+        LambdaQueryWrapper<UpdateLogEntity> queryWrapper = new LambdaQueryWrapper<UpdateLogEntity>()
+                .eq(query.getStatus() != null, UpdateLogEntity::getStatus, query.getStatus())
+                .eq(org.springframework.util.StringUtils.hasText(query.getVersion()), UpdateLogEntity::getVersion, query.getVersion())
+                .like(org.springframework.util.StringUtils.hasText(query.getTitle()), UpdateLogEntity::getTitle, query.getTitle())
                 .orderByDesc(UpdateLogEntity::getCreateTime);
 
         return updateLogRepository.selectPage(page, queryWrapper);
@@ -148,10 +165,21 @@ public class UpdateLogDomainService {
 
         // 批量创建变更详情
         if (!CollectionUtils.isEmpty(changes)) {
+            LocalDateTime now = LocalDateTime.now();
             for (UpdateLogChangeEntity change : changes) {
                 change.setUpdateLogId(updateLog.getId());
-                updateLogChangeRepository.insert(change);
+                if (change.getId() == null) {
+                    // 保证批量插入时ID/时间字段完整
+                    change.setId(java.util.UUID.randomUUID().toString());
+                    change.setCreateTime(now);
+                    change.setUpdateTime(now);
+                    if (change.getDeleted() == null) {
+                        change.setDeleted(false);
+                    }
+                }
             }
+            // 批量插入变更详情
+            updateLogChangeRepository.insertBatch(changes);
         }
 
         return updateLog;
@@ -176,10 +204,19 @@ public class UpdateLogDomainService {
 
         // 批量创建新的变更详情
         if (!CollectionUtils.isEmpty(changes)) {
+            LocalDateTime now = LocalDateTime.now();
             for (UpdateLogChangeEntity change : changes) {
                 change.setUpdateLogId(updateLog.getId());
-                updateLogChangeRepository.insert(change);
+                if (change.getId() == null) {
+                    change.setId(java.util.UUID.randomUUID().toString());
+                    change.setCreateTime(now);
+                    change.setUpdateTime(now);
+                    if (change.getDeleted() == null) {
+                        change.setDeleted(false);
+                    }
+                }
             }
+            updateLogChangeRepository.insertBatch(changes);
         }
 
         return updateLog;
