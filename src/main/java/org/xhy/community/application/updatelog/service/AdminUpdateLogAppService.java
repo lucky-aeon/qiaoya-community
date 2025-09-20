@@ -1,12 +1,14 @@
 package org.xhy.community.application.updatelog.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import org.apache.catalina.User;
 import org.springframework.stereotype.Service;
 import org.xhy.community.application.updatelog.assembler.UpdateLogAssembler;
 import org.xhy.community.application.updatelog.dto.UpdateLogDTO;
 import org.xhy.community.domain.updatelog.entity.UpdateLogEntity;
 import org.xhy.community.domain.updatelog.entity.UpdateLogChangeEntity;
 import org.xhy.community.domain.updatelog.service.UpdateLogDomainService;
+import org.xhy.community.domain.user.entity.UserEntity;
 import org.xhy.community.domain.user.service.UserDomainService;
 import org.xhy.community.interfaces.updatelog.request.CreateUpdateLogRequest;
 import org.xhy.community.interfaces.updatelog.request.UpdateUpdateLogRequest;
@@ -112,14 +114,14 @@ public class AdminUpdateLogAppService {
                 .filter(id -> id != null)
                 .collect(Collectors.toSet());
 
-        Map<String, String> authorNameMap = userDomainService.getUserNameMapByIds(authorIds);
+        Map<String, UserEntity> authorNameMap = userDomainService.getUserEntityMapByIds(authorIds);
 
         // 转换为DTO并设置作者名称
         List<UpdateLogDTO> dtoList = updateLogs.stream()
                 .map(entity -> {
                     UpdateLogDTO dto = UpdateLogAssembler.toDTO(entity);
                     if (entity.getAuthorId() != null) {
-                        dto.setAuthorName(authorNameMap.get(entity.getAuthorId()));
+                        dto.setAuthorName(authorNameMap.get(entity.getAuthorId()).getName());
                     }
                     return dto;
                 })

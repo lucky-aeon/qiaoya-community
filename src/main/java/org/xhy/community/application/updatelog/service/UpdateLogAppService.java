@@ -6,6 +6,7 @@ import org.xhy.community.application.updatelog.dto.UpdateLogDTO;
 import org.xhy.community.domain.updatelog.entity.UpdateLogEntity;
 import org.xhy.community.domain.updatelog.entity.UpdateLogChangeEntity;
 import org.xhy.community.domain.updatelog.service.UpdateLogDomainService;
+import org.xhy.community.domain.user.entity.UserEntity;
 import org.xhy.community.domain.user.service.UserDomainService;
 
 import java.util.List;
@@ -50,7 +51,7 @@ public class UpdateLogAppService {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
-        Map<String, String> authorNameMap = userDomainService.getUserNameMapByIds(authorIds);
+        Map<String, UserEntity> authorNameMap = userDomainService.getUserEntityMapByIds(authorIds);
 
         // 批量获取所有变更详情（避免 N+1 查询）
         Set<String> updateLogIds = updateLogs.stream()
@@ -70,7 +71,7 @@ public class UpdateLogAppService {
 
                     // 设置作者名称
                     if (entity.getAuthorId() != null) {
-                        dto.setAuthorName(authorNameMap.get(entity.getAuthorId()));
+                        dto.setAuthorName(authorNameMap.get(entity.getAuthorId()).getName());
                     }
 
                     return dto;
