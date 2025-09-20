@@ -47,12 +47,12 @@ public class AppFollowController {
             // 如果已关注则取消关注
             followAppService.unfollow(request.getTargetId(), request.getTargetType());
             result.put("isFollowing", false);
-            return ApiResponse.success("取消关注成功", result);
+            return ApiResponse.success("取消订阅成功", result);
         } else {
             // 如果未关注则创建关注
             followAppService.createFollow(request.getTargetId(), request.getTargetType());
             result.put("isFollowing", true);
-            return ApiResponse.success("关注成功", result);
+            return ApiResponse.success("订阅成功", result);
         }
     }
     
@@ -66,9 +66,11 @@ public class AppFollowController {
      * @return 是否已关注的状态
      */
     @GetMapping("/check/{targetType}/{targetId}")
-    public ApiResponse<Boolean> checkFollowStatus(@PathVariable FollowTargetType targetType,
+    public ApiResponse<Map<String, Object>> checkFollowStatus(@PathVariable FollowTargetType targetType,
                                                  @PathVariable String targetId) {
         boolean isFollowing = followAppService.checkFollowStatus(targetId, targetType);
-        return ApiResponse.success(isFollowing);
+        Map<String, Object> result = new HashMap<>();
+        result.put("isFollowing", isFollowing);
+        return ApiResponse.success(result);
     }
 }
