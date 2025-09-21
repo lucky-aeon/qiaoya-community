@@ -49,11 +49,17 @@ public class TestimonialEntity extends BaseEntity {
     }
 
     public void updateContent(String content, Integer rating) {
-        if (this.status == TestimonialStatus.PENDING) {
+        if (this.status == TestimonialStatus.PENDING || this.status == TestimonialStatus.REJECTED) {
             this.content = content;
             this.rating = rating;
+            // 如果是拒绝状态修改后，重置为待审核状态
+            if (this.status == TestimonialStatus.REJECTED) {
+                this.status = TestimonialStatus.PENDING;
+            }
         } else {
-            throw new IllegalStateException("只有待审核状态的评价可以修改内容");
+            throw new org.xhy.community.infrastructure.exception.BusinessException(
+                org.xhy.community.infrastructure.exception.TestimonialErrorCode.TESTIMONIAL_NOT_MODIFIABLE
+            );
         }
     }
 
@@ -70,7 +76,7 @@ public class TestimonialEntity extends BaseEntity {
     }
 
     public boolean canBeModified() {
-        return TestimonialStatus.PENDING.equals(this.status);
+        return TestimonialStatus.PENDING.equals(this.status) || TestimonialStatus.REJECTED.equals(this.status);
     }
 
     // Getters and Setters

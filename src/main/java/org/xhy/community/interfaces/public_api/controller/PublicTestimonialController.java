@@ -4,8 +4,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.xhy.community.application.testimonial.dto.TestimonialDTO;
+import org.xhy.community.application.testimonial.dto.PublicTestimonialDTO;
 import org.xhy.community.application.testimonial.service.PublicTestimonialAppService;
+import org.xhy.community.infrastructure.config.ApiResponse;
 
 import java.util.List;
 
@@ -29,11 +30,12 @@ public class PublicTestimonialController {
      * 前台展示用，返回所有已发布状态的评价，按排序权重和创建时间倒序排列
      * 无需用户认证
      *
-     * @return 已发布的学员评价列表
+     * @return 已发布的学员评价列表，包含id、用户昵称、内容、评分
      */
     @GetMapping("/testimonials")
-    public ResponseEntity<List<TestimonialDTO>> getPublishedTestimonials() {
-        List<TestimonialDTO> testimonials = publicTestimonialAppService.getPublishedTestimonials();
-        return ResponseEntity.ok(testimonials);
+    public ApiResponse<List<PublicTestimonialDTO>> getPublishedTestimonials() {
+        List<PublicTestimonialDTO> testimonials = publicTestimonialAppService.getPublishedTestimonials();
+        return ApiResponse.success(testimonials);
+
     }
 }
