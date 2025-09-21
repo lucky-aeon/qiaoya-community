@@ -1,4 +1,4 @@
-package org.xhy.community.interfaces.config;
+package org.xhy.community.interfaces.webconfig;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -51,10 +51,16 @@ public class UserContextInterceptor implements HandlerInterceptor {
 
             // 兜底：确保用户至少拥有一个默认套餐，由应用服务封装具体逻辑
             try {
-                userSubscriptionAppService.ensureDefaultSubscriptionIfMissing(userId);
+                boolean hasActive = userSubscriptionAppService.hasActiveSubscription(userId);
+                if (!hasActive) {
+                    log.warn("访问被拒绝：当前用户没有有效订阅，userId={}", userId);
+                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                    return false;
+                }
             } catch (Exception e) {
-                // 双保险：即便应用层已处理异常，这里也不影响请求
-                log.warn("ensureDefaultSubscriptionIfMissing threw, userId={}, err={}", userId, e.getMessage());
+                log.error("订阅校验失败，userId={}，错误={}", userId, e.getMessage());
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                return false;
             }
         } else {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);

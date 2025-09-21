@@ -92,8 +92,11 @@ public class SubscriptionDomainService {
     }
     
     public UserSubscriptionEntity getSubscriptionById(String subscriptionId,String userId) {
-        UserSubscriptionEntity subscription = userSubscriptionRepository.selectOne(new LambdaQueryWrapper<UserSubscriptionEntity>()
-                .eq(UserSubscriptionEntity::getSubscriptionPlanId, subscriptionId).eq(UserSubscriptionEntity::getUserId, userId));
+        UserSubscriptionEntity subscription = userSubscriptionRepository.selectOne(
+                new LambdaQueryWrapper<UserSubscriptionEntity>()
+                        .eq(UserSubscriptionEntity::getId, subscriptionId)
+                        .eq(UserSubscriptionEntity::getUserId, userId)
+        );
         if (subscription == null) {
             throw new BusinessException(SubscriptionErrorCode.SUBSCRIPTION_NOT_FOUND);
         }

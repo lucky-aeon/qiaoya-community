@@ -91,4 +91,12 @@ public class UserSubscriptionAppService {
             return false;
         }
     }
+
+    /**
+     * 只读校验：用户是否存在有效订阅
+     */
+    public boolean hasActiveSubscription(String userId) {
+        var actives = subscriptionDomainService.getUserActiveSubscriptions(userId);
+        return actives != null && !actives.isEmpty();
+    }
 }
