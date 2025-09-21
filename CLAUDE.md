@@ -466,12 +466,13 @@ postDomainService.getUserPosts(null, pageNum, pageSize, status, AccessLevel.ADMI
 - `AdminPostAssembler` - 管理员专用转换器
 
 **关联数据查询模式：**
+
 ```java
-// 批量查询关联数据，避免N+1查询问题
+import org.xhy.community.domain.user.entity.UserEntity;// 批量查询关联数据，避免N+1查询问题
 Set<String> authorIds = posts.stream().map(PostEntity::getAuthorId).collect(Collectors.toSet());
 Set<String> categoryIds = posts.stream().map(PostEntity::getCategoryId).collect(Collectors.toSet());
 
-Map<String, String> authorNames = userDomainService.getUserNameMapByIds(authorIds);
+Map<String, UserEntity> authorNames = userDomainService.getUserEntityMapByIds(authorIds);
 Map<String, String> categoryNames = categoryService.getCategoryNameMapByIds(categoryIds);
 
 // 在Assembler中组装完整的DTO
