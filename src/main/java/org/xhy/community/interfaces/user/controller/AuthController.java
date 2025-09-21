@@ -1,11 +1,13 @@
 package org.xhy.community.interfaces.user.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 import org.xhy.community.application.user.dto.LoginResponseDTO;
 import org.xhy.community.application.user.dto.UserDTO;
 import org.xhy.community.application.user.service.UserAppService;
 import org.xhy.community.infrastructure.config.ApiResponse;
+import org.xhy.community.infrastructure.util.ClientIpUtil;
 import org.xhy.community.interfaces.user.request.LoginRequest;
 import org.xhy.community.interfaces.user.request.RegisterRequest;
 import org.xhy.community.infrastructure.annotation.LogUserActivity;
@@ -40,9 +42,10 @@ public class AuthController {
         successType = ActivityType.LOGIN_SUCCESS,
         failureType = ActivityType.LOGIN_FAILED
     )
-    public ApiResponse<LoginResponseDTO> login(@Valid @RequestBody LoginRequest request) {
+    public ApiResponse<LoginResponseDTO> login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest) {
         try {
-            LoginResponseDTO loginResponse = userAppService.login(request.getEmail(), request.getPassword());
+            String ip = ClientIpUtil.getClientIp(httpRequest);
+            LoginResponseDTO loginResponse = userAppService.login(request.getEmail(), request.getPassword(), ip);
             return ApiResponse.success("登录成功", loginResponse);
         } catch (IllegalArgumentException e) {
             return ApiResponse.error(400, e.getMessage());

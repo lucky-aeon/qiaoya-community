@@ -8,6 +8,7 @@ import org.xhy.community.domain.config.entity.SystemConfigEntity;
 import org.xhy.community.domain.config.service.SystemConfigDomainService;
 import org.xhy.community.domain.config.valueobject.DefaultSubscriptionConfig;
 import org.xhy.community.domain.config.valueobject.SystemConfigType;
+import org.xhy.community.domain.config.valueobject.UserSessionConfig;
 import org.xhy.community.domain.subscription.service.SubscriptionPlanDomainService;
 import org.xhy.community.domain.subscription.entity.SubscriptionPlanEntity;
 import org.xhy.community.infrastructure.exception.BusinessException;
@@ -54,6 +55,7 @@ public class AdminSystemConfigAppService {
         switch (type) {
             case DEFAULT_SUBSCRIPTION_PLAN -> validateAndUpdateDefaultSubscriptionConfig(configData);
             case EMAIL_TEMPLATE, SYSTEM_MAINTENANCE -> validateGeneralConfig(configData);
+            case USER_SESSION_LIMIT -> validateAndUpdateUserSessionConfig(configData);
         }
 
         // 更新配置
@@ -135,6 +137,46 @@ public class AdminSystemConfigAppService {
         if (configData == null) {
             throw new BusinessException(SystemConfigErrorCode.INVALID_CONFIG_DATA,
                 "配置数据不能为空");
+        }
+    }
+
+    /**
+     * 验证并更新用户会话限制配置
+     */
+    private void validateAndUpdateUserSessionConfig(Object configData) {
+        try {
+            UserSessionConfig config;
+            if (configData instanceof UserSessionConfig) {
+                config = (UserSessionConfig) configData;
+            } else {
+                // 如果是Map或其他类型，尝试转换为UserSessionConfig
+                config = objectMapper.convertValue(configData, UserSessionConfig.class);
+            }
+
+            // 验证配置有效性
+            if (!config.isValid()) {
+                throw new BusinessException(SystemConfigErrorCode.INVALID_CONFIG_DATA,
+                    "用户会话配置数据无效");
+            }
+
+            // 验证最大活跃IP数范围
+            if (config.getMaxActiveIps() < 1 || config.getMaxActiveIps() > 10) {
+                throw new BusinessException(SystemConfigErrorCode.INVALID_CONFIG_DATA,
+                    "最大活跃IP数必须在1-10之间");
+            }
+
+            // 验证封禁时长
+            if (config.getBanTtlDays() < 0) {
+                throw new BusinessException(SystemConfigErrorCode.INVALID_CONFIG_DATA,
+                    "封禁时长不能为负数");
+            }
+
+        } catch (Exception e) {
+            if (e instanceof BusinessException) {
+                throw e;
+            }
+            throw new BusinessException(SystemConfigErrorCode.INVALID_CONFIG_DATA,
+                "用户会话配置数据格式错误");
         }
     }
 

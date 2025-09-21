@@ -10,29 +10,52 @@ import org.xhy.community.domain.user.entity.UserEntity;
 import org.xhy.community.infrastructure.exception.UserErrorCode;
 import org.xhy.community.domain.user.service.UserDomainService;
 import org.xhy.community.infrastructure.config.JwtUtil;
+import org.xhy.community.domain.session.service.DeviceSessionDomainService;
+import org.xhy.community.domain.config.service.UserSessionConfigService;
+import org.xhy.community.domain.config.valueobject.UserSessionConfig;
 
 @Service
 public class UserAppService {
     
     private final UserDomainService userDomainService;
     private final JwtUtil jwtUtil;
-    
-    public UserAppService(UserDomainService userDomainService, JwtUtil jwtUtil) {
+    private final DeviceSessionDomainService deviceSessionDomainService;
+    private final UserSessionConfigService userSessionConfigService;
+
+    public UserAppService(UserDomainService userDomainService,
+                          JwtUtil jwtUtil,
+                          DeviceSessionDomainService deviceSessionDomainService,
+                          UserSessionConfigService userSessionConfigService) {
         this.userDomainService = userDomainService;
         this.jwtUtil = jwtUtil;
+        this.deviceSessionDomainService = deviceSessionDomainService;
+        this.userSessionConfigService = userSessionConfigService;
     }
     
-    public LoginResponseDTO login(String email, String password) {
+    public LoginResponseDTO login(String email, String password, String ip) {
         if (!userDomainService.authenticateUser(email, password)) {
             throw new BusinessException(UserErrorCode.WRONG_PASSWORD, "邮箱或密码错误");
         }
-        
+
         UserEntity user = userDomainService.getUserByEmail(email);
         UserDTO userDTO = UserAssembler.toDTO(user);
-        
+
+        // 获取用户会话配置
+        UserSessionConfig sessionConfig = userSessionConfigService.getUserSessionConfig();
+
+        // 设备/IP 并发控制：基于 IP 的会话限制
+        boolean allowed = deviceSessionDomainService.createOrReuseByIp(
+                user.getId(), ip,
+                sessionConfig.getMaxActiveIps(), sessionConfig.getPolicy(),
+                sessionConfig.getTtl().toMillis(), sessionConfig.getHistoryWindow().toMillis(),
+                sessionConfig.getBanThreshold(), sessionConfig.getBanTtl().toMillis());
+        if (!allowed) {
+            throw new BusinessException(UserErrorCode.USER_BANNED, "设备或IP限制，登录被拒绝");
+        }
+
         // 生成JWT token
         String token = jwtUtil.generateToken(user.getId(), user.getEmail());
-        
+
         return new LoginResponseDTO(token, userDTO);
     }
     
