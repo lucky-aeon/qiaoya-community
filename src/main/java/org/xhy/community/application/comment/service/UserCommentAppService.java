@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 public class UserCommentAppService {
@@ -126,11 +127,11 @@ public class UserCommentAppService {
         // 批量查询用户信息（包括评论用户和被回复用户）
         Set<String> userIds = comments.stream()
                 .flatMap(comment -> {
-                    Set<String> ids = Set.of(comment.getCommentUserId());
                     if (comment.getReplyUserId() != null) {
-                        return Set.of(comment.getCommentUserId(), comment.getReplyUserId()).stream();
+                        return Stream.of(comment.getCommentUserId(), comment.getReplyUserId());
+                    } else {
+                        return Stream.of(comment.getCommentUserId());
                     }
-                    return ids.stream();
                 })
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
