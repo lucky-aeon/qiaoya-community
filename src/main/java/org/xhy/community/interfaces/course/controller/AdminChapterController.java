@@ -41,7 +41,7 @@ public class AdminChapterController {
     public ApiResponse<ChapterDTO> createChapter(@Valid @RequestBody CreateChapterRequest request) {
         String currentUserId = UserContext.getCurrentUserId();
         ChapterDTO chapter = adminChapterAppService.createChapter(request, currentUserId);
-        return ApiResponse.success(chapter);
+        return ApiResponse.success("创建成功",chapter);
     }
     
     /**
@@ -57,7 +57,7 @@ public class AdminChapterController {
     public ApiResponse<ChapterDTO> updateChapter(@PathVariable String id,
                                                 @Valid @RequestBody UpdateChapterRequest request) {
         ChapterDTO chapter = adminChapterAppService.updateChapter(id, request);
-        return ApiResponse.success(chapter);
+        return ApiResponse.success("更新成功",chapter);
     }
     
     /**
@@ -71,7 +71,7 @@ public class AdminChapterController {
     @DeleteMapping("/{id}")
     public ApiResponse<Void> deleteChapter(@PathVariable String id) {
         adminChapterAppService.deleteChapter(id);
-        return ApiResponse.success();
+        return ApiResponse.success("删除成功");
     }
     
     /**

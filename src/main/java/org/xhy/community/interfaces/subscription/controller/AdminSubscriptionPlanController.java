@@ -34,7 +34,7 @@ public class AdminSubscriptionPlanController {
     @PostMapping
     public ApiResponse<SubscriptionPlanDTO> createSubscriptionPlan(@Valid @RequestBody CreateSubscriptionPlanRequest request) {
         SubscriptionPlanDTO subscriptionPlan = adminSubscriptionPlanAppService.createSubscriptionPlan(request);
-        return ApiResponse.success(subscriptionPlan);
+        return ApiResponse.success("创建成功",subscriptionPlan);
     }
     
     /**
@@ -48,7 +48,7 @@ public class AdminSubscriptionPlanController {
     public ApiResponse<SubscriptionPlanDTO> updateSubscriptionPlan(@PathVariable String id, 
                                                                  @Valid @RequestBody UpdateSubscriptionPlanRequest request) {
         SubscriptionPlanDTO subscriptionPlan = adminSubscriptionPlanAppService.updateSubscriptionPlan(id, request);
-        return ApiResponse.success(subscriptionPlan);
+        return ApiResponse.success("更新成功",subscriptionPlan);
     }
     
     /**
@@ -72,7 +72,7 @@ public class AdminSubscriptionPlanController {
     @DeleteMapping("/{id}")
     public ApiResponse<Void> deleteSubscriptionPlan(@PathVariable String id) {
         adminSubscriptionPlanAppService.deleteSubscriptionPlan(id);
-        return ApiResponse.success();
+        return ApiResponse.success("删除成功");
     }
     
     /**

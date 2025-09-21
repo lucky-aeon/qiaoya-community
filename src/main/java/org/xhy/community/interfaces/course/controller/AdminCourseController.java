@@ -40,7 +40,7 @@ public class AdminCourseController {
     public ApiResponse<CourseDTO> createCourse(@Valid @RequestBody CreateCourseRequest request) {
         String currentUserId = UserContext.getCurrentUserId();
         CourseDTO course = adminCourseAppService.createCourse(request, currentUserId);
-        return ApiResponse.success(course);
+        return ApiResponse.success("创建成功",course);
     }
     
     /**
@@ -55,7 +55,7 @@ public class AdminCourseController {
     public ApiResponse<CourseDTO> updateCourse(@PathVariable String id, 
                                               @Valid @RequestBody UpdateCourseRequest request) {
         CourseDTO course = adminCourseAppService.updateCourse(id, request);
-        return ApiResponse.success(course);
+        return ApiResponse.success("更新成功",course);
     }
     
     /**
@@ -81,7 +81,7 @@ public class AdminCourseController {
     @ActivityLog(ActivityType.DELETE_COURSE)
     public ApiResponse<Void> deleteCourse(@PathVariable String id) {
         adminCourseAppService.deleteCourse(id);
-        return ApiResponse.success();
+        return ApiResponse.success("删除成功");
     }
     
     @GetMapping

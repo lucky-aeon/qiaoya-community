@@ -35,7 +35,7 @@ public class AdminCDKController {
     @PostMapping
     public ApiResponse<List<CDKDTO>> createCDK(@Valid @RequestBody CreateCDKRequest request) {
         List<CDKDTO> cdkList = adminCDKAppService.createCDK(request);
-        return ApiResponse.success(cdkList);
+        return ApiResponse.success("创建成功",cdkList);
     }
     
     /**
@@ -59,6 +59,6 @@ public class AdminCDKController {
     @DeleteMapping("/{id}")
     public ApiResponse<Void> deleteCDK(@PathVariable String id) {
         adminCDKAppService.deleteCDK(id);
-        return ApiResponse.success();
+        return ApiResponse.success("删除成功");
     }
 }

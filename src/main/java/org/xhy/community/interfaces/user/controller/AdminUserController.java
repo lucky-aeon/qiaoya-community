@@ -49,7 +49,7 @@ public class AdminUserController {
     @PutMapping("/{userId}/toggle-status")
     public ApiResponse<AdminUserDTO> toggleUserStatus(@PathVariable String userId) {
         AdminUserDTO user = adminUserAppService.toggleUserStatus(userId);
-        return ApiResponse.success(user);
+        return ApiResponse.success("切换成功",user);
     }
     
     /**

@@ -11,7 +11,6 @@ import org.xhy.community.domain.follow.service.FollowDomainService;
 import org.xhy.community.domain.follow.valueobject.FollowTargetType;
 import org.xhy.community.infrastructure.config.UserContext;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,7 +32,7 @@ public class FollowAppService {
      * 创建关注
      */
     @Transactional
-    public FollowDTO createFollow(String targetId, FollowTargetType targetType) {
+    public FollowDTO follow(String targetId, FollowTargetType targetType) {
         String followerId = UserContext.getCurrentUserId();
         
         FollowEntity follow = followDomainService.createFollow(followerId, targetId, targetType);

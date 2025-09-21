@@ -75,6 +75,6 @@ public class AdminSubscriptionPlanCourseController {
     public ApiResponse<Void> updateSubscriptionPlanCourses(@PathVariable String planId, 
                                                          @Valid @RequestBody UpdateSubscriptionPlanCoursesRequest request) {
         adminSubscriptionPlanCourseAppService.updateSubscriptionPlanCourses(planId, request);
-        return ApiResponse.success();
+        return ApiResponse.success("绑定成功");
     }
 }

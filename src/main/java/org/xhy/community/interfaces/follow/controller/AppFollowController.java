@@ -2,7 +2,6 @@ package org.xhy.community.interfaces.follow.controller;
 
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
-import org.xhy.community.application.follow.dto.FollowDTO;
 import org.xhy.community.application.follow.service.FollowAppService;
 import org.xhy.community.domain.follow.valueobject.FollowTargetType;
 import org.xhy.community.infrastructure.config.ApiResponse;
@@ -50,7 +49,7 @@ public class AppFollowController {
             return ApiResponse.success("取消订阅成功", result);
         } else {
             // 如果未关注则创建关注
-            followAppService.createFollow(request.getTargetId(), request.getTargetType());
+            followAppService.follow(request.getTargetId(), request.getTargetType());
             result.put("isFollowing", true);
             return ApiResponse.success("订阅成功", result);
         }

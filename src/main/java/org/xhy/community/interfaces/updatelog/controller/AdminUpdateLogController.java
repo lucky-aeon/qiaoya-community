@@ -40,7 +40,7 @@ public class AdminUpdateLogController {
         String currentUserId = UserContext.getCurrentUserId();
 
         UpdateLogDTO updateLog = adminUpdateLogAppService.createUpdateLog(request, currentUserId);
-        return ApiResponse.success(updateLog);
+        return ApiResponse.success("创建成功",updateLog);
     }
 
     /**
@@ -55,7 +55,7 @@ public class AdminUpdateLogController {
     public ApiResponse<UpdateLogDTO> updateUpdateLog(@PathVariable String id,
                                                    @Valid @RequestBody UpdateUpdateLogRequest request) {
         UpdateLogDTO updateLog = adminUpdateLogAppService.updateUpdateLog(id, request);
-        return ApiResponse.success(updateLog);
+        return ApiResponse.success("更新成功",updateLog);
     }
 
     /**
@@ -81,7 +81,7 @@ public class AdminUpdateLogController {
     @DeleteMapping("/{id}")
     public ApiResponse<Void> deleteUpdateLog(@PathVariable String id) {
         adminUpdateLogAppService.deleteUpdateLog(id);
-        return ApiResponse.success();
+        return ApiResponse.success("删除成功");
     }
 
     /**
@@ -107,6 +107,6 @@ public class AdminUpdateLogController {
     @PutMapping("/{id}/toggle-status")
     public ApiResponse<UpdateLogDTO> toggleUpdateLogStatus(@PathVariable String id) {
         UpdateLogDTO updateLog = adminUpdateLogAppService.toggleUpdateLogStatus(id);
-        return ApiResponse.success(updateLog);
+        return ApiResponse.success("切换成功",updateLog);
     }
 }
