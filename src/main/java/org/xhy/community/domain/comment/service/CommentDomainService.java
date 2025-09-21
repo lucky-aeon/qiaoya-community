@@ -131,7 +131,7 @@ public class CommentDomainService {
     
     public IPage<CommentEntity> getUserRelatedComments(CommentQuery query) {
         Page<CommentEntity> page = new Page<>(query.getPageNum(), query.getPageSize());
-        
+
         // 查询与用户相关的评论：用户发表的评论 + 回复给用户的评论
         LambdaQueryWrapper<CommentEntity> queryWrapper = new LambdaQueryWrapper<CommentEntity>()
                 .and(wrapper -> wrapper
@@ -140,7 +140,15 @@ public class CommentDomainService {
                     .eq(CommentEntity::getReplyUserId, query.getUserId())    // 回复给用户的评论
                 )
                 .orderByDesc(CommentEntity::getCreateTime);
-        
+
         return commentRepository.selectPage(page, queryWrapper);
+    }
+
+    public List<CommentEntity> getLatestComments() {
+        return commentRepository.selectList(
+            new LambdaQueryWrapper<CommentEntity>()
+                .orderByDesc(CommentEntity::getCreateTime)
+                .last("LIMIT 10")
+        );
     }
 }

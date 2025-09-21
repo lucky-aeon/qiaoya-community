@@ -83,11 +83,19 @@ public class ChapterDomainService {
         for (int i = 0; i < chapterIds.size(); i++) {
             String chapterId = chapterIds.get(i);
             int sortOrder = totalCount - i;
-            
+
             ChapterEntity chapter = new ChapterEntity();
             chapter.setId(chapterId);
             chapter.setSortOrder(sortOrder);
             chapterRepository.updateById(chapter);
         }
+    }
+
+    public List<ChapterEntity> getLatestChapters() {
+        return chapterRepository.selectList(
+            new LambdaQueryWrapper<ChapterEntity>()
+                .orderByDesc(ChapterEntity::getCreateTime)
+                .last("LIMIT 5")
+        );
     }
 }

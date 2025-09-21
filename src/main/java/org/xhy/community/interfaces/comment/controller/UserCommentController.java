@@ -5,12 +5,15 @@ import jakarta.validation.Valid;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.xhy.community.application.comment.dto.CommentDTO;
+import org.xhy.community.application.comment.dto.LatestCommentDTO;
 import org.xhy.community.application.comment.service.UserCommentAppService;
 import org.xhy.community.infrastructure.config.ApiResponse;
 import org.xhy.community.infrastructure.config.UserContext;
 import org.xhy.community.interfaces.comment.request.CreateReplyCommentRequest;
 import org.xhy.community.interfaces.comment.request.CommentQueryRequest;
 import org.xhy.community.interfaces.comment.request.CreateCommentRequest;
+
+import java.util.List;
 
 /**
  * 用户评论管理控制器
@@ -81,7 +84,7 @@ public class UserCommentController {
      * 获取用户相关评论
      * 分页查询当前用户的相关评论，包括用户发表的评论和收到的回复
      * 需要JWT令牌认证
-     * 
+     *
      * @param request 评论查询请求参数，包含分页和筛选条件
      * @return 分页的用户相关评论数据
      */
@@ -89,6 +92,18 @@ public class UserCommentController {
     public ApiResponse<IPage<CommentDTO>> getUserRelatedComments(CommentQueryRequest request) {
         String currentUserId = UserContext.getCurrentUserId();
         IPage<CommentDTO> comments = userCommentAppService.getUserRelatedComments(request, currentUserId);
+        return ApiResponse.success(comments);
+    }
+
+    /**
+     * 获取最新评论
+     * 查询最新的10条评论，包含评论内容、用户昵称、业务类型和业务名称
+     *
+     * @return 最新评论列表
+     */
+    @GetMapping("/latest")
+    public ApiResponse<List<LatestCommentDTO>> getLatestComments() {
+        List<LatestCommentDTO> comments = userCommentAppService.getLatestComments();
         return ApiResponse.success(comments);
     }
 }

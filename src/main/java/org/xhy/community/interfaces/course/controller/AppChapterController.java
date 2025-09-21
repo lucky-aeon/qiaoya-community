@@ -2,8 +2,11 @@ package org.xhy.community.interfaces.course.controller;
 
 import org.springframework.web.bind.annotation.*;
 import org.xhy.community.application.course.dto.FrontChapterDetailDTO;
+import org.xhy.community.application.course.dto.LatestChapterDTO;
 import org.xhy.community.application.course.service.ChapterAppService;
 import org.xhy.community.infrastructure.config.ApiResponse;
+
+import java.util.List;
 
 /**
  * 前台章节控制器
@@ -34,5 +37,17 @@ public class AppChapterController {
     public ApiResponse<FrontChapterDetailDTO> getChapterDetail(@PathVariable String id) {
         FrontChapterDetailDTO chapterDetail = chapterAppService.getChapterById(id);
         return ApiResponse.success(chapterDetail);
+    }
+
+    /**
+     * 获取最新章节列表
+     * 查询最新的5条课程章节，包含章节信息和课程名称
+     *
+     * @return 最新章节列表
+     */
+    @GetMapping("/latest")
+    public ApiResponse<List<LatestChapterDTO>> getLatestChapters() {
+        List<LatestChapterDTO> chapters = chapterAppService.getLatestChapters();
+        return ApiResponse.success(chapters);
     }
 }
