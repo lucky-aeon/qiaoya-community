@@ -109,7 +109,7 @@ public class UserController {
      * 获取指定用户的公开个人资料信息，不包含私密信息（邮箱、通知设置等）
      * 主要用于查看其他用户的公开资料
      * 需要JWT令牌认证
-     * 
+     *
      * @param userId 目标用户ID，UUID格式
      * @return 指定用户的公开资料信息
      */
@@ -121,5 +121,18 @@ public class UserController {
         } catch (IllegalArgumentException e) {
             return ApiResponse.error(400, e.getMessage());
         }
+    }
+
+    /**
+     * 用户会话心跳检查
+     * 用于前端定期检查当前用户会话状态，及时发现被管理员下线的情况
+     * 通过拦截器验证会话有效性，如果会话无效将返回401状态码
+     * 需要JWT令牌认证
+     *
+     * @return 会话有效时返回成功状态
+     */
+    @GetMapping("/heartbeat")
+    public ApiResponse<Void> heartbeat() {
+        return ApiResponse.success();
     }
 }

@@ -9,8 +9,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.xhy.community.application.subscription.service.UserSubscriptionAppService;
 import org.xhy.community.domain.session.service.DeviceSessionDomainService;
-import org.xhy.community.domain.config.service.UserSessionConfigService;
-import org.xhy.community.domain.config.valueobject.UserSessionConfig;
+import org.xhy.community.domain.session.service.TokenBlacklistDomainService;
 import org.xhy.community.infrastructure.config.JwtUtil;
 import org.xhy.community.infrastructure.config.UserContext;
 import org.xhy.community.infrastructure.util.ClientIpUtil;
@@ -23,16 +22,16 @@ public class UserContextInterceptor implements HandlerInterceptor {
     private final JwtUtil jwtUtil;
     private final UserSubscriptionAppService userSubscriptionAppService;
     private final DeviceSessionDomainService deviceSessionDomainService;
-    private final UserSessionConfigService userSessionConfigService;
+    private final TokenBlacklistDomainService tokenBlacklistDomainService;
 
     public UserContextInterceptor(JwtUtil jwtUtil,
                                   UserSubscriptionAppService userSubscriptionAppService,
                                   DeviceSessionDomainService deviceSessionDomainService,
-                                  UserSessionConfigService userSessionConfigService) {
+                                  TokenBlacklistDomainService tokenBlacklistDomainService) {
         this.jwtUtil = jwtUtil;
         this.userSubscriptionAppService = userSubscriptionAppService;
         this.deviceSessionDomainService = deviceSessionDomainService;
-        this.userSessionConfigService = userSessionConfigService;
+        this.tokenBlacklistDomainService = tokenBlacklistDomainService;
     }
 
     @Override
@@ -42,26 +41,13 @@ public class UserContextInterceptor implements HandlerInterceptor {
         if (StringUtils.hasText(userId)) {
             UserContext.setCurrentUserId(userId);
 
-            // 基于 IP 的活跃会话校验
+            // 基于 IP 的设备白名单检查（无锁，纯读操作）
             String ip = ClientIpUtil.getClientIp(request);
-            boolean active = deviceSessionDomainService.isIpActive(userId, ip);
-            if (!active) {
+            boolean ipAllowed = deviceSessionDomainService.isIpActive(userId, ip);
+            if (!ipAllowed) {
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 return false;
             }
-
-            // 获取用户会话配置
-            UserSessionConfig sessionConfig = userSessionConfigService.getUserSessionConfig();
-
-            // 续活（简单策略：每次请求均续活；如需节流可加 Redis 简易令牌）
-            deviceSessionDomainService.touchActiveIp(
-                userId,
-                ip,
-                sessionConfig.getTtl().toMillis(),
-                sessionConfig.getHistoryWindow().toMillis(),
-                sessionConfig.getBanThreshold(),
-                sessionConfig.getBanTtl().toMillis()
-            );
 
             // 兜底：确保用户至少拥有一个默认套餐，由应用服务封装具体逻辑
             try {
@@ -88,6 +74,13 @@ public class UserContextInterceptor implements HandlerInterceptor {
         String authorization = request.getHeader("Authorization");
         if (StringUtils.hasText(authorization) && authorization.startsWith("Bearer ")) {
             String token = authorization.substring(7);
+
+            // 首先检查token是否在黑名单中
+            if (tokenBlacklistDomainService.isBlacklisted(token)) {
+                log.warn("Token已被列入黑名单: {}", token.substring(0, Math.min(token.length(), 20)) + "...");
+                return null;
+            }
+
             return parseUserIdFromToken(token);
         }
 

@@ -6,7 +6,7 @@ import org.xhy.community.interfaces.common.request.PageRequest;
  * 管理员设备会话查询请求
  * 管理员查询所有用户的设备会话信息，支持多条件过滤和分页
  */
-public class AdminDeviceSessionQueryRequest extends PageRequest {
+public class DeviceSessionQueryRequest extends PageRequest {
 
     /** 可选：筛选特定用户 */
     private String userId;
@@ -17,11 +17,11 @@ public class AdminDeviceSessionQueryRequest extends PageRequest {
     /** 可选：按IP搜索 */
     private String ip;
 
-    public AdminDeviceSessionQueryRequest() {
+    public DeviceSessionQueryRequest() {
         super();
     }
 
-    public AdminDeviceSessionQueryRequest(Integer pageNum, Integer pageSize) {
+    public DeviceSessionQueryRequest(Integer pageNum, Integer pageSize) {
         super(pageNum, pageSize);
     }
 

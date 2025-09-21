@@ -13,8 +13,7 @@
       "Read(/Users/xhy/course/AgentX/AgentX/src/main/java/org/xhy/infrastructure/config/**)",
       "WebFetch(domain:help.aliyun.com)",
       "Bash(curl:*)",
-      "Bash(find:*)",
-      "Bash(rm:*)"
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []

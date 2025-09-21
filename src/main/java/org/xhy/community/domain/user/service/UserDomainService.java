@@ -186,6 +186,13 @@ public class UserDomainService {
     }
     
 
+    public List<UserEntity> getUsersByIds(Collection<String> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+        return userRepository.selectBatchIds(userIds);
+    }
+
     public java.util.Map<String, UserEntity> getUserEntityMapByIds(Collection<String> userIds) {
         if (userIds == null || userIds.isEmpty()) {
             return java.util.Collections.emptyMap();

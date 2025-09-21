@@ -109,34 +109,58 @@ public class DeviceSessionDomainService {
     }
 
     /**
-     * 鉴权校验：当前请求 IP 是否属于活跃集合且未被封禁。
+     * 检查IP是否活跃（纯读操作，无锁）
+     * 同时进行懒清理：过滤掉已过期的IP
      */
     public boolean isIpActive(String userId, String ip) {
         if (Boolean.TRUE.equals(redis.hasKey(keyBan(userId)))) {
             return false;
         }
-        return redis.opsForZSet().score(keyActive(userId), ip) != null;
+
+        String activeKey = keyActive(userId);
+        Double score = redis.opsForZSet().score(activeKey, ip);
+
+        if (score == null) {
+            return false;
+        }
+
+        // 懒清理：检查该IP是否已过期（30天TTL）
+        long now = System.currentTimeMillis();
+        long sessionTtlMs = Duration.ofDays(30).toMillis();
+
+        if (score < now - sessionTtlMs) {
+            // IP已过期，异步移除（避免阻塞当前请求）
+            redis.opsForZSet().remove(activeKey, ip);
+            return false;
+        }
+
+        return true;
     }
 
     /**
-     * 心跳/续活：刷新 lastSeen，同时做过期、滑窗与封禁维护（串行化）。
+     * 清理过期数据并进行异常检测（后台任务使用）
+     * 注意：此方法不应在每次请求中调用，仅用于定时清理或管理员操作
      */
-    public void touchActiveIp(String userId, String ip,
-                              long sessionTtlMs, long historyWindowMs,
-                              int banThreshold, long banTtlMs) {
-        lock.runWithLock(keyLock(userId), Duration.ofMillis(200), Duration.ofSeconds(3), () -> {
+    public void cleanupExpiredData(String userId,
+                                  long sessionTtlMs, long historyWindowMs,
+                                  int banThreshold, long banTtlMs) {
+        lock.runWithLock(keyLock(userId), Duration.ofMillis(1000), Duration.ofSeconds(3), () -> {
             long now = System.currentTimeMillis();
             String activeKey = keyActive(userId);
             String histKey = keyHist(userId);
             String banKey = keyBan(userId);
 
             if (Boolean.TRUE.equals(redis.hasKey(banKey))) {
-                return; // 已封禁无需续活
+                return; // 已封禁，跳过清理
             }
-            // 清理与维护
+
+            // 清理过期的活跃IP
             redis.opsForZSet().removeRangeByScore(activeKey, Double.NEGATIVE_INFINITY, now - sessionTtlMs);
+
+            // 清理过期的历史IP
             redis.opsForZSet().removeRangeByScore(histKey, Double.NEGATIVE_INFINITY, now - historyWindowMs);
-            redis.opsForZSet().add(histKey, ip, now);
+
+            // 检查历史IP数量，进行异常检测
             Long histCount = redis.opsForZSet().zCard(histKey);
             if (histCount != null && histCount > banThreshold) {
                 if (banTtlMs > 0) {
@@ -144,12 +168,6 @@ public class DeviceSessionDomainService {
                 } else {
                     redis.opsForValue().set(banKey, "1");
                 }
-                return;
-            }
-
-            // 若 IP 当前活跃，则续活
-            if (redis.opsForZSet().score(activeKey, ip) != null) {
-                redis.opsForZSet().add(activeKey, ip, now);
             }
         });
     }

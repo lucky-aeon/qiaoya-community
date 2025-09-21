@@ -11,6 +11,7 @@ import org.xhy.community.infrastructure.exception.UserErrorCode;
 import org.xhy.community.domain.user.service.UserDomainService;
 import org.xhy.community.infrastructure.config.JwtUtil;
 import org.xhy.community.domain.session.service.DeviceSessionDomainService;
+import org.xhy.community.domain.session.service.TokenIpMappingDomainService;
 import org.xhy.community.domain.config.service.UserSessionConfigService;
 import org.xhy.community.domain.config.valueobject.UserSessionConfig;
 
@@ -21,15 +22,18 @@ public class UserAppService {
     private final JwtUtil jwtUtil;
     private final DeviceSessionDomainService deviceSessionDomainService;
     private final UserSessionConfigService userSessionConfigService;
+    private final TokenIpMappingDomainService tokenIpMappingDomainService;
 
     public UserAppService(UserDomainService userDomainService,
                           JwtUtil jwtUtil,
                           DeviceSessionDomainService deviceSessionDomainService,
-                          UserSessionConfigService userSessionConfigService) {
+                          UserSessionConfigService userSessionConfigService,
+                          TokenIpMappingDomainService tokenIpMappingDomainService) {
         this.userDomainService = userDomainService;
         this.jwtUtil = jwtUtil;
         this.deviceSessionDomainService = deviceSessionDomainService;
         this.userSessionConfigService = userSessionConfigService;
+        this.tokenIpMappingDomainService = tokenIpMappingDomainService;
     }
     
     public LoginResponseDTO login(String email, String password, String ip) {
@@ -55,6 +59,9 @@ public class UserAppService {
 
         // 生成JWT token
         String token = jwtUtil.generateToken(user.getId(), user.getEmail());
+
+        // 建立token和IP的映射关系，用于后续设备下线时能找到对应token
+        tokenIpMappingDomainService.mapTokenToIp(user.getId(), ip, token, sessionConfig.getTtl());
 
         return new LoginResponseDTO(token, userDTO);
     }
