@@ -5,7 +5,9 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import org.springframework.util.StringUtils;
 import org.xhy.community.domain.common.entity.BaseEntity;
 import org.xhy.community.domain.user.valueobject.UserStatus;
+import org.xhy.community.domain.user.valueobject.UserRole;
 import org.xhy.community.infrastructure.converter.UserStatusConverter;
+import org.xhy.community.infrastructure.converter.UserRoleConverter;
 
 @TableName("users")
 public class UserEntity extends BaseEntity {
@@ -28,6 +30,10 @@ public class UserEntity extends BaseEntity {
     /** 用户状态：ACTIVE-活跃，INACTIVE-未激活，BANNED-已封禁 */
     @TableField(typeHandler = UserStatusConverter.class)
     private UserStatus status;
+
+    /** 用户角色：USER-普通用户，ADMIN-管理员 */
+    @TableField(typeHandler = UserRoleConverter.class)
+    private UserRole role;
     
     /** 是否启用邮件通知 */
     private Boolean emailNotificationEnabled;
@@ -43,6 +49,7 @@ public class UserEntity extends BaseEntity {
         this.email = email;
         this.password = password;
         this.status = UserStatus.ACTIVE;
+        this.role = UserRole.USER;
         this.emailNotificationEnabled = false;
         this.maxConcurrentDevices = 5;
     }
@@ -91,6 +98,10 @@ public class UserEntity extends BaseEntity {
     public boolean isActive() {
         return UserStatus.ACTIVE.equals(this.status);
     }
+
+    public boolean isAdmin() {
+        return UserRole.ADMIN.equals(this.role);
+    }
     
     // Getters and Setters
     public String getName() { return name; }
@@ -110,6 +121,9 @@ public class UserEntity extends BaseEntity {
     
     public UserStatus getStatus() { return status; }
     public void setStatus(UserStatus status) { this.status = status; }
+
+    public UserRole getRole() { return role; }
+    public void setRole(UserRole role) { this.role = role; }
     
     public Boolean getEmailNotificationEnabled() { return emailNotificationEnabled; }
     public void setEmailNotificationEnabled(Boolean emailNotificationEnabled) { 
