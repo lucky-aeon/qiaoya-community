@@ -146,6 +146,11 @@ public enum ActivityType {
      */
     START_LEARNING("开始学习"),
     
+    /**
+     * 激活CDK
+     */
+    ACTIVATE_CDK("激活CDK"),
+    
     // ==================== 管理操作 ====================
     /**
      * 管理员登录
@@ -219,6 +224,7 @@ public enum ActivityType {
             case ENROLL_COURSE:
             case COMPLETE_CHAPTER:
             case START_LEARNING:
+            case ACTIVATE_CDK:
                 return ActivityCategory.LEARNING;
                 
             case ADMIN_LOGIN:

@@ -45,6 +45,8 @@ public class SubscriptionNotificationListener {
     @Async
     public void handleCDKActivatedEvent(CDKActivatedEvent event) {
         try {
+            log.info("[CDK激活-通知] 收到事件: userId={}, type={}, targetId={}",
+                    event.getUserId(), event.getCdkType(), event.getTargetId());
             // Application层流程编排：查询用户邮箱开关设置
             Boolean emailNotificationEnabled = userDomainService.getUserById(event.getUserId())
                 .getEmailNotificationEnabled();
@@ -62,6 +64,8 @@ public class SubscriptionNotificationListener {
 
             // Application层职责：调用Domain服务
             notificationDomainService.sendNotification(notificationData);
+            log.info("[CDK激活-通知] 已触发通知: userId={}, emailEnabled={}",
+                    event.getUserId(), emailNotificationEnabled);
 
         } catch (Exception e) {
             log.error("处理CDK激活事件失败", e);

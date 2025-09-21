@@ -40,7 +40,16 @@ public class UserSubscriptionAppService {
     @Transactional
     public void activateCDK(String userId, ActivateCDKRequest request) {
         // 同步处理CDK激活，所有事件监听器都在同一个事务中执行
-        cdkDomainService.activateCDK(userId, request.getCdkCode());
+        String masked = maskCdk(request.getCdkCode());
+        log.info("[CDK激活] 发起激活请求: userId={}, cdk={}", userId, masked);
+        try {
+            cdkDomainService.activateCDK(userId, request.getCdkCode());
+            log.info("[CDK激活] 激活成功: userId={}, cdk={}", userId, masked);
+        } catch (Exception e) {
+            // 保持原有异常传播，同时记录日志（不打印完整CDK）
+            log.warn("[CDK激活] 激活失败: userId={}, cdk={}, err={}", userId, masked, e.getMessage());
+            throw e;
+        }
     }
     
     public IPage<UserSubscriptionDTO> getSubscriptions(String userId, SubscriptionQueryRequest request) {
@@ -98,5 +107,11 @@ public class UserSubscriptionAppService {
     public boolean hasActiveSubscription(String userId) {
         var actives = subscriptionDomainService.getUserActiveSubscriptions(userId);
         return actives != null && !actives.isEmpty();
+    }
+
+    private String maskCdk(String code) {
+        if (code == null || code.length() <= 4) return "****";
+        int len = code.length();
+        return code.substring(0, Math.min(4, len)) + "****" + code.substring(len - 2);
     }
 }

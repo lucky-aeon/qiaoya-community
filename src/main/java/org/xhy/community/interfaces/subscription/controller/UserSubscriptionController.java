@@ -9,6 +9,8 @@ import org.xhy.community.infrastructure.config.ApiResponse;
 import org.xhy.community.infrastructure.config.UserContext;
 import org.xhy.community.interfaces.subscription.request.ActivateCDKRequest;
 import org.xhy.community.interfaces.subscription.request.SubscriptionQueryRequest;
+import org.xhy.community.infrastructure.annotation.ActivityLog;
+import org.xhy.community.domain.common.valueobject.ActivityType;
 
 /**
  * 用户订阅控制器
@@ -32,6 +34,7 @@ public class UserSubscriptionController {
      * @return CDK激活结果
      */
     @PostMapping("/activate-cdk")
+    @ActivityLog(value = ActivityType.ACTIVATE_CDK, recordRequest = false)
     public ApiResponse<Void> activateCDK(@Valid @RequestBody ActivateCDKRequest request) {
         String userId = UserContext.getCurrentUserId();
         userSubscriptionAppService.activateCDK(userId, request);
