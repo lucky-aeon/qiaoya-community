@@ -13,10 +13,12 @@ import org.xhy.community.domain.cdk.event.CDKActivatedEvent;
 import org.xhy.community.domain.cdk.repository.CDKRepository;
 import org.xhy.community.domain.cdk.valueobject.CDKType;
 import org.xhy.community.domain.cdk.valueobject.CDKStatus;
+import org.xhy.community.domain.cdk.valueobject.CDKAcquisitionType;
 import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.infrastructure.exception.CDKErrorCode;
 import org.xhy.community.domain.cdk.query.CDKQuery;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -33,40 +35,70 @@ public class CDKDomainService {
         this.applicationEventPublisher = applicationEventPublisher;
     }
     
-    public List<CDKEntity> createCDKBatch(CDKType cdkType, String targetId, int quantity) {
+    /**
+     * 批量创建CDK - 扩展版本，支持获得方式和价格
+     */
+    public List<CDKEntity> createCDKBatch(CDKType cdkType, String targetId, int quantity,
+                                         CDKAcquisitionType acquisitionType, BigDecimal price, String remark) {
         String batchId = UUID.randomUUID().toString();
         List<CDKEntity> cdkList = new ArrayList<>();
-        
+
         for (int i = 0; i < quantity; i++) {
             String code = generateCDKCode();
-            CDKEntity cdk = new CDKEntity(code, cdkType, targetId, batchId);
+            CDKEntity cdk = new CDKEntity(code, cdkType, targetId, batchId, acquisitionType, price);
+            cdk.setRemark(remark);
             cdkRepository.insert(cdk);
             cdkList.add(cdk);
         }
-        
+
+        log.info("[CDK批量创建] 成功创建{}个CDK，类型：{}，获得方式：{}，价格：{}",
+                quantity, cdkType, acquisitionType, price);
+
         return cdkList;
     }
+
+    /**
+     * 兼容原有方法 - 默认为购买获得，价格为0
+     */
+    public List<CDKEntity> createCDKBatch(CDKType cdkType, String targetId, int quantity) {
+        return createCDKBatch(cdkType, targetId, quantity, CDKAcquisitionType.PURCHASE, BigDecimal.ZERO, null);
+    }
     
+    /**
+     * CDK激活 - 扩展事件信息
+     */
     public void activateCDK(String userId, String cdkCode) {
         String masked = mask(cdkCode);
         log.info("[CDK激活] 开始处理: userId={}, cdk={}", userId, masked);
+
         // 1. 验证CDK有效性
         CDKEntity cdk = getCDKByCode(cdkCode);
-        log.debug("[CDK激活] CDK可用性检查通过: type={}, targetId={}", cdk.getCdkType(), cdk.getTargetId());
-        
+        log.debug("[CDK激活] CDK可用性检查通过: type={}, targetId={}, acquisitionType={}, price={}",
+                cdk.getCdkType(), cdk.getTargetId(), cdk.getAcquisitionType(), cdk.getPrice());
+
         if (!cdk.isUsable()) {
             log.warn("[CDK激活] CDK不可用，拒绝处理: userId={}, cdk={}", userId, masked);
             throw new BusinessException(CDKErrorCode.CDK_NOT_USABLE);
         }
-        
+
         // 2. 标记CDK已使用
         markCDKAsUsed(cdkCode, userId);
         log.info("[CDK激活] 已标记为已使用: userId={}, cdk={}", userId, masked);
-        
-        // 3. 发布CDK激活事件
-        CDKActivatedEvent event = new CDKActivatedEvent(userId, cdkCode, cdk.getCdkType(), cdk.getTargetId());
+
+        // 3. 发布扩展的CDK激活事件
+        CDKActivatedEvent event = new CDKActivatedEvent(
+            userId,
+            cdkCode,
+            cdk.getCdkType(),
+            cdk.getTargetId(),
+            cdk.getAcquisitionType(),
+            cdk.getPrice(),
+            "待获取", // TODO: 后续优化为从Application层传入完整用户信息
+            null
+        );
         applicationEventPublisher.publishEvent(event);
-        log.info("[CDK激活] 已发布事件: userId={}, type={}, targetId={}", userId, cdk.getCdkType(), cdk.getTargetId());
+        log.info("[CDK激活] 已发布事件: userId={}, type={}, targetId={}, acquisitionType={}, price={}",
+                userId, cdk.getCdkType(), cdk.getTargetId(), cdk.getAcquisitionType(), cdk.getPrice());
     }
     
     public CDKEntity getCDKById(String id) {
@@ -113,6 +145,7 @@ public class CDKDomainService {
         queryWrapper.eq(query.getCdkType() != null, CDKEntity::getCdkType, query.getCdkType())
                    .eq(StringUtils.hasText(query.getTargetId()), CDKEntity::getTargetId, query.getTargetId())
                    .eq(query.getStatus() != null, CDKEntity::getStatus, query.getStatus())
+                   .eq(query.getAcquisitionType() != null, CDKEntity::getAcquisitionType, query.getAcquisitionType())
                    .like(StringUtils.hasText(query.getCode()), CDKEntity::getCode, query.getCode())
                    .orderByDesc(CDKEntity::getCreateTime);
         

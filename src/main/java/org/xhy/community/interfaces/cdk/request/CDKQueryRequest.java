@@ -2,6 +2,7 @@ package org.xhy.community.interfaces.cdk.request;
 
 import org.xhy.community.domain.cdk.valueobject.CDKType;
 import org.xhy.community.domain.cdk.valueobject.CDKStatus;
+import org.xhy.community.domain.cdk.valueobject.CDKAcquisitionType;
 import org.xhy.community.interfaces.common.request.PageRequest;
 
 /**
@@ -12,6 +13,8 @@ public class CDKQueryRequest extends PageRequest {
     private CDKType cdkType;
     private String targetId;
     private CDKStatus status;
+    private CDKAcquisitionType acquisitionType; // 新增
+    private String code;
     
     public CDKQueryRequest() {
     }
@@ -24,4 +27,10 @@ public class CDKQueryRequest extends PageRequest {
     
     public CDKStatus getStatus() { return status; }
     public void setStatus(CDKStatus status) { this.status = status; }
+
+    public CDKAcquisitionType getAcquisitionType() { return acquisitionType; }
+    public void setAcquisitionType(CDKAcquisitionType acquisitionType) { this.acquisitionType = acquisitionType; }
+
+    public String getCode() { return code; }
+    public void setCode(String code) { this.code = code; }
 }

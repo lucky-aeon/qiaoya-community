@@ -33,15 +33,18 @@ public class AdminCDKAppService {
     
     public List<CDKDTO> createCDK(CreateCDKRequest request) {
         validateTarget(request.getCdkType(), request.getTargetId());
-        
+
         List<CDKEntity> cdkList = cdkDomainService.createCDKBatch(
-            request.getCdkType(), 
-            request.getTargetId(), 
-            request.getQuantity()
+            request.getCdkType(),
+            request.getTargetId(),
+            request.getQuantity(),
+            request.getAcquisitionType(),
+            request.getPrice(),
+            request.getRemark()
         );
-        
+
         String targetName = getTargetName(request.getCdkType(), request.getTargetId());
-        
+
         return cdkList.stream()
                      .map(entity -> CDKAssembler.toDTOWithTargetName(entity, targetName))
                      .collect(Collectors.toList());
@@ -56,9 +59,11 @@ public class AdminCDKAppService {
         query.setCdkType(request.getCdkType());
         query.setTargetId(request.getTargetId());
         query.setStatus(request.getStatus());
-        
+        query.setAcquisitionType(request.getAcquisitionType()); // 新增
+        query.setCode(request.getCode()); // 新增
+
         IPage<CDKEntity> entityPage = cdkDomainService.getPagedCDKs(query);
-        
+
         return entityPage.convert(entity -> {
             String targetName = getTargetName(entity.getCdkType(), entity.getTargetId());
             return CDKAssembler.toDTOWithTargetName(entity, targetName);

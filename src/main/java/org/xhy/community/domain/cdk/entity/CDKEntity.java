@@ -4,7 +4,9 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import org.xhy.community.domain.common.entity.BaseEntity;
 import org.xhy.community.domain.cdk.valueobject.CDKType;
 import org.xhy.community.domain.cdk.valueobject.CDKStatus;
+import org.xhy.community.domain.cdk.valueobject.CDKAcquisitionType;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @TableName("cdk_codes")
@@ -17,6 +19,11 @@ public class CDKEntity extends BaseEntity {
     private CDKStatus status;
     private String usedByUserId;
     private LocalDateTime usedTime;
+
+    // 新增字段
+    private CDKAcquisitionType acquisitionType;  // CDK获得方式
+    private BigDecimal price;                    // CDK对应价格
+    private String remark;                       // 备注信息
     
     public CDKEntity() {
     }
@@ -27,6 +34,15 @@ public class CDKEntity extends BaseEntity {
         this.targetId = targetId;
         this.batchId = batchId;
         this.status = CDKStatus.ACTIVE;
+        this.acquisitionType = CDKAcquisitionType.PURCHASE; // 默认为购买
+        this.price = BigDecimal.ZERO;
+    }
+
+    public CDKEntity(String code, CDKType cdkType, String targetId, String batchId,
+                     CDKAcquisitionType acquisitionType, BigDecimal price) {
+        this(code, cdkType, targetId, batchId);
+        this.acquisitionType = acquisitionType;
+        this.price = price;
     }
     
     public void markAsUsed(String userId) {
@@ -63,4 +79,13 @@ public class CDKEntity extends BaseEntity {
     
     public LocalDateTime getUsedTime() { return usedTime; }
     public void setUsedTime(LocalDateTime usedTime) { this.usedTime = usedTime; }
+
+    public CDKAcquisitionType getAcquisitionType() { return acquisitionType; }
+    public void setAcquisitionType(CDKAcquisitionType acquisitionType) { this.acquisitionType = acquisitionType; }
+
+    public BigDecimal getPrice() { return price; }
+    public void setPrice(BigDecimal price) { this.price = price; }
+
+    public String getRemark() { return remark; }
+    public void setRemark(String remark) { this.remark = remark; }
 }

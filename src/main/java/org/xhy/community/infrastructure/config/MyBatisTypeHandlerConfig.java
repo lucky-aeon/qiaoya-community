@@ -17,6 +17,8 @@ import org.xhy.community.domain.user.valueobject.UserStatus;
 import org.xhy.community.domain.user.valueobject.UserRole;
 import org.xhy.community.domain.cdk.valueobject.CDKType;
 import org.xhy.community.domain.cdk.valueobject.CDKStatus;
+import org.xhy.community.domain.cdk.valueobject.CDKAcquisitionType;
+import org.xhy.community.domain.order.valueobject.OrderType;
 import org.xhy.community.domain.common.valueobject.ActivityType;
 import org.xhy.community.domain.follow.valueobject.FollowTargetType;
 import org.xhy.community.domain.follow.valueobject.FollowStatus;
@@ -37,6 +39,8 @@ import org.xhy.community.infrastructure.converter.UserStatusConverter;
 import org.xhy.community.infrastructure.converter.UserRoleConverter;
 import org.xhy.community.infrastructure.converter.CDKTypeConverter;
 import org.xhy.community.infrastructure.converter.CDKStatusConverter;
+import org.xhy.community.infrastructure.converter.CDKAcquisitionTypeConverter;
+import org.xhy.community.infrastructure.converter.OrderTypeConverter;
 import org.xhy.community.infrastructure.converter.ActivityTypeConverter;
 import org.xhy.community.infrastructure.converter.FollowTargetTypeConverter;
 import org.xhy.community.infrastructure.converter.FollowStatusConverter;
@@ -81,6 +85,8 @@ public class MyBatisTypeHandlerConfig {
         typeHandlerRegistry.register(SubscriptionStatus.class, new SubscriptionStatusConverter());
         typeHandlerRegistry.register(CDKType.class, new CDKTypeConverter());
         typeHandlerRegistry.register(CDKStatus.class, new CDKStatusConverter());
+        typeHandlerRegistry.register(CDKAcquisitionType.class, new CDKAcquisitionTypeConverter());
+        typeHandlerRegistry.register(OrderType.class, new OrderTypeConverter());
         typeHandlerRegistry.register(ActivityType.class, new ActivityTypeConverter());
         typeHandlerRegistry.register(FollowTargetType.class, new FollowTargetTypeConverter());
         typeHandlerRegistry.register(FollowStatus.class, new FollowStatusConverter());
@@ -100,7 +106,7 @@ public class MyBatisTypeHandlerConfig {
         // 依赖@TableField(typeHandler = XxxConverter.class)注解来指定具体的转换器
         // CourseEntity中的字段会根据@TableField注解自动选择对应的转换器
 
-        log.info("手动注册类型处理器：UserStatusConverter, UserRoleConverter, PostStatusConverter, CategoryTypeConverter, CourseStatusConverter, BusinessTypeConverter, ResourceTypeConverter, SubscriptionPlanStatusConverter, SubscriptionStatusConverter, CDKTypeConverter, CDKStatusConverter, ActivityTypeConverter, FollowTargetTypeConverter, FollowStatusConverter, NotificationTypeConverter, ChannelTypeConverter, NotificationStatusConverter, UpdateLogStatusConverter, ChangeTypeConverter, TestimonialStatusConverter, MapJsonTypeHandler");
+        log.info("手动注册类型处理器：UserStatusConverter, UserRoleConverter, PostStatusConverter, CategoryTypeConverter, CourseStatusConverter, BusinessTypeConverter, ResourceTypeConverter, SubscriptionPlanStatusConverter, SubscriptionStatusConverter, CDKTypeConverter, CDKStatusConverter, CDKAcquisitionTypeConverter, OrderTypeConverter, ActivityTypeConverter, FollowTargetTypeConverter, FollowStatusConverter, NotificationTypeConverter, ChannelTypeConverter, NotificationStatusConverter, UpdateLogStatusConverter, ChangeTypeConverter, TestimonialStatusConverter, MapJsonTypeHandler");
         log.info("已注册的类型处理器总数: {}", typeHandlerRegistry.getTypeHandlers().size());
     }
 }
