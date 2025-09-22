@@ -43,11 +43,18 @@ public class AdminOrderAppService {
 
     /**
      * 获取订单统计信息
+     * @param startTime 开始时间（可选，不传则查询所有订单）
+     * @param endTime 结束时间（可选，不传则查询所有订单）
      */
     public OrderStatisticsDTO getOrderStatistics(LocalDateTime startTime, LocalDateTime endTime) {
         OrderQuery query = new OrderQuery();
-        query.setStartTime(startTime);
-        query.setEndTime(endTime);
+        // 只有当时间参数不为null时才设置时间条件
+        if (startTime != null) {
+            query.setStartTime(startTime);
+        }
+        if (endTime != null) {
+            query.setEndTime(endTime);
+        }
         query.setPageNum(1);
         query.setPageSize(Integer.MAX_VALUE);
 

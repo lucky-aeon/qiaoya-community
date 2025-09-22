@@ -51,12 +51,12 @@ public class AdminOrderController {
 
     /**
      * 获取订单统计信息
-     * 统计指定时间范围内的订单数量和金额
-     * @param request 统计查询请求参数
+     * 统计指定时间范围内的订单数量和金额，不传时间参数则统计所有订单
+     * @param request 统计查询请求参数（时间参数可选）
      * @return 订单统计信息
      */
     @GetMapping("/statistics")
-    public ApiResponse<OrderStatisticsDTO> getOrderStatistics(@Valid OrderStatisticsRequest request) {
+    public ApiResponse<OrderStatisticsDTO> getOrderStatistics(OrderStatisticsRequest request) {
         OrderStatisticsDTO statistics = adminOrderAppService.getOrderStatistics(
             request.getStartTime(), request.getEndTime());
         return ApiResponse.success(statistics);
