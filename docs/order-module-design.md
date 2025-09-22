@@ -1,0 +1,1921 @@
+# 敲鸭社区订单模块技术设计方案
+
+## 一、业务背景
+
+### 1.1 当前业务现状
+
+敲鸭社区目前采用CDK激活模式进行商品分发：
+
+- **CDK生成**：管理员手动批量生成CDK码，支持订阅计划CDK和课程CDK
+- **CDK分发**：用户通过微信转账，管理员人工确认后发送CDK给用户
+- **CDK激活**：用户收到CDK后在系统中激活，获得对应权限
+- **商品类型**：
+  - `SUBSCRIPTION_PLAN`：订阅计划CDK，激活后获得套餐权限
+  - `COURSE`：课程CDK，激活后获得单课程访问权限
+
+### 1.2 业务痛点
+
+1. **缺乏财务记录**：无法统计收入情况和销售数据
+2. **CDK来源不明**：无法区分CDK是购买获得还是免费赠送
+3. **数据分析困难**：缺乏订单维度的数据分析能力
+4. **运营统计缺失**：无法进行有效的商业化运营分析
+
+### 1.3 解决方案
+
+通过引入**轻量级订单模块**，在保持现有CDK激活流程的基础上：
+
+1. **区分CDK来源**：标记CDK是购买还是赠送获得
+2. **记录交易信息**：CDK激活时自动创建订单记录
+3. **支持数据统计**：提供订单维度的数据查询和分析
+4. **保持业务简单**：不改变现有微信转账+手动发CDK的流程
+
+## 二、代码详细设计
+
+### 2.1 整体架构设计
+
+#### 2.1.1 设计原则
+
+- **最小改动**：保持现有CDK激活流程完全不变
+- **向后兼容**：所有现有功能继续正常工作
+- **事件驱动**：通过事件机制实现订单自动创建
+- **DDD规范**：严格遵循项目的领域驱动设计架构
+
+#### 2.1.2 核心流程
+
+```
+管理员创建CDK(标记购买/赠送) → 用户激活CDK → 触发事件 → 自动创建订单记录
+```
+
+### 2.2 领域模型设计
+
+#### 2.2.1 新增值对象
+
+**CDK获得方式枚举**
+```java
+package org.xhy.community.domain.cdk.valueobject;
+
+/**
+ * CDK获得方式
+ */
+public enum CDKAcquisitionType {
+    PURCHASE("购买获得"),
+    GIFT("赠送获得");
+
+    private final String description;
+
+    CDKAcquisitionType(String description) {
+        this.description = description;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+}
+```
+
+**订单类型枚举**
+```java
+package org.xhy.community.domain.order.valueobject;
+
+/**
+ * 订单类型
+ */
+public enum OrderType {
+    PURCHASE("购买订单"),
+    GIFT("赠送订单");
+
+    private final String description;
+
+    OrderType(String description) {
+        this.description = description;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+}
+```
+
+#### 2.2.2 实体设计
+
+**扩展CDKEntity**
+```java
+package org.xhy.community.domain.cdk.entity;
+
+import com.baomidou.mybatisplus.annotation.TableName;
+import org.xhy.community.domain.common.entity.BaseEntity;
+import org.xhy.community.domain.cdk.valueobject.CDKType;
+import org.xhy.community.domain.cdk.valueobject.CDKStatus;
+import org.xhy.community.domain.cdk.valueobject.CDKAcquisitionType;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+@TableName("cdk_codes")
+public class CDKEntity extends BaseEntity {
+
+    private String code;
+    private CDKType cdkType;
+    private String targetId;
+    private String batchId;
+    private CDKStatus status;
+    private String usedByUserId;
+    private LocalDateTime usedTime;
+
+    // 新增字段
+    private CDKAcquisitionType acquisitionType;  // CDK获得方式
+    private BigDecimal price;                    // CDK对应价格
+    private String remark;                       // 备注信息
+
+    public CDKEntity() {
+    }
+
+    public CDKEntity(String code, CDKType cdkType, String targetId, String batchId) {
+        this.code = code;
+        this.cdkType = cdkType;
+        this.targetId = targetId;
+        this.batchId = batchId;
+        this.status = CDKStatus.ACTIVE;
+        this.acquisitionType = CDKAcquisitionType.PURCHASE; // 默认为购买
+        this.price = BigDecimal.ZERO;
+    }
+
+    public CDKEntity(String code, CDKType cdkType, String targetId, String batchId,
+                    CDKAcquisitionType acquisitionType, BigDecimal price) {
+        this(code, cdkType, targetId, batchId);
+        this.acquisitionType = acquisitionType;
+        this.price = price;
+    }
+
+    public void markAsUsed(String userId) {
+        this.status = CDKStatus.USED;
+        this.usedByUserId = userId;
+        this.usedTime = LocalDateTime.now();
+    }
+
+    public void disable() {
+        this.status = CDKStatus.DISABLED;
+    }
+
+    public boolean isUsable() {
+        return this.status == CDKStatus.ACTIVE;
+    }
+
+    // Getters and Setters
+    public String getCode() { return code; }
+    public void setCode(String code) { this.code = code; }
+
+    public CDKType getCdkType() { return cdkType; }
+    public void setCdkType(CDKType cdkType) { this.cdkType = cdkType; }
+
+    public String getTargetId() { return targetId; }
+    public void setTargetId(String targetId) { this.targetId = targetId; }
+
+    public String getBatchId() { return batchId; }
+    public void setBatchId(String batchId) { this.batchId = batchId; }
+
+    public CDKStatus getStatus() { return status; }
+    public void setStatus(CDKStatus status) { this.status = status; }
+
+    public String getUsedByUserId() { return usedByUserId; }
+    public void setUsedByUserId(String usedByUserId) { this.usedByUserId = usedByUserId; }
+
+    public LocalDateTime getUsedTime() { return usedTime; }
+    public void setUsedTime(LocalDateTime usedTime) { this.usedTime = usedTime; }
+
+    public CDKAcquisitionType getAcquisitionType() { return acquisitionType; }
+    public void setAcquisitionType(CDKAcquisitionType acquisitionType) { this.acquisitionType = acquisitionType; }
+
+    public BigDecimal getPrice() { return price; }
+    public void setPrice(BigDecimal price) { this.price = price; }
+
+    public String getRemark() { return remark; }
+    public void setRemark(String remark) { this.remark = remark; }
+}
+```
+
+**新增OrderEntity**
+```java
+package org.xhy.community.domain.order.entity;
+
+import com.baomidou.mybatisplus.annotation.TableName;
+import org.xhy.community.domain.common.entity.BaseEntity;
+import org.xhy.community.domain.cdk.valueobject.CDKType;
+import org.xhy.community.domain.order.valueobject.OrderType;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+@TableName("orders")
+public class OrderEntity extends BaseEntity {
+
+    private String orderNo;              // 订单号
+    private String userId;               // 用户ID
+    private String cdkCode;              // 关联的CDK码
+    private CDKType productType;         // 商品类型
+    private String productId;            // 商品ID（targetId）
+    private String productName;          // 商品名称
+    private OrderType orderType;         // 订单类型
+    private BigDecimal amount;           // 金额
+    private LocalDateTime activatedTime; // CDK激活时间
+    private String remark;               // 备注
+
+    public OrderEntity() {
+    }
+
+    public OrderEntity(String orderNo, String userId, String cdkCode, CDKType productType,
+                      String productId, String productName, OrderType orderType,
+                      BigDecimal amount, LocalDateTime activatedTime) {
+        this.orderNo = orderNo;
+        this.userId = userId;
+        this.cdkCode = cdkCode;
+        this.productType = productType;
+        this.productId = productId;
+        this.productName = productName;
+        this.orderType = orderType;
+        this.amount = amount;
+        this.activatedTime = activatedTime;
+    }
+
+    // Getters and Setters
+    public String getOrderNo() { return orderNo; }
+    public void setOrderNo(String orderNo) { this.orderNo = orderNo; }
+
+    public String getUserId() { return userId; }
+    public void setUserId(String userId) { this.userId = userId; }
+
+    public String getCdkCode() { return cdkCode; }
+    public void setCdkCode(String cdkCode) { this.cdkCode = cdkCode; }
+
+    public CDKType getProductType() { return productType; }
+    public void setProductType(CDKType productType) { this.productType = productType; }
+
+    public String getProductId() { return productId; }
+    public void setProductId(String productId) { this.productId = productId; }
+
+    public String getProductName() { return productName; }
+    public void setProductName(String productName) { this.productName = productName; }
+
+    public OrderType getOrderType() { return orderType; }
+    public void setOrderType(OrderType orderType) { this.orderType = orderType; }
+
+    public BigDecimal getAmount() { return amount; }
+    public void setAmount(BigDecimal amount) { this.amount = amount; }
+
+    public LocalDateTime getActivatedTime() { return activatedTime; }
+    public void setActivatedTime(LocalDateTime activatedTime) { this.activatedTime = activatedTime; }
+
+    public String getRemark() { return remark; }
+    public void setRemark(String remark) { this.remark = remark; }
+}
+```
+
+### 2.3 Repository设计
+
+**OrderRepository**
+```java
+package org.xhy.community.domain.order.repository;
+
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import org.springframework.stereotype.Repository;
+import org.xhy.community.domain.order.entity.OrderEntity;
+
+@Repository
+public interface OrderRepository extends BaseMapper<OrderEntity> {
+}
+```
+
+### 2.4 领域服务设计
+
+**扩展CDKDomainService**
+```java
+package org.xhy.community.domain.cdk.service;
+
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import org.springframework.context.ApplicationEventPublisher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+import org.xhy.community.domain.cdk.entity.CDKEntity;
+import org.xhy.community.domain.cdk.event.CDKActivatedEvent;
+import org.xhy.community.domain.cdk.repository.CDKRepository;
+import org.xhy.community.domain.cdk.valueobject.CDKType;
+import org.xhy.community.domain.cdk.valueobject.CDKStatus;
+import org.xhy.community.domain.cdk.valueobject.CDKAcquisitionType;
+import org.xhy.community.infrastructure.exception.BusinessException;
+import org.xhy.community.infrastructure.exception.CDKErrorCode;
+import org.xhy.community.domain.cdk.query.CDKQuery;
+
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
+@Service
+public class CDKDomainService {
+
+    private final CDKRepository cdkRepository;
+    private final ApplicationEventPublisher applicationEventPublisher;
+    private static final Logger log = LoggerFactory.getLogger(CDKDomainService.class);
+
+    public CDKDomainService(CDKRepository cdkRepository, ApplicationEventPublisher applicationEventPublisher) {
+        this.cdkRepository = cdkRepository;
+        this.applicationEventPublisher = applicationEventPublisher;
+    }
+
+    /**
+     * 批量创建CDK - 扩展版本，支持获得方式和价格
+     */
+    public List<CDKEntity> createCDKBatch(CDKType cdkType, String targetId, int quantity,
+                                         CDKAcquisitionType acquisitionType, BigDecimal price, String remark) {
+        String batchId = UUID.randomUUID().toString();
+        List<CDKEntity> cdkList = new ArrayList<>();
+
+        for (int i = 0; i < quantity; i++) {
+            String code = generateCDKCode();
+            CDKEntity cdk = new CDKEntity(code, cdkType, targetId, batchId, acquisitionType, price);
+            cdk.setRemark(remark);
+            cdkRepository.insert(cdk);
+            cdkList.add(cdk);
+        }
+
+        log.info("[CDK批量创建] 成功创建{}个CDK，类型：{}，获得方式：{}，价格：{}",
+                quantity, cdkType, acquisitionType, price);
+
+        return cdkList;
+    }
+
+    /**
+     * 兼容原有方法 - 默认为购买获得，价格为0
+     */
+    public List<CDKEntity> createCDKBatch(CDKType cdkType, String targetId, int quantity) {
+        return createCDKBatch(cdkType, targetId, quantity, CDKAcquisitionType.PURCHASE, BigDecimal.ZERO, null);
+    }
+
+    /**
+     * CDK激活 - 扩展事件信息
+     */
+    public void activateCDK(String userId, String cdkCode) {
+        String masked = mask(cdkCode);
+        log.info("[CDK激活] 开始处理: userId={}, cdk={}", userId, masked);
+
+        // 1. 验证CDK有效性
+        CDKEntity cdk = getCDKByCode(cdkCode);
+        log.debug("[CDK激活] CDK可用性检查通过: type={}, targetId={}, acquisitionType={}, price={}",
+                cdk.getCdkType(), cdk.getTargetId(), cdk.getAcquisitionType(), cdk.getPrice());
+
+        if (!cdk.isUsable()) {
+            log.warn("[CDK激活] CDK不可用，拒绝处理: userId={}, cdk={}", userId, masked);
+            throw new BusinessException(CDKErrorCode.CDK_NOT_USABLE);
+        }
+
+        // 2. 标记CDK已使用
+        markCDKAsUsed(cdkCode, userId);
+        log.info("[CDK激活] 已标记为已使用: userId={}, cdk={}", userId, masked);
+
+        // 3. 发布扩展的CDK激活事件
+        CDKActivatedEvent event = new CDKActivatedEvent(
+            userId,
+            cdkCode,
+            cdk.getCdkType(),
+            cdk.getTargetId(),
+            cdk.getAcquisitionType(),
+            cdk.getPrice()
+        );
+        applicationEventPublisher.publishEvent(event);
+        log.info("[CDK激活] 已发布事件: userId={}, type={}, targetId={}, acquisitionType={}, price={}",
+                userId, cdk.getCdkType(), cdk.getTargetId(), cdk.getAcquisitionType(), cdk.getPrice());
+    }
+
+    // 其他原有方法保持不变...
+
+    public CDKEntity getCDKById(String id) {
+        CDKEntity cdk = cdkRepository.selectById(id);
+        if (cdk == null) {
+            throw new BusinessException(CDKErrorCode.CDK_NOT_FOUND);
+        }
+        return cdk;
+    }
+
+    public CDKEntity getCDKByCode(String code) {
+        LambdaQueryWrapper<CDKEntity> queryWrapper = new LambdaQueryWrapper<CDKEntity>()
+            .eq(CDKEntity::getCode, code);
+
+        CDKEntity cdk = cdkRepository.selectOne(queryWrapper);
+        if (cdk == null) {
+            throw new BusinessException(CDKErrorCode.CDK_NOT_FOUND);
+        }
+        return cdk;
+    }
+
+    public void deleteCDK(String id) {
+        CDKEntity cdk = getCDKById(id);
+        if (cdk.getStatus() == CDKStatus.USED) {
+            throw new BusinessException(CDKErrorCode.CDK_ALREADY_USED);
+        }
+        cdkRepository.deleteById(id);
+    }
+
+    public void markCDKAsUsed(String cdkCode, String userId) {
+        CDKEntity cdk = getCDKByCode(cdkCode);
+        if (!cdk.isUsable()) {
+            log.warn("[CDK激活] 尝试标记已使用但CDK不可用: userId={}, cdk={}", userId, mask(cdkCode));
+            throw new BusinessException(CDKErrorCode.CDK_NOT_USABLE);
+        }
+        cdk.markAsUsed(userId);
+        cdkRepository.updateById(cdk);
+    }
+
+    public IPage<CDKEntity> getPagedCDKs(CDKQuery query) {
+        Page<CDKEntity> page = new Page<>(query.getPageNum(), query.getPageSize());
+        LambdaQueryWrapper<CDKEntity> queryWrapper = new LambdaQueryWrapper<>();
+
+        queryWrapper.eq(query.getCdkType() != null, CDKEntity::getCdkType, query.getCdkType())
+                   .eq(StringUtils.hasText(query.getTargetId()), CDKEntity::getTargetId, query.getTargetId())
+                   .eq(query.getStatus() != null, CDKEntity::getStatus, query.getStatus())
+                   .eq(query.getAcquisitionType() != null, CDKEntity::getAcquisitionType, query.getAcquisitionType())
+                   .like(StringUtils.hasText(query.getCode()), CDKEntity::getCode, query.getCode())
+                   .orderByDesc(CDKEntity::getCreateTime);
+
+        return cdkRepository.selectPage(page, queryWrapper);
+    }
+
+    private String generateCDKCode() {
+        String code;
+        do {
+            code = generateRandomCode();
+        } while (cdkCodeExists(code));
+        return code;
+    }
+
+    private String generateRandomCode() {
+        return UUID.randomUUID().toString().replace("-", "").substring(0, 16).toUpperCase();
+    }
+
+    private boolean cdkCodeExists(String code) {
+        LambdaQueryWrapper<CDKEntity> queryWrapper = new LambdaQueryWrapper<CDKEntity>()
+            .eq(CDKEntity::getCode, code);
+        return cdkRepository.exists(queryWrapper);
+    }
+
+    private String mask(String code) {
+        if (code == null || code.length() <= 4) return "****";
+        int len = code.length();
+        return code.substring(0, Math.min(4, len)) + "****" + code.substring(len - 2);
+    }
+}
+```
+
+**新增OrderDomainService**
+```java
+package org.xhy.community.domain.order.service;
+
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+import org.xhy.community.domain.order.entity.OrderEntity;
+import org.xhy.community.domain.order.repository.OrderRepository;
+import org.xhy.community.domain.order.query.OrderQuery;
+import org.xhy.community.infrastructure.exception.BusinessException;
+import org.xhy.community.infrastructure.exception.OrderErrorCode;
+
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.concurrent.atomic.AtomicLong;
+
+@Service
+public class OrderDomainService {
+
+    private final OrderRepository orderRepository;
+    private static final AtomicLong orderSequence = new AtomicLong(1);
+
+    public OrderDomainService(OrderRepository orderRepository) {
+        this.orderRepository = orderRepository;
+    }
+
+    /**
+     * 创建订单
+     */
+    public OrderEntity createOrder(OrderEntity order) {
+        if (order.getOrderNo() == null) {
+            order.setOrderNo(generateOrderNo());
+        }
+        orderRepository.insert(order);
+        return order;
+    }
+
+    /**
+     * 根据ID获取订单
+     */
+    public OrderEntity getOrderById(String id) {
+        OrderEntity order = orderRepository.selectById(id);
+        if (order == null) {
+            throw new BusinessException(OrderErrorCode.ORDER_NOT_FOUND);
+        }
+        return order;
+    }
+
+    /**
+     * 根据CDK码获取订单
+     */
+    public OrderEntity getOrderByCdkCode(String cdkCode) {
+        LambdaQueryWrapper<OrderEntity> queryWrapper = new LambdaQueryWrapper<OrderEntity>()
+            .eq(OrderEntity::getCdkCode, cdkCode);
+
+        return orderRepository.selectOne(queryWrapper);
+    }
+
+    /**
+     * 分页查询订单
+     */
+    public IPage<OrderEntity> getPagedOrders(OrderQuery query) {
+        Page<OrderEntity> page = new Page<>(query.getPageNum(), query.getPageSize());
+        LambdaQueryWrapper<OrderEntity> queryWrapper = new LambdaQueryWrapper<>();
+
+        queryWrapper.eq(StringUtils.hasText(query.getUserId()), OrderEntity::getUserId, query.getUserId())
+                   .eq(query.getOrderType() != null, OrderEntity::getOrderType, query.getOrderType())
+                   .eq(query.getProductType() != null, OrderEntity::getProductType, query.getProductType())
+                   .like(StringUtils.hasText(query.getProductName()), OrderEntity::getProductName, query.getProductName())
+                   .like(StringUtils.hasText(query.getCdkCode()), OrderEntity::getCdkCode, query.getCdkCode())
+                   .ge(query.getStartTime() != null, OrderEntity::getActivatedTime, query.getStartTime())
+                   .le(query.getEndTime() != null, OrderEntity::getActivatedTime, query.getEndTime())
+                   .orderByDesc(OrderEntity::getActivatedTime);
+
+        return orderRepository.selectPage(page, queryWrapper);
+    }
+
+    /**
+     * 生成订单号
+     */
+    private String generateOrderNo() {
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+        long sequence = orderSequence.getAndIncrement() % 10000;
+        return "ORD" + timestamp + String.format("%04d", sequence);
+    }
+}
+```
+
+### 2.5 事件设计
+
+**扩展CDKActivatedEvent**
+```java
+package org.xhy.community.domain.cdk.event;
+
+import org.xhy.community.domain.cdk.valueobject.CDKType;
+import org.xhy.community.domain.cdk.valueobject.CDKAcquisitionType;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+/**
+ * CDK激活事件 - 扩展版本，包含订单所需信息
+ */
+public class CDKActivatedEvent {
+
+    private final String userId;
+    private final String cdkCode;
+    private final CDKType cdkType;
+    private final String targetId;
+    private final CDKAcquisitionType acquisitionType;
+    private final BigDecimal price;
+    private final LocalDateTime activatedTime;
+
+    public CDKActivatedEvent(String userId, String cdkCode, CDKType cdkType, String targetId,
+                           CDKAcquisitionType acquisitionType, BigDecimal price) {
+        this.userId = userId;
+        this.cdkCode = cdkCode;
+        this.cdkType = cdkType;
+        this.targetId = targetId;
+        this.acquisitionType = acquisitionType;
+        this.price = price;
+        this.activatedTime = LocalDateTime.now();
+    }
+
+    // 兼容原有构造函数
+    public CDKActivatedEvent(String userId, String cdkCode, CDKType cdkType, String targetId) {
+        this(userId, cdkCode, cdkType, targetId, CDKAcquisitionType.PURCHASE, BigDecimal.ZERO);
+    }
+
+    // Getters
+    public String getUserId() { return userId; }
+    public String getCdkCode() { return cdkCode; }
+    public CDKType getCdkType() { return cdkType; }
+    public String getTargetId() { return targetId; }
+    public CDKAcquisitionType getAcquisitionType() { return acquisitionType; }
+    public BigDecimal getPrice() { return price; }
+    public LocalDateTime getActivatedTime() { return activatedTime; }
+
+    // 兼容原有方法名
+    public LocalDateTime getActivationTime() { return activatedTime; }
+}
+```
+
+### 2.6 应用层设计
+
+#### 2.6.1 订单事件处理器
+
+**OrderEventHandler**
+```java
+package org.xhy.community.application.order.event;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.context.event.EventListener;
+import org.springframework.stereotype.Component;
+import org.xhy.community.domain.cdk.event.CDKActivatedEvent;
+import org.xhy.community.domain.course.service.CourseDomainService;
+import org.xhy.community.domain.order.entity.OrderEntity;
+import org.xhy.community.domain.order.service.OrderDomainService;
+import org.xhy.community.domain.order.valueobject.OrderType;
+import org.xhy.community.domain.subscription.service.SubscriptionPlanDomainService;
+import org.xhy.community.domain.user.service.UserDomainService;
+
+@Component
+public class OrderEventHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(OrderEventHandler.class);
+
+    private final OrderDomainService orderDomainService;
+    private final UserDomainService userDomainService;
+    private final CourseDomainService courseDomainService;
+    private final SubscriptionPlanDomainService subscriptionPlanDomainService;
+
+    public OrderEventHandler(OrderDomainService orderDomainService,
+                           UserDomainService userDomainService,
+                           CourseDomainService courseDomainService,
+                           SubscriptionPlanDomainService subscriptionPlanDomainService) {
+        this.orderDomainService = orderDomainService;
+        this.userDomainService = userDomainService;
+        this.courseDomainService = courseDomainService;
+        this.subscriptionPlanDomainService = subscriptionPlanDomainService;
+    }
+
+    /**
+     * 处理CDK激活事件，自动创建订单记录
+     */
+    @EventListener
+    public void handleCDKActivated(CDKActivatedEvent event) {
+        try {
+            log.info("[订单创建] 开始处理CDK激活事件: userId={}, cdkCode={}, type={}",
+                    event.getUserId(), maskCdkCode(event.getCdkCode()), event.getCdkType());
+
+            // 检查是否已存在订单记录
+            OrderEntity existingOrder = orderDomainService.getOrderByCdkCode(event.getCdkCode());
+            if (existingOrder != null) {
+                log.warn("[订单创建] CDK对应订单已存在，跳过创建: cdkCode={}, orderId={}",
+                        maskCdkCode(event.getCdkCode()), existingOrder.getId());
+                return;
+            }
+
+            // 获取商品名称
+            String productName = getProductName(event.getCdkType(), event.getTargetId());
+
+            // 创建订单记录
+            OrderEntity order = new OrderEntity();
+            order.setUserId(event.getUserId());
+            order.setCdkCode(event.getCdkCode());
+            order.setProductType(event.getCdkType());
+            order.setProductId(event.getTargetId());
+            order.setProductName(productName);
+            order.setOrderType(event.getAcquisitionType() == CDKAcquisitionType.PURCHASE ?
+                              OrderType.PURCHASE : OrderType.GIFT);
+            order.setAmount(event.getPrice());
+            order.setActivatedTime(event.getActivatedTime());
+
+            OrderEntity createdOrder = orderDomainService.createOrder(order);
+
+            log.info("[订单创建] 成功创建订单: orderId={}, orderNo={}, type={}, amount={}",
+                    createdOrder.getId(), createdOrder.getOrderNo(),
+                    createdOrder.getOrderType(), createdOrder.getAmount());
+
+        } catch (Exception e) {
+            log.error("[订单创建] 处理CDK激活事件失败: userId={}, cdkCode={}",
+                     event.getUserId(), maskCdkCode(event.getCdkCode()), e);
+            // 不抛出异常，避免影响CDK激活流程
+        }
+    }
+
+    /**
+     * 根据商品类型和ID获取商品名称
+     */
+    private String getProductName(CDKType cdkType, String targetId) {
+        return switch (cdkType) {
+            case COURSE -> {
+                try {
+                    yield courseDomainService.getCourseById(targetId).getName();
+                } catch (Exception e) {
+                    log.warn("[订单创建] 获取课程名称失败: courseId={}", targetId, e);
+                    yield "未知课程";
+                }
+            }
+            case SUBSCRIPTION_PLAN -> {
+                try {
+                    yield subscriptionPlanDomainService.getById(targetId).getName();
+                } catch (Exception e) {
+                    log.warn("[订单创建] 获取订阅计划名称失败: planId={}", targetId, e);
+                    yield "未知订阅计划";
+                }
+            }
+        };
+    }
+
+    private String maskCdkCode(String cdkCode) {
+        if (cdkCode == null || cdkCode.length() <= 4) return "****";
+        int len = cdkCode.length();
+        return cdkCode.substring(0, Math.min(4, len)) + "****" + cdkCode.substring(len - 2);
+    }
+}
+```
+
+#### 2.6.2 应用服务
+
+**AdminOrderAppService**
+```java
+package org.xhy.community.application.order.service;
+
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import org.springframework.stereotype.Service;
+import org.xhy.community.application.order.assembler.OrderAssembler;
+import org.xhy.community.application.order.dto.OrderDTO;
+import org.xhy.community.application.order.dto.OrderStatisticsDTO;
+import org.xhy.community.domain.order.entity.OrderEntity;
+import org.xhy.community.domain.order.query.OrderQuery;
+import org.xhy.community.domain.order.service.OrderDomainService;
+import org.xhy.community.domain.order.valueobject.OrderType;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Service
+public class AdminOrderAppService {
+
+    private final OrderDomainService orderDomainService;
+
+    public AdminOrderAppService(OrderDomainService orderDomainService) {
+        this.orderDomainService = orderDomainService;
+    }
+
+    /**
+     * 分页查询订单
+     */
+    public IPage<OrderDTO> getOrdersByPage(OrderQuery query) {
+        IPage<OrderEntity> orderPage = orderDomainService.getPagedOrders(query);
+        return OrderAssembler.toDTOPage(orderPage);
+    }
+
+    /**
+     * 根据ID获取订单详情
+     */
+    public OrderDTO getOrderById(String orderId) {
+        OrderEntity order = orderDomainService.getOrderById(orderId);
+        return OrderAssembler.toDTO(order);
+    }
+
+    /**
+     * 获取订单统计信息
+     */
+    public OrderStatisticsDTO getOrderStatistics(LocalDateTime startTime, LocalDateTime endTime) {
+        OrderQuery query = new OrderQuery();
+        query.setStartTime(startTime);
+        query.setEndTime(endTime);
+        query.setPageNum(1);
+        query.setPageSize(Integer.MAX_VALUE);
+
+        IPage<OrderEntity> allOrders = orderDomainService.getPagedOrders(query);
+        List<OrderEntity> orders = allOrders.getRecords();
+
+        // 统计购买订单
+        long purchaseCount = orders.stream()
+            .filter(order -> order.getOrderType() == OrderType.PURCHASE)
+            .count();
+
+        BigDecimal purchaseAmount = orders.stream()
+            .filter(order -> order.getOrderType() == OrderType.PURCHASE)
+            .map(OrderEntity::getAmount)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // 统计赠送订单
+        long giftCount = orders.stream()
+            .filter(order -> order.getOrderType() == OrderType.GIFT)
+            .count();
+
+        return new OrderStatisticsDTO(
+            orders.size(),
+            purchaseCount,
+            giftCount,
+            purchaseAmount
+        );
+    }
+}
+```
+
+#### 2.6.3 DTO设计
+
+**OrderDTO**
+```java
+package org.xhy.community.application.order.dto;
+
+import org.xhy.community.domain.cdk.valueobject.CDKType;
+import org.xhy.community.domain.order.valueobject.OrderType;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+public class OrderDTO {
+
+    private String id;
+    private String orderNo;
+    private String userId;
+    private String userName;
+    private String cdkCode;
+    private CDKType productType;
+    private String productId;
+    private String productName;
+    private OrderType orderType;
+    private BigDecimal amount;
+    private LocalDateTime activatedTime;
+    private String remark;
+    private LocalDateTime createTime;
+
+    // Getters and Setters
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
+
+    public String getOrderNo() { return orderNo; }
+    public void setOrderNo(String orderNo) { this.orderNo = orderNo; }
+
+    public String getUserId() { return userId; }
+    public void setUserId(String userId) { this.userId = userId; }
+
+    public String getUserName() { return userName; }
+    public void setUserName(String userName) { this.userName = userName; }
+
+    public String getCdkCode() { return cdkCode; }
+    public void setCdkCode(String cdkCode) { this.cdkCode = cdkCode; }
+
+    public CDKType getProductType() { return productType; }
+    public void setProductType(CDKType productType) { this.productType = productType; }
+
+    public String getProductId() { return productId; }
+    public void setProductId(String productId) { this.productId = productId; }
+
+    public String getProductName() { return productName; }
+    public void setProductName(String productName) { this.productName = productName; }
+
+    public OrderType getOrderType() { return orderType; }
+    public void setOrderType(OrderType orderType) { this.orderType = orderType; }
+
+    public BigDecimal getAmount() { return amount; }
+    public void setAmount(BigDecimal amount) { this.amount = amount; }
+
+    public LocalDateTime getActivatedTime() { return activatedTime; }
+    public void setActivatedTime(LocalDateTime activatedTime) { this.activatedTime = activatedTime; }
+
+    public String getRemark() { return remark; }
+    public void setRemark(String remark) { this.remark = remark; }
+
+    public LocalDateTime getCreateTime() { return createTime; }
+    public void setCreateTime(LocalDateTime createTime) { this.createTime = createTime; }
+}
+```
+
+**OrderStatisticsDTO**
+```java
+package org.xhy.community.application.order.dto;
+
+import java.math.BigDecimal;
+
+public class OrderStatisticsDTO {
+
+    private long totalCount;       // 总订单数
+    private long purchaseCount;    // 购买订单数
+    private long giftCount;        // 赠送订单数
+    private BigDecimal totalAmount; // 总金额
+
+    public OrderStatisticsDTO(long totalCount, long purchaseCount, long giftCount, BigDecimal totalAmount) {
+        this.totalCount = totalCount;
+        this.purchaseCount = purchaseCount;
+        this.giftCount = giftCount;
+        this.totalAmount = totalAmount;
+    }
+
+    // Getters and Setters
+    public long getTotalCount() { return totalCount; }
+    public void setTotalCount(long totalCount) { this.totalCount = totalCount; }
+
+    public long getPurchaseCount() { return purchaseCount; }
+    public void setPurchaseCount(long purchaseCount) { this.purchaseCount = purchaseCount; }
+
+    public long getGiftCount() { return giftCount; }
+    public void setGiftCount(long giftCount) { this.giftCount = giftCount; }
+
+    public BigDecimal getTotalAmount() { return totalAmount; }
+    public void setTotalAmount(BigDecimal totalAmount) { this.totalAmount = totalAmount; }
+}
+```
+
+#### 2.6.4 转换器设计
+
+**OrderAssembler**
+```java
+package org.xhy.community.application.order.assembler;
+
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import org.springframework.beans.BeanUtils;
+import org.xhy.community.application.order.dto.OrderDTO;
+import org.xhy.community.domain.order.entity.OrderEntity;
+
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+public class OrderAssembler {
+
+    /**
+     * 实体转DTO
+     */
+    public static OrderDTO toDTO(OrderEntity entity) {
+        if (entity == null) {
+            return null;
+        }
+
+        OrderDTO dto = new OrderDTO();
+        BeanUtils.copyProperties(entity, dto);
+        return dto;
+    }
+
+    /**
+     * 实体列表转DTO列表
+     */
+    public static List<OrderDTO> toDTOList(List<OrderEntity> entities) {
+        if (entities == null) {
+            return null;
+        }
+
+        return entities.stream()
+            .map(OrderAssembler::toDTO)
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * 分页实体转分页DTO
+     */
+    public static IPage<OrderDTO> toDTOPage(IPage<OrderEntity> entityPage) {
+        IPage<OrderDTO> dtoPage = new Page<>(entityPage.getCurrent(), entityPage.getSize(), entityPage.getTotal());
+        List<OrderDTO> dtoList = toDTOList(entityPage.getRecords());
+        dtoPage.setRecords(dtoList);
+        return dtoPage;
+    }
+
+    /**
+     * 带用户名称的实体列表转DTO列表
+     */
+    public static List<OrderDTO> toDTOList(List<OrderEntity> entities, Map<String, String> userNameMap) {
+        if (entities == null) {
+            return null;
+        }
+
+        return entities.stream()
+            .map(entity -> {
+                OrderDTO dto = toDTO(entity);
+                if (dto != null && userNameMap != null) {
+                    dto.setUserName(userNameMap.get(entity.getUserId()));
+                }
+                return dto;
+            })
+            .collect(Collectors.toList());
+    }
+}
+```
+
+### 2.7 查询对象设计
+
+**扩展CDKQuery**
+```java
+package org.xhy.community.domain.cdk.query;
+
+import org.xhy.community.domain.cdk.valueobject.CDKType;
+import org.xhy.community.domain.cdk.valueobject.CDKStatus;
+import org.xhy.community.domain.cdk.valueobject.CDKAcquisitionType;
+import org.xhy.community.interfaces.common.request.PageRequest;
+
+public class CDKQuery extends PageRequest {
+
+    private CDKType cdkType;
+    private String targetId;
+    private CDKStatus status;
+    private CDKAcquisitionType acquisitionType; // 新增
+    private String code;
+
+    // Getters and Setters
+    public CDKType getCdkType() { return cdkType; }
+    public void setCdkType(CDKType cdkType) { this.cdkType = cdkType; }
+
+    public String getTargetId() { return targetId; }
+    public void setTargetId(String targetId) { this.targetId = targetId; }
+
+    public CDKStatus getStatus() { return status; }
+    public void setStatus(CDKStatus status) { this.status = status; }
+
+    public CDKAcquisitionType getAcquisitionType() { return acquisitionType; }
+    public void setAcquisitionType(CDKAcquisitionType acquisitionType) { this.acquisitionType = acquisitionType; }
+
+    public String getCode() { return code; }
+    public void setCode(String code) { this.code = code; }
+}
+```
+
+**新增OrderQuery**
+```java
+package org.xhy.community.domain.order.query;
+
+import org.xhy.community.domain.cdk.valueobject.CDKType;
+import org.xhy.community.domain.order.valueobject.OrderType;
+import org.xhy.community.interfaces.common.request.PageRequest;
+
+import java.time.LocalDateTime;
+
+public class OrderQuery extends PageRequest {
+
+    private String userId;
+    private OrderType orderType;
+    private CDKType productType;
+    private String productName;
+    private String cdkCode;
+    private LocalDateTime startTime;
+    private LocalDateTime endTime;
+
+    // Getters and Setters
+    public String getUserId() { return userId; }
+    public void setUserId(String userId) { this.userId = userId; }
+
+    public OrderType getOrderType() { return orderType; }
+    public void setOrderType(OrderType orderType) { this.orderType = orderType; }
+
+    public CDKType getProductType() { return productType; }
+    public void setProductType(CDKType productType) { this.productType = productType; }
+
+    public String getProductName() { return productName; }
+    public void setProductName(String productName) { this.productName = productName; }
+
+    public String getCdkCode() { return cdkCode; }
+    public void setCdkCode(String cdkCode) { this.cdkCode = cdkCode; }
+
+    public LocalDateTime getStartTime() { return startTime; }
+    public void setStartTime(LocalDateTime startTime) { this.startTime = startTime; }
+
+    public LocalDateTime getEndTime() { return endTime; }
+    public void setEndTime(LocalDateTime endTime) { this.endTime = endTime; }
+}
+```
+
+### 2.8 异常处理
+
+**新增OrderErrorCode**
+```java
+package org.xhy.community.infrastructure.exception;
+
+public enum OrderErrorCode implements ErrorCode {
+    ORDER_NOT_FOUND("ORDER_001", "订单不存在"),
+    ORDER_ALREADY_EXISTS("ORDER_002", "订单已存在"),
+    INVALID_ORDER_DATA("ORDER_003", "订单数据无效");
+
+    private final String code;
+    private final String message;
+
+    OrderErrorCode(String code, String message) {
+        this.code = code;
+        this.message = message;
+    }
+
+    @Override
+    public String getCode() {
+        return code;
+    }
+
+    @Override
+    public String getMessage() {
+        return message;
+    }
+}
+```
+
+## 三、接口文档
+
+### 3.1 管理员CDK接口扩展
+
+#### 3.1.1 批量创建CDK（扩展）
+
+**接口路径**：`POST /api/admin/cdk/batch`
+
+**请求参数**：
+```java
+public class CreateCDKRequest {
+    @NotNull(message = "CDK类型不能为空")
+    private CDKType cdkType;
+
+    @NotBlank(message = "目标ID不能为空")
+    private String targetId;
+
+    @Min(value = 1, message = "数量必须大于0")
+    @Max(value = 1000, message = "单次创建数量不能超过1000")
+    private Integer quantity;
+
+    @NotNull(message = "获得方式不能为空")
+    private CDKAcquisitionType acquisitionType;
+
+    @DecimalMin(value = "0.00", message = "价格不能为负数")
+    private BigDecimal price;
+
+    @Size(max = 500, message = "备注长度不能超过500字符")
+    private String remark;
+
+    // Getters and Setters...
+}
+```
+
+**响应结果**：
+```json
+{
+    "code": "SUCCESS",
+    "message": "成功",
+    "data": [
+        {
+            "id": "uuid",
+            "code": "ABC123DEF456",
+            "cdkType": "COURSE",
+            "targetId": "course-id-123",
+            "acquisitionType": "PURCHASE",
+            "price": 99.00,
+            "status": "ACTIVE",
+            "createTime": "2024-03-01T10:00:00"
+        }
+    ]
+}
+```
+
+#### 3.1.2 CDK查询（扩展）
+
+**接口路径**：`GET /api/admin/cdk/list`
+
+**请求参数**：
+```java
+public class CDKQueryRequest extends PageRequest {
+    private CDKType cdkType;
+    private String targetId;
+    private CDKStatus status;
+    private CDKAcquisitionType acquisitionType; // 新增
+    private String code;
+
+    // Getters and Setters...
+}
+```
+
+**响应结果**：
+```json
+{
+    "code": "SUCCESS",
+    "message": "成功",
+    "data": {
+        "records": [
+            {
+                "id": "uuid",
+                "code": "ABC123DEF456",
+                "cdkType": "COURSE",
+                "targetId": "course-id-123",
+                "acquisitionType": "PURCHASE",
+                "price": 99.00,
+                "status": "ACTIVE",
+                "usedByUserId": null,
+                "usedTime": null,
+                "remark": "春节促销活动",
+                "createTime": "2024-03-01T10:00:00"
+            }
+        ],
+        "total": 100,
+        "size": 20,
+        "current": 1,
+        "pages": 5
+    }
+}
+```
+
+### 3.2 管理员订单接口
+
+#### 3.2.1 订单列表查询
+
+**接口路径**：`GET /api/admin/orders`
+
+**请求参数**：
+```java
+public class OrderQueryRequest extends PageRequest {
+    private String userId;
+    private OrderType orderType;
+    private CDKType productType;
+    private String productName;
+    private String cdkCode;
+
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime startTime;
+
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime endTime;
+
+    // Getters and Setters...
+}
+```
+
+**响应结果**：
+```json
+{
+    "code": "SUCCESS",
+    "message": "成功",
+    "data": {
+        "records": [
+            {
+                "id": "order-uuid",
+                "orderNo": "ORD20240301100001",
+                "userId": "user-uuid",
+                "userName": "张三",
+                "cdkCode": "ABC123DEF456",
+                "productType": "COURSE",
+                "productId": "course-id-123",
+                "productName": "Java高级编程",
+                "orderType": "PURCHASE",
+                "amount": 99.00,
+                "activatedTime": "2024-03-01T10:30:00",
+                "remark": null,
+                "createTime": "2024-03-01T10:30:00"
+            }
+        ],
+        "total": 50,
+        "size": 20,
+        "current": 1,
+        "pages": 3
+    }
+}
+```
+
+#### 3.2.2 订单详情查询
+
+**接口路径**：`GET /api/admin/orders/{orderId}`
+
+**路径参数**：
+- `orderId`：订单ID
+
+**响应结果**：
+```json
+{
+    "code": "SUCCESS",
+    "message": "成功",
+    "data": {
+        "id": "order-uuid",
+        "orderNo": "ORD20240301100001",
+        "userId": "user-uuid",
+        "userName": "张三",
+        "cdkCode": "ABC123DEF456",
+        "productType": "COURSE",
+        "productId": "course-id-123",
+        "productName": "Java高级编程",
+        "orderType": "PURCHASE",
+        "amount": 99.00,
+        "activatedTime": "2024-03-01T10:30:00",
+        "remark": null,
+        "createTime": "2024-03-01T10:30:00"
+    }
+}
+```
+
+#### 3.2.3 订单统计查询
+
+**接口路径**：`GET /api/admin/orders/statistics`
+
+**请求参数**：
+```java
+public class OrderStatisticsRequest {
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime startTime;
+
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime endTime;
+
+    // Getters and Setters...
+}
+```
+
+**响应结果**：
+```json
+{
+    "code": "SUCCESS",
+    "message": "成功",
+    "data": {
+        "totalCount": 150,
+        "purchaseCount": 120,
+        "giftCount": 30,
+        "totalAmount": 11880.00
+    }
+}
+```
+
+### 3.3 控制器实现
+
+#### 3.3.1 扩展AdminCDKController
+
+```java
+package org.xhy.community.interfaces.cdk.controller;
+
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.*;
+import org.xhy.community.application.cdk.dto.CDKDTO;
+import org.xhy.community.application.cdk.service.AdminCDKAppService;
+import org.xhy.community.infrastructure.config.ApiResponse;
+import org.xhy.community.interfaces.cdk.request.CreateCDKRequest;
+import org.xhy.community.interfaces.cdk.request.CDKQueryRequest;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/admin/cdk")
+public class AdminCDKController {
+
+    private final AdminCDKAppService adminCDKAppService;
+
+    public AdminCDKController(AdminCDKAppService adminCDKAppService) {
+        this.adminCDKAppService = adminCDKAppService;
+    }
+
+    /**
+     * 批量创建CDK
+     */
+    @PostMapping("/batch")
+    public ApiResponse<List<CDKDTO>> createCDKBatch(@Valid @RequestBody CreateCDKRequest request) {
+        List<CDKDTO> cdks = adminCDKAppService.createCDKBatch(request);
+        return ApiResponse.success(cdks);
+    }
+
+    /**
+     * 查询CDK列表
+     */
+    @GetMapping("/list")
+    public ApiResponse<IPage<CDKDTO>> getCDKList(@Valid CDKQueryRequest request) {
+        IPage<CDKDTO> cdkPage = adminCDKAppService.getCDKsByPage(request);
+        return ApiResponse.success(cdkPage);
+    }
+
+    /**
+     * 根据ID获取CDK详情
+     */
+    @GetMapping("/{cdkId}")
+    public ApiResponse<CDKDTO> getCDKById(@PathVariable String cdkId) {
+        CDKDTO cdk = adminCDKAppService.getCDKById(cdkId);
+        return ApiResponse.success(cdk);
+    }
+
+    /**
+     * 删除CDK
+     */
+    @DeleteMapping("/{cdkId}")
+    public ApiResponse<Void> deleteCDK(@PathVariable String cdkId) {
+        adminCDKAppService.deleteCDK(cdkId);
+        return ApiResponse.success();
+    }
+}
+```
+
+#### 3.3.2 新增AdminOrderController
+
+```java
+package org.xhy.community.interfaces.order.controller;
+
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.*;
+import org.xhy.community.application.order.dto.OrderDTO;
+import org.xhy.community.application.order.dto.OrderStatisticsDTO;
+import org.xhy.community.application.order.service.AdminOrderAppService;
+import org.xhy.community.domain.order.query.OrderQuery;
+import org.xhy.community.infrastructure.annotation.LogUserActivity;
+import org.xhy.community.infrastructure.config.ApiResponse;
+import org.xhy.community.interfaces.order.request.OrderQueryRequest;
+import org.xhy.community.interfaces.order.request.OrderStatisticsRequest;
+
+@RestController
+@RequestMapping("/api/admin/orders")
+public class AdminOrderController {
+
+    private final AdminOrderAppService adminOrderAppService;
+
+    public AdminOrderController(AdminOrderAppService adminOrderAppService) {
+        this.adminOrderAppService = adminOrderAppService;
+    }
+
+    /**
+     * 查询订单列表
+     */
+    @GetMapping
+    @LogUserActivity("查看订单列表")
+    public ApiResponse<IPage<OrderDTO>> getOrders(@Valid OrderQueryRequest request) {
+        OrderQuery query = convertToQuery(request);
+        IPage<OrderDTO> orderPage = adminOrderAppService.getOrdersByPage(query);
+        return ApiResponse.success(orderPage);
+    }
+
+    /**
+     * 根据ID获取订单详情
+     */
+    @GetMapping("/{orderId}")
+    @LogUserActivity("查看订单详情")
+    public ApiResponse<OrderDTO> getOrderById(@PathVariable String orderId) {
+        OrderDTO order = adminOrderAppService.getOrderById(orderId);
+        return ApiResponse.success(order);
+    }
+
+    /**
+     * 获取订单统计信息
+     */
+    @GetMapping("/statistics")
+    @LogUserActivity("查看订单统计")
+    public ApiResponse<OrderStatisticsDTO> getOrderStatistics(@Valid OrderStatisticsRequest request) {
+        OrderStatisticsDTO statistics = adminOrderAppService.getOrderStatistics(
+            request.getStartTime(), request.getEndTime());
+        return ApiResponse.success(statistics);
+    }
+
+    private OrderQuery convertToQuery(OrderQueryRequest request) {
+        OrderQuery query = new OrderQuery();
+        query.setPageNum(request.getPageNum());
+        query.setPageSize(request.getPageSize());
+        query.setUserId(request.getUserId());
+        query.setOrderType(request.getOrderType());
+        query.setProductType(request.getProductType());
+        query.setProductName(request.getProductName());
+        query.setCdkCode(request.getCdkCode());
+        query.setStartTime(request.getStartTime());
+        query.setEndTime(request.getEndTime());
+        return query;
+    }
+}
+```
+
+### 3.4 请求对象设计
+
+#### 3.4.1 扩展CreateCDKRequest
+
+```java
+package org.xhy.community.interfaces.cdk.request;
+
+import jakarta.validation.constraints.*;
+import org.xhy.community.domain.cdk.valueobject.CDKType;
+import org.xhy.community.domain.cdk.valueobject.CDKAcquisitionType;
+
+import java.math.BigDecimal;
+
+public class CreateCDKRequest {
+
+    @NotNull(message = "CDK类型不能为空")
+    private CDKType cdkType;
+
+    @NotBlank(message = "目标ID不能为空")
+    private String targetId;
+
+    @Min(value = 1, message = "数量必须大于0")
+    @Max(value = 1000, message = "单次创建数量不能超过1000")
+    private Integer quantity;
+
+    @NotNull(message = "获得方式不能为空")
+    private CDKAcquisitionType acquisitionType;
+
+    @DecimalMin(value = "0.00", message = "价格不能为负数")
+    private BigDecimal price;
+
+    @Size(max = 500, message = "备注长度不能超过500字符")
+    private String remark;
+
+    // Getters and Setters
+    public CDKType getCdkType() { return cdkType; }
+    public void setCdkType(CDKType cdkType) { this.cdkType = cdkType; }
+
+    public String getTargetId() { return targetId; }
+    public void setTargetId(String targetId) { this.targetId = targetId; }
+
+    public Integer getQuantity() { return quantity; }
+    public void setQuantity(Integer quantity) { this.quantity = quantity; }
+
+    public CDKAcquisitionType getAcquisitionType() { return acquisitionType; }
+    public void setAcquisitionType(CDKAcquisitionType acquisitionType) { this.acquisitionType = acquisitionType; }
+
+    public BigDecimal getPrice() { return price; }
+    public void setPrice(BigDecimal price) { this.price = price; }
+
+    public String getRemark() { return remark; }
+    public void setRemark(String remark) { this.remark = remark; }
+}
+```
+
+#### 3.4.2 新增OrderQueryRequest
+
+```java
+package org.xhy.community.interfaces.order.request;
+
+import org.springframework.format.annotation.DateTimeFormat;
+import org.xhy.community.domain.cdk.valueobject.CDKType;
+import org.xhy.community.domain.order.valueobject.OrderType;
+import org.xhy.community.interfaces.common.request.PageRequest;
+
+import java.time.LocalDateTime;
+
+public class OrderQueryRequest extends PageRequest {
+
+    private String userId;
+    private OrderType orderType;
+    private CDKType productType;
+    private String productName;
+    private String cdkCode;
+
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime startTime;
+
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime endTime;
+
+    // Getters and Setters
+    public String getUserId() { return userId; }
+    public void setUserId(String userId) { this.userId = userId; }
+
+    public OrderType getOrderType() { return orderType; }
+    public void setOrderType(OrderType orderType) { this.orderType = orderType; }
+
+    public CDKType getProductType() { return productType; }
+    public void setProductType(CDKType productType) { this.productType = productType; }
+
+    public String getProductName() { return productName; }
+    public void setProductName(String productName) { this.productName = productName; }
+
+    public String getCdkCode() { return cdkCode; }
+    public void setCdkCode(String cdkCode) { this.cdkCode = cdkCode; }
+
+    public LocalDateTime getStartTime() { return startTime; }
+    public void setStartTime(LocalDateTime startTime) { this.startTime = startTime; }
+
+    public LocalDateTime getEndTime() { return endTime; }
+    public void setEndTime(LocalDateTime endTime) { this.endTime = endTime; }
+}
+```
+
+#### 3.4.3 新增OrderStatisticsRequest
+
+```java
+package org.xhy.community.interfaces.order.request;
+
+import org.springframework.format.annotation.DateTimeFormat;
+
+import java.time.LocalDateTime;
+
+public class OrderStatisticsRequest {
+
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime startTime;
+
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime endTime;
+
+    // Getters and Setters
+    public LocalDateTime getStartTime() { return startTime; }
+    public void setStartTime(LocalDateTime startTime) { this.startTime = startTime; }
+
+    public LocalDateTime getEndTime() { return endTime; }
+    public void setEndTime(LocalDateTime endTime) { this.endTime = endTime; }
+}
+```
+
+## 四、表迁移文件
+
+### 4.1 扩展CDK表迁移
+
+**文件路径**：`src/main/resources/db/migration/V30__Add_order_fields_to_cdk_codes.sql`
+
+```sql
+-- 为CDK表添加订单相关字段
+ALTER TABLE cdk_codes
+ADD COLUMN acquisition_type VARCHAR(20) DEFAULT 'PURCHASE',
+ADD COLUMN price DECIMAL(10,2) DEFAULT 0.00,
+ADD COLUMN remark VARCHAR(500);
+
+-- 添加列注释
+COMMENT ON COLUMN cdk_codes.acquisition_type IS 'CDK获得方式：PURCHASE购买/GIFT赠送';
+COMMENT ON COLUMN cdk_codes.price IS 'CDK对应价格，赠送时为0';
+COMMENT ON COLUMN cdk_codes.remark IS 'CDK备注信息';
+
+-- 为新字段创建索引
+CREATE INDEX idx_cdk_codes_acquisition_type ON cdk_codes(acquisition_type);
+CREATE INDEX idx_cdk_codes_price ON cdk_codes(price);
+
+-- 更新现有数据：所有现有CDK标记为购买获得
+UPDATE cdk_codes
+SET acquisition_type = 'PURCHASE'
+WHERE acquisition_type IS NULL;
+
+-- 设置非空约束
+ALTER TABLE cdk_codes
+ALTER COLUMN acquisition_type SET NOT NULL;
+```
+
+### 4.2 创建订单表迁移
+
+**文件路径**：`src/main/resources/db/migration/V31__Create_orders_table.sql`
+
+```sql
+-- 创建订单表
+CREATE TABLE orders (
+    id VARCHAR(36) PRIMARY KEY,
+    order_no VARCHAR(32) UNIQUE NOT NULL,
+    user_id VARCHAR(36) NOT NULL,
+    cdk_code VARCHAR(32) NOT NULL,
+    product_type VARCHAR(20) NOT NULL,
+    product_id VARCHAR(36) NOT NULL,
+    product_name VARCHAR(100) NOT NULL,
+    order_type VARCHAR(20) NOT NULL,
+    amount DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    activated_time TIMESTAMP NOT NULL,
+    remark VARCHAR(500),
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    deleted BOOLEAN DEFAULT FALSE
+);
+
+-- 添加表注释
+COMMENT ON TABLE orders IS '订单记录表，CDK激活时自动创建';
+
+-- 添加列注释
+COMMENT ON COLUMN orders.order_no IS '订单号，格式：ORD+时间戳+序号';
+COMMENT ON COLUMN orders.user_id IS '用户ID，关联users表';
+COMMENT ON COLUMN orders.cdk_code IS '关联的CDK激活码';
+COMMENT ON COLUMN orders.product_type IS '商品类型：SUBSCRIPTION_PLAN订阅计划/COURSE课程';
+COMMENT ON COLUMN orders.product_id IS '商品ID，对应subscription_plans.id或courses.id';
+COMMENT ON COLUMN orders.product_name IS '商品名称，冗余存储便于查询';
+COMMENT ON COLUMN orders.order_type IS '订单类型：PURCHASE购买订单/GIFT赠送订单';
+COMMENT ON COLUMN orders.amount IS '订单金额，赠送订单为0';
+COMMENT ON COLUMN orders.activated_time IS 'CDK激活时间';
+COMMENT ON COLUMN orders.remark IS '订单备注';
+COMMENT ON COLUMN orders.create_time IS '记录创建时间';
+COMMENT ON COLUMN orders.update_time IS '记录更新时间';
+COMMENT ON COLUMN orders.deleted IS '逻辑删除标记';
+
+-- 创建索引
+CREATE INDEX idx_orders_order_no ON orders(order_no);
+CREATE INDEX idx_orders_user_id ON orders(user_id);
+CREATE INDEX idx_orders_cdk_code ON orders(cdk_code);
+CREATE INDEX idx_orders_product_type ON orders(product_type);
+CREATE INDEX idx_orders_product_id ON orders(product_id);
+CREATE INDEX idx_orders_order_type ON orders(order_type);
+CREATE INDEX idx_orders_activated_time ON orders(activated_time);
+CREATE INDEX idx_orders_amount ON orders(amount);
+CREATE INDEX idx_orders_create_time ON orders(create_time);
+
+-- 复合索引
+CREATE INDEX idx_orders_user_order_type ON orders(user_id, order_type);
+CREATE INDEX idx_orders_time_range ON orders(activated_time, order_type);
+CREATE INDEX idx_orders_product_info ON orders(product_type, product_id);
+
+-- 外键约束
+ALTER TABLE orders
+ADD CONSTRAINT fk_orders_user_id
+FOREIGN KEY (user_id) REFERENCES users(id);
+
+ALTER TABLE orders
+ADD CONSTRAINT fk_orders_cdk_code
+FOREIGN KEY (cdk_code) REFERENCES cdk_codes(code);
+
+-- 唯一约束
+ALTER TABLE orders
+ADD CONSTRAINT uk_orders_cdk_code
+UNIQUE (cdk_code);
+```
+
+### 4.3 类型转换器配置迁移
+
+**文件路径**：`src/main/resources/db/migration/V32__Add_order_type_handlers.sql`
+
+```sql
+-- 该文件主要是提醒需要添加类型转换器配置
+-- 实际的Java代码配置在下一节
+
+-- 需要在MyBatisTypeHandlerConfig中添加以下类型转换器：
+-- CDKAcquisitionTypeConverter
+-- OrderTypeConverter
+
+-- 这是一个空的迁移文件，仅用于版本记录
+SELECT 1 as migration_marker;
+
+COMMENT ON TABLE orders IS '订单记录表，CDK激活时自动创建。注意：需要配置OrderTypeConverter和CDKAcquisitionTypeConverter';
+```
+
+### 4.4 配置MyBatis类型转换器
+
+**新增转换器**
+
+**CDKAcquisitionTypeConverter**
+```java
+package org.xhy.community.infrastructure.converter;
+
+import org.apache.ibatis.type.BaseTypeHandler;
+import org.apache.ibatis.type.JdbcType;
+import org.xhy.community.domain.cdk.valueobject.CDKAcquisitionType;
+
+import java.sql.CallableStatement;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+public class CDKAcquisitionTypeConverter extends BaseTypeHandler<CDKAcquisitionType> {
+
+    @Override
+    public void setNonNullParameter(PreparedStatement ps, int i, CDKAcquisitionType parameter, JdbcType jdbcType) throws SQLException {
+        ps.setString(i, parameter.name());
+    }
+
+    @Override
+    public CDKAcquisitionType getNullableResult(ResultSet rs, String columnName) throws SQLException {
+        String value = rs.getString(columnName);
+        return value == null ? null : CDKAcquisitionType.valueOf(value);
+    }
+
+    @Override
+    public CDKAcquisitionType getNullableResult(ResultSet rs, int columnIndex) throws SQLException {
+        String value = rs.getString(columnIndex);
+        return value == null ? null : CDKAcquisitionType.valueOf(value);
+    }
+
+    @Override
+    public CDKAcquisitionType getNullableResult(CallableStatement cs, int columnIndex) throws SQLException {
+        String value = cs.getString(columnIndex);
+        return value == null ? null : CDKAcquisitionType.valueOf(value);
+    }
+}
+```
+
+**OrderTypeConverter**
+```java
+package org.xhy.community.infrastructure.converter;
+
+import org.apache.ibatis.type.BaseTypeHandler;
+import org.apache.ibatis.type.JdbcType;
+import org.xhy.community.domain.order.valueobject.OrderType;
+
+import java.sql.CallableStatement;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+public class OrderTypeConverter extends BaseTypeHandler<OrderType> {
+
+    @Override
+    public void setNonNullParameter(PreparedStatement ps, int i, OrderType parameter, JdbcType jdbcType) throws SQLException {
+        ps.setString(i, parameter.name());
+    }
+
+    @Override
+    public OrderType getNullableResult(ResultSet rs, String columnName) throws SQLException {
+        String value = rs.getString(columnName);
+        return value == null ? null : OrderType.valueOf(value);
+    }
+
+    @Override
+    public OrderType getNullableResult(ResultSet rs, int columnIndex) throws SQLException {
+        String value = rs.getString(columnIndex);
+        return value == null ? null : OrderType.valueOf(value);
+    }
+
+    @Override
+    public OrderType getNullableResult(CallableStatement cs, int columnIndex) throws SQLException {
+        String value = cs.getString(columnIndex);
+        return value == null ? null : OrderType.valueOf(value);
+    }
+}
+```
+
+**扩展MyBatisTypeHandlerConfig**
+```java
+package org.xhy.community.infrastructure.config;
+
+import org.apache.ibatis.session.SqlSessionFactory;
+import org.mybatis.spring.SqlSessionFactoryBean;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.xhy.community.infrastructure.converter.*;
+
+@Configuration
+public class MyBatisTypeHandlerConfig {
+
+    @Bean
+    public SqlSessionFactory sqlSessionFactory() throws Exception {
+        SqlSessionFactoryBean sqlSessionFactoryBean = new SqlSessionFactoryBean();
+
+        // 注册现有的类型转换器
+        sqlSessionFactoryBean.setTypeHandlers(new BaseTypeHandler[]{
+            // ... 现有转换器
+            new CDKAcquisitionTypeConverter(),  // 新增
+            new OrderTypeConverter()            // 新增
+        });
+
+        return sqlSessionFactoryBean.getObject();
+    }
+}
+```
+
+## 五、实施步骤
+
+### 5.1 第一阶段：数据库准备（1天）
+
+1. **执行数据库迁移**
+   - 运行V30迁移：扩展CDK表字段
+   - 运行V31迁移：创建订单表
+   - 运行V32迁移：标记需要类型转换器
+
+2. **验证数据库结构**
+   - 确认所有字段和索引创建成功
+   - 验证外键约束正常工作
+
+### 5.2 第二阶段：基础代码实现（2天）
+
+1. **值对象和实体**
+   - 实现`CDKAcquisitionType`枚举
+   - 实现`OrderType`枚举
+   - 扩展`CDKEntity`
+   - 实现`OrderEntity`
+
+2. **Repository和转换器**
+   - 实现`OrderRepository`
+   - 实现类型转换器
+   - 配置MyBatis类型处理
+
+### 5.3 第三阶段：领域服务（2天）
+
+1. **扩展CDK领域服务**
+   - 修改`CDKDomainService`支持新字段
+   - 扩展`CDKActivatedEvent`
+
+2. **实现订单领域服务**
+   - 实现`OrderDomainService`
+   - 实现`OrderEventHandler`
+
+### 5.4 第四阶段：应用服务和接口（2天）
+
+1. **实现应用服务**
+   - 扩展`AdminCDKAppService`
+   - 实现`AdminOrderAppService`
+   - 实现相关Assembler
+
+2. **实现控制器接口**
+   - 扩展`AdminCDKController`
+   - 实现`AdminOrderController`
+   - 实现请求对象
+
+### 5.5 第五阶段：测试和优化（1天）
+
+1. **功能测试**
+   - CDK创建和激活流程测试
+   - 订单自动创建测试
+   - 查询接口测试
+
+2. **性能优化**
+   - 查询性能优化
+   - 索引效果验证
+
+## 六、注意事项
+
+### 6.1 向后兼容性
+
+1. **保持原有CDK激活流程不变**
+2. **现有CDK自动标记为购买获得**
+3. **事件监听器容错处理，不影响CDK激活**
+
+### 6.2 数据一致性
+
+1. **CDK码与订单的唯一约束**
+2. **事务边界控制**
+3. **异常情况的处理策略**
+
+### 6.3 性能考虑
+
+1. **查询索引优化**
+2. **分页查询性能**
+3. **事件处理异步化**
+
+### 6.4 安全考虑
+
+1. **管理员权限验证**
+2. **敏感信息脱敏**
+3. **操作日志记录**
+
+---
+
+该技术方案在保持现有业务流程不变的前提下，通过最小化的改动实现了订单模块的引入，为后续的商业化运营提供了数据基础。
