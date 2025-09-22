@@ -12,6 +12,7 @@ import org.xhy.community.domain.user.entity.UserEntity;
 import org.xhy.community.domain.user.service.UserDomainService;
 import org.xhy.community.domain.post.service.PostDomainService;
 import org.xhy.community.domain.course.service.CourseDomainService;
+import org.xhy.community.domain.course.service.ChapterDomainService;
 import org.xhy.community.interfaces.comment.request.CreateReplyCommentRequest;
 import org.xhy.community.interfaces.comment.request.CommentQueryRequest;
 import org.xhy.community.interfaces.comment.request.CreateCommentRequest;
@@ -32,15 +33,18 @@ public class UserCommentAppService {
     private final UserDomainService userDomainService;
     private final PostDomainService postDomainService;
     private final CourseDomainService courseDomainService;
+    private final ChapterDomainService chapterDomainService;
 
     public UserCommentAppService(CommentDomainService commentDomainService,
                                 UserDomainService userDomainService,
                                 PostDomainService postDomainService,
-                                CourseDomainService courseDomainService) {
+                                CourseDomainService courseDomainService,
+                                ChapterDomainService chapterDomainService) {
         this.commentDomainService = commentDomainService;
         this.userDomainService = userDomainService;
         this.postDomainService = postDomainService;
         this.courseDomainService = courseDomainService;
+        this.chapterDomainService = chapterDomainService;
     }
     
     public CommentDTO createComment(CreateCommentRequest request, String userId) {
@@ -137,7 +141,7 @@ public class UserCommentAppService {
                 .collect(Collectors.toSet());
         Map<String, UserEntity> userMap = userDomainService.getUserEntityMapByIds(userIds);
 
-        // 按业务类型分组，分别批量查询文章标题和课程标题
+        // 按业务类型分组，分别批量查询文章标题、课程标题和章节标题
         Set<String> postIds = comments.stream()
                 .filter(comment -> BusinessType.POST.equals(comment.getBusinessType()))
                 .map(CommentEntity::getBusinessId)
@@ -148,18 +152,25 @@ public class UserCommentAppService {
                 .map(CommentEntity::getBusinessId)
                 .collect(Collectors.toSet());
 
+        Set<String> chapterIds = comments.stream()
+                .filter(comment -> BusinessType.CHAPTER.equals(comment.getBusinessType()))
+                .map(CommentEntity::getBusinessId)
+                .collect(Collectors.toSet());
+
         Map<String, String> postTitleMap = postDomainService.getPostTitleMapByIds(postIds);
         Map<String, String> courseTitleMap = courseDomainService.getCourseTitleMapByIds(courseIds);
+        Map<String, String> chapterTitleMap = chapterDomainService.getChapterTitleMapByIds(chapterIds);
 
         return comments.stream()
-                .map(comment -> convertToLatestCommentDTO(comment, userMap, postTitleMap, courseTitleMap))
+                .map(comment -> convertToLatestCommentDTO(comment, userMap, postTitleMap, courseTitleMap, chapterTitleMap))
                 .collect(Collectors.toList());
     }
 
     private LatestCommentDTO convertToLatestCommentDTO(CommentEntity comment,
                                                       Map<String, UserEntity> userMap,
                                                       Map<String, String> postTitleMap,
-                                                      Map<String, String> courseTitleMap) {
+                                                      Map<String, String> courseTitleMap,
+                                                      Map<String, String> chapterTitleMap) {
         LatestCommentDTO dto = new LatestCommentDTO();
         dto.setId(comment.getId());
         dto.setContent(comment.getContent());
@@ -189,6 +200,8 @@ public class UserCommentAppService {
             dto.setBusinessName(postTitleMap.get(comment.getBusinessId()));
         } else if (BusinessType.COURSE.equals(comment.getBusinessType())) {
             dto.setBusinessName(courseTitleMap.get(comment.getBusinessId()));
+        } else if (BusinessType.CHAPTER.equals(comment.getBusinessType())) {
+            dto.setBusinessName(chapterTitleMap.get(comment.getBusinessId()));
         }
 
         return dto;

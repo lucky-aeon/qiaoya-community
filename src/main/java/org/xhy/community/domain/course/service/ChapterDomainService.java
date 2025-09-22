@@ -14,6 +14,9 @@ import org.xhy.community.infrastructure.exception.CourseErrorCode;
 import org.xhy.community.domain.course.query.ChapterQuery;
 
 import java.util.List;
+import java.util.Collection;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class ChapterDomainService {
@@ -97,5 +100,18 @@ public class ChapterDomainService {
                 .orderByDesc(ChapterEntity::getCreateTime)
                 .last("LIMIT 5")
         );
+    }
+
+    public Map<String, String> getChapterTitleMapByIds(Collection<String> chapterIds) {
+        if (chapterIds == null || chapterIds.isEmpty()) {
+            return Map.of();
+        }
+
+        List<ChapterEntity> chapters = chapterRepository.selectBatchIds(chapterIds);
+        return chapters.stream()
+                .collect(Collectors.toMap(
+                    ChapterEntity::getId,
+                    ChapterEntity::getTitle
+                ));
     }
 }

@@ -2,7 +2,8 @@ package org.xhy.community.domain.comment.valueobject;
 
 public enum BusinessType {
     POST("文章"),
-    COURSE("课程");
+    COURSE("课程"),
+    CHAPTER("章节");
     
     private final String description;
     
