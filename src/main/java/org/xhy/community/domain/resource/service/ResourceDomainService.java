@@ -148,10 +148,10 @@ public class ResourceDomainService {
     }
     
     private String extractUserIdFromFileKey(String fileKey) {
-        // fileKey格式: uploads/{userId}/{date}/{uuid}.{ext}
+        // fileKey格式: {userId}/{date}/{uuid}.{ext}
         String[] parts = fileKey.split("/");
         if (parts.length > 1) {
-            return parts[1]; // userId在第二个位置
+            return parts[0]; // userId在第二个位置
         }
         throw new IllegalArgumentException("无法从fileKey中提取用户ID: " + fileKey);
     }

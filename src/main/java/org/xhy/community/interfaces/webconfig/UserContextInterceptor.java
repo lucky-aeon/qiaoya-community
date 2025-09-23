@@ -49,7 +49,7 @@ public class UserContextInterceptor implements HandlerInterceptor {
                 return false;
             }
 
-            // 兜底：确保用户至少拥有一个默认套餐，由应用服务封装具体逻辑
+            // 仅进行订阅有效性校验（兜底绑定在注册/登录/获取用户信息时处理）
             try {
                 boolean hasActive = userSubscriptionAppService.hasActiveSubscription(userId);
                 if (!hasActive) {

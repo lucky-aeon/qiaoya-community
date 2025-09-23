@@ -189,26 +189,34 @@ public class PostDomainService {
     }
     
     public void incrementViewCount(String postId) {
-        PostEntity post = getPostById(postId);
-        
-        post.setViewCount(post.getViewCount() + 1);
-        postRepository.updateById(post);
+        // 原子自增，避免并发丢失
+        LambdaUpdateWrapper<PostEntity> updateWrapper = new LambdaUpdateWrapper<PostEntity>()
+                .eq(PostEntity::getId, postId)
+                .setSql("view_count = view_count + 1");
+        int updated = postRepository.update(null, updateWrapper);
+        if (updated == 0) {
+            throw new BusinessException(PostErrorCode.POST_NOT_FOUND);
+        }
     }
     
     public void incrementCommentCount(String postId) {
-        PostEntity post = getPostById(postId);
-        
-        post.setCommentCount(post.getCommentCount() + 1);
-        postRepository.updateById(post);
+        // 原子自增
+        LambdaUpdateWrapper<PostEntity> updateWrapper = new LambdaUpdateWrapper<PostEntity>()
+                .eq(PostEntity::getId, postId)
+                .setSql("comment_count = comment_count + 1");
+        int updated = postRepository.update(null, updateWrapper);
+        if (updated == 0) {
+            throw new BusinessException(PostErrorCode.POST_NOT_FOUND);
+        }
     }
     
     public void decrementCommentCount(String postId) {
-        PostEntity post = getPostById(postId);
-        
-        if (post.getCommentCount() > 0) {
-            post.setCommentCount(post.getCommentCount() - 1);
-            postRepository.updateById(post);
-        }
+        // 原子自减（仅当 > 0）
+        LambdaUpdateWrapper<PostEntity> updateWrapper = new LambdaUpdateWrapper<PostEntity>()
+                .eq(PostEntity::getId, postId)
+                .gt(PostEntity::getCommentCount, 0)
+                .setSql("comment_count = comment_count - 1");
+        postRepository.update(null, updateWrapper);
     }
     
     /**

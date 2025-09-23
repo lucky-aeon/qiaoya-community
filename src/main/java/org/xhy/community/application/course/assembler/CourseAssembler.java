@@ -46,7 +46,7 @@ public class CourseAssembler {
         return entity;
     }
     
-    public static CourseEntity fromUpdateRequest(CreateCourseRequest request, String courseId) {
+    public static CourseEntity fromUpdateRequest(UpdateCourseRequest request, String courseId) {
         if (request == null) {
             return null;
         }

@@ -8,8 +8,6 @@ import org.apache.ibatis.type.BaseTypeHandler;
 import org.apache.ibatis.type.JdbcType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.type.classreading.CachingMetadataReaderFactory;
@@ -38,8 +36,7 @@ public class UniversalListConverter extends BaseTypeHandler<List<?>> {
     private static final Logger log = LoggerFactory.getLogger(UniversalListConverter.class);
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    @Autowired
-    private ApplicationContext applicationContext;
+    // 无需注入 ApplicationContext
 
     // 缓存字段名到元素类型的映射，避免频繁反射
     private static final Map<String, Class<?>> FIELD_TYPE_CACHE = new ConcurrentHashMap<>();
