@@ -34,7 +34,7 @@ public class DeviceSessionController {
         String currentIp = ClientIpUtil.getClientIp(request);
 
         List<ActiveSessionDTO> activeSessions = deviceSessionAppService.getUserActiveSessions(userId, currentIp);
-        return ApiResponse.success("获取活跃设备列表成功", activeSessions);
+        return ApiResponse.success(activeSessions);
     }
 
     /**
