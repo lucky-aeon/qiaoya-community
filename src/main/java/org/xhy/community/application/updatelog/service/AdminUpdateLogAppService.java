@@ -1,7 +1,6 @@
 package org.xhy.community.application.updatelog.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import org.apache.catalina.User;
 import org.springframework.stereotype.Service;
 import org.xhy.community.application.updatelog.assembler.UpdateLogAssembler;
 import org.springframework.transaction.annotation.Transactional;

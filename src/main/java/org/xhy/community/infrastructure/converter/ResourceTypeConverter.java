@@ -1,10 +1,8 @@
 package org.xhy.community.infrastructure.converter;
 
-import com.baomidou.mybatisplus.extension.handlers.AbstractJsonTypeHandler;
 import org.apache.ibatis.type.BaseTypeHandler;
 import org.apache.ibatis.type.JdbcType;
 import org.apache.ibatis.type.MappedTypes;
-import org.xhy.community.domain.post.valueobject.PostStatus;
 import org.xhy.community.domain.resource.valueobject.ResourceType;
 
 import java.sql.CallableStatement;

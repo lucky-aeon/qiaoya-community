@@ -2,7 +2,6 @@ package org.xhy.community.interfaces.post.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.xhy.community.application.post.dto.PostDTO;
 import org.xhy.community.application.post.service.PostAppService;
@@ -25,8 +24,11 @@ import org.xhy.community.interfaces.post.request.UpdatePostRequest;
 @RequestMapping("/api/user/posts")
 public class UserPostController {
     
-    @Autowired
-    private PostAppService postAppService;
+    private final PostAppService postAppService;
+
+    public UserPostController(PostAppService postAppService) {
+        this.postAppService = postAppService;
+    }
     
     /**
      * 创建新文章

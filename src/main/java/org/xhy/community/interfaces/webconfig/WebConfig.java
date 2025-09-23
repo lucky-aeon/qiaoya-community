@@ -1,6 +1,5 @@
 package org.xhy.community.interfaces.webconfig;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -8,11 +7,14 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
 
-    @Autowired
-    private UserContextInterceptor userContextInterceptor;
+    private final UserContextInterceptor userContextInterceptor;
+    private final AdminAuthInterceptor adminAuthInterceptor;
 
-    @Autowired
-    private AdminAuthInterceptor adminAuthInterceptor;
+    public WebConfig(UserContextInterceptor userContextInterceptor,
+                     AdminAuthInterceptor adminAuthInterceptor) {
+        this.userContextInterceptor = userContextInterceptor;
+        this.adminAuthInterceptor = adminAuthInterceptor;
+    }
 
     
     @Override

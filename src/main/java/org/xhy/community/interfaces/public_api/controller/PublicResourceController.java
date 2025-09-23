@@ -36,7 +36,7 @@ public class PublicResourceController {
      * @return 回调处理结果，返回给OSS服务的响应
      */
     @PostMapping("/oss-callback")
-    public ApiResponse<ResourceDTO> handleOssCallback(
+    public ResponseEntity<Map<String, Object>> handleOssCallback(
             @Valid OssCallbackRequest callbackRequest,
             HttpServletRequest request
     ) {
@@ -44,6 +44,7 @@ public class PublicResourceController {
         // 简化签名验证 - 可以通过IP白名单或其他方式验证 TODO
         ResourceDTO resource = resourceAppService.handleOssCallback(callbackRequest);
         
-        return ApiResponse.success(resource);
+        Map<String, Object> response = Map.of("Status", "OK","resource",resource);
+        return ResponseEntity.ok(response);
     }
 }
