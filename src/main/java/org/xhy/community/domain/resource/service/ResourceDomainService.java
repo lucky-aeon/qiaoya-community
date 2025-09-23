@@ -153,6 +153,6 @@ public class ResourceDomainService {
         if (parts.length > 1) {
             return parts[0]; // userId在第二个位置
         }
-        throw new IllegalArgumentException("无法从fileKey中提取用户ID: " + fileKey);
+        throw new BusinessException(ResourceErrorCode.UPLOAD_FAILED, "无法从fileKey中提取用户ID: " + fileKey);
     }
 }

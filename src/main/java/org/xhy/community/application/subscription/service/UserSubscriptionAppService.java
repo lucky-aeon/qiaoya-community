@@ -74,34 +74,6 @@ public class UserSubscriptionAppService {
     }
 
     /**
-     * 兜底：确保用户至少拥有默认套餐
-     * - 若用户无有效订阅，则尝试绑定默认套餐
-     * - 若默认套餐未配置/无效或绑定失败，返回false且不抛异常
-     * @return 是否执行了绑定（成功绑定返回true，已存在或未配置返回false）
-     */
-    public boolean ensureDefaultSubscriptionIfMissing(String userId) {
-        try {
-            var actives = subscriptionDomainService.getUserActiveSubscriptions(userId);
-            if (actives != null && !actives.isEmpty()) {
-                return false;
-            }
-
-            DefaultSubscriptionConfig config = systemConfigDomainService.getDefaultSubscriptionConfig();
-            if (config == null || !config.isValid()) {
-                return false;
-            }
-
-            UserSubscriptionEntity created = subscriptionDomainService.createSystemGiftSubscription(
-                userId, config.getSubscriptionPlanId()
-            );
-            return created != null;
-        } catch (Exception e) {
-            log.warn("ensureDefaultSubscriptionIfMissing failed, userId={}, err={}", userId, e.getMessage());
-            return false;
-        }
-    }
-
-    /**
      * 只读校验：用户是否存在有效订阅
      */
     public boolean hasActiveSubscription(String userId) {

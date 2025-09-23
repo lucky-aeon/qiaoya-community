@@ -2,7 +2,6 @@ package org.xhy.community.infrastructure.config;
 
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.type.TypeHandlerRegistry;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,8 +64,11 @@ public class MyBatisTypeHandlerConfig {
 
     private static final Logger log = LoggerFactory.getLogger(MyBatisTypeHandlerConfig.class);
 
-    @Autowired
-    private SqlSessionFactory sqlSessionFactory;
+    private final SqlSessionFactory sqlSessionFactory;
+
+    public MyBatisTypeHandlerConfig(SqlSessionFactory sqlSessionFactory) {
+        this.sqlSessionFactory = sqlSessionFactory;
+    }
 
     /** 初始化注册类型处理器 */
     @PostConstruct

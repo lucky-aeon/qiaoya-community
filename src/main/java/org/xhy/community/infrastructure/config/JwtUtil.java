@@ -3,7 +3,6 @@ package org.xhy.community.infrastructure.config;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
@@ -17,7 +16,6 @@ public class JwtUtil {
     private final JwtProperties jwtProperties;
     private final SecretKey secretKey;
     
-    @Autowired
     public JwtUtil(JwtProperties jwtProperties) {
         this.jwtProperties = jwtProperties;
         this.secretKey = Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes());
