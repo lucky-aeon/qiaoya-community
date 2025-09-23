@@ -7,7 +7,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.xhy.community.domain.subscription.entity.UserSubscriptionEntity;
 import org.xhy.community.domain.subscription.repository.UserSubscriptionRepository;
-import org.xhy.community.domain.subscription.valueobject.SubscriptionStatus;
 import org.xhy.community.domain.subscription.service.SubscriptionPlanDomainService;
 import org.xhy.community.domain.subscription.entity.SubscriptionPlanEntity;
 import org.xhy.community.infrastructure.exception.BusinessException;
@@ -81,12 +80,13 @@ public class SubscriptionDomainService {
     }
     
     public boolean checkActiveSubscriptionExists(String userId, String planId) {
+        LocalDateTime now = LocalDateTime.now();
         LambdaQueryWrapper<UserSubscriptionEntity> queryWrapper =
             new LambdaQueryWrapper<UserSubscriptionEntity>()
                 .eq(UserSubscriptionEntity::getUserId, userId)
                 .eq(UserSubscriptionEntity::getSubscriptionPlanId, planId)
-                .eq(UserSubscriptionEntity::getStatus, SubscriptionStatus.ACTIVE)
-                .gt(UserSubscriptionEntity::getEndTime, LocalDateTime.now());
+                .le(UserSubscriptionEntity::getStartTime, now)
+                .gt(UserSubscriptionEntity::getEndTime, now);
 
         return userSubscriptionRepository.exists(queryWrapper);
     }
@@ -104,11 +104,12 @@ public class SubscriptionDomainService {
     }
     
     public List<UserSubscriptionEntity> getUserActiveSubscriptions(String userId) {
+        LocalDateTime now = LocalDateTime.now();
         LambdaQueryWrapper<UserSubscriptionEntity> queryWrapper =
             new LambdaQueryWrapper<UserSubscriptionEntity>()
                 .eq(UserSubscriptionEntity::getUserId, userId)
-                .eq(UserSubscriptionEntity::getStatus, SubscriptionStatus.ACTIVE)
-                .gt(UserSubscriptionEntity::getEndTime, LocalDateTime.now())
+                .le(UserSubscriptionEntity::getStartTime, now)
+                .gt(UserSubscriptionEntity::getEndTime, now)
                 .orderByDesc(UserSubscriptionEntity::getCreateTime);
 
         return userSubscriptionRepository.selectList(queryWrapper);

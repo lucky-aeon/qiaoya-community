@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.xhy.community.domain.follow.entity.FollowEntity;
+import org.xhy.community.domain.follow.query.FollowQuery;
 import org.xhy.community.domain.follow.event.UserFollowedEvent;
 import org.xhy.community.domain.follow.repository.FollowRepository;
 import org.xhy.community.domain.follow.valueobject.FollowStatus;
@@ -100,18 +101,17 @@ public class FollowDomainService {
     }
     
     /**
-     * 获取用户的关注列表
+     * 获取用户的关注列表（Query）
      */
-    public IPage<FollowEntity> getUserFollowings(String followerId, FollowTargetType targetType, 
-                                                Integer pageNum, Integer pageSize) {
-        Page<FollowEntity> page = new Page<>(pageNum, pageSize);
-        
+    public IPage<FollowEntity> getUserFollowings(FollowQuery query) {
+        Page<FollowEntity> page = new Page<>(query.getPageNum(), query.getPageSize());
+
         LambdaQueryWrapper<FollowEntity> queryWrapper = new LambdaQueryWrapper<FollowEntity>()
-                .eq(FollowEntity::getFollowerId, followerId)
+                .eq(FollowEntity::getFollowerId, query.getFollowerId())
                 .eq(FollowEntity::getStatus, FollowStatus.ACTIVE)
-                .eq(targetType != null, FollowEntity::getTargetType, targetType)
+                .eq(query.getTargetType() != null, FollowEntity::getTargetType, query.getTargetType())
                 .orderByDesc(FollowEntity::getFollowTime);
-        
+
         return followRepository.selectPage(page, queryWrapper);
     }
     

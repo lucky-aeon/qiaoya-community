@@ -6,7 +6,6 @@ import org.xhy.community.domain.subscription.entity.SubscriptionPlanCourseEntity
 import org.xhy.community.domain.subscription.entity.UserSubscriptionEntity;
 import org.xhy.community.domain.subscription.repository.SubscriptionPlanCourseRepository;
 import org.xhy.community.domain.subscription.repository.UserSubscriptionRepository;
-import org.xhy.community.domain.subscription.valueobject.SubscriptionStatus;
 import org.xhy.community.domain.user.service.UserDomainService;
 
 import java.time.LocalDateTime;
@@ -85,9 +84,8 @@ public class UserPermissionAppService {
         LambdaQueryWrapper<UserSubscriptionEntity> queryWrapper = 
             new LambdaQueryWrapper<UserSubscriptionEntity>()
                 .eq(UserSubscriptionEntity::getUserId, userId)
-                .eq(UserSubscriptionEntity::getStatus, SubscriptionStatus.ACTIVE)
                 .le(UserSubscriptionEntity::getStartTime, now)
-                .ge(UserSubscriptionEntity::getEndTime, now);
+                .gt(UserSubscriptionEntity::getEndTime, now);
         
         return userSubscriptionRepository.selectList(queryWrapper);
     }

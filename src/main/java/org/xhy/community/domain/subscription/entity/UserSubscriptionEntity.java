@@ -31,15 +31,16 @@ public class UserSubscriptionEntity extends BaseEntity {
     }
     
     public boolean isActive() {
-        return this.status == SubscriptionStatus.ACTIVE && LocalDateTime.now().isBefore(this.endTime);
+        LocalDateTime now = LocalDateTime.now();
+        return (startTime == null || !now.isBefore(startTime)) && endTime != null && now.isBefore(endTime);
     }
     
     public long getDaysRemaining() {
-        if (!isActive()) {
+        LocalDateTime now = LocalDateTime.now();
+        if (endTime == null || !now.isBefore(endTime)) {
             return 0;
         }
-        LocalDateTime now = LocalDateTime.now();
-        return ChronoUnit.DAYS.between(now, this.endTime);
+        return Math.max(0, ChronoUnit.DAYS.between(now, this.endTime));
     }
     
     public void expire() {
@@ -51,8 +52,8 @@ public class UserSubscriptionEntity extends BaseEntity {
     }
     
     public boolean isExpired() {
-        return this.status == SubscriptionStatus.EXPIRED || 
-               (this.status == SubscriptionStatus.ACTIVE && LocalDateTime.now().isAfter(this.endTime));
+        LocalDateTime now = LocalDateTime.now();
+        return endTime != null && !now.isBefore(endTime);
     }
     
     public String getUserId() { return userId; }

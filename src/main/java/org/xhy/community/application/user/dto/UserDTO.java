@@ -2,6 +2,7 @@ package org.xhy.community.application.user.dto;
 
 import org.xhy.community.domain.user.valueobject.UserRole;
 import org.xhy.community.domain.user.valueobject.UserStatus;
+import org.xhy.community.application.subscription.dto.UserSubscriptionDTO;
 
 import java.time.LocalDateTime;
 
@@ -18,6 +19,13 @@ public class UserDTO {
     private UserRole role;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
+
+    // 当前套餐信息扩展字段
+    private UserSubscriptionDTO currentSubscription;
+    private String currentSubscriptionPlanId;
+    private String currentSubscriptionPlanName;
+    private LocalDateTime currentSubscriptionStartTime;
+    private LocalDateTime currentSubscriptionEndTime;
     
     public UserDTO() {
     }
@@ -62,5 +70,45 @@ public class UserDTO {
 
     public void setRole(UserRole role) {
         this.role = role;
+    }
+
+    public UserSubscriptionDTO getCurrentSubscription() {
+        return currentSubscription;
+    }
+
+    public void setCurrentSubscription(UserSubscriptionDTO currentSubscription) {
+        this.currentSubscription = currentSubscription;
+    }
+
+    public String getCurrentSubscriptionPlanId() {
+        return currentSubscriptionPlanId;
+    }
+
+    public void setCurrentSubscriptionPlanId(String currentSubscriptionPlanId) {
+        this.currentSubscriptionPlanId = currentSubscriptionPlanId;
+    }
+
+    public String getCurrentSubscriptionPlanName() {
+        return currentSubscriptionPlanName;
+    }
+
+    public void setCurrentSubscriptionPlanName(String currentSubscriptionPlanName) {
+        this.currentSubscriptionPlanName = currentSubscriptionPlanName;
+    }
+
+    public LocalDateTime getCurrentSubscriptionStartTime() {
+        return currentSubscriptionStartTime;
+    }
+
+    public void setCurrentSubscriptionStartTime(LocalDateTime currentSubscriptionStartTime) {
+        this.currentSubscriptionStartTime = currentSubscriptionStartTime;
+    }
+
+    public LocalDateTime getCurrentSubscriptionEndTime() {
+        return currentSubscriptionEndTime;
+    }
+
+    public void setCurrentSubscriptionEndTime(LocalDateTime currentSubscriptionEndTime) {
+        this.currentSubscriptionEndTime = currentSubscriptionEndTime;
     }
 }

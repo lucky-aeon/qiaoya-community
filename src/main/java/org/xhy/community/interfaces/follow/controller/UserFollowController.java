@@ -33,15 +33,13 @@ public class UserFollowController {
      *                - targetType: 关注目标类型过滤（可选），可选值：
      *                  * USER: 用户
      *                  * POST: 文章
-     * @return 分页的关注列表，包含关注的对象信息和关注时间
+     *                  * CHAPTER: 章节
+     *                  * COURSE: 课程
+     * @return 分页的关注列表（包含 targetType/targetId/targetName 等）
      */
     @GetMapping
     public ApiResponse<IPage<FollowDTO>> getMyFollowings(FollowQueryRequest request) {
-        IPage<FollowDTO> followings = followAppService.getMyFollowings(
-            request.getTargetType(), 
-            request.getPageNum(), 
-            request.getPageSize()
-        );
+        IPage<FollowDTO> followings = followAppService.getMyFollowings(request);
         return ApiResponse.success(followings);
     }
     

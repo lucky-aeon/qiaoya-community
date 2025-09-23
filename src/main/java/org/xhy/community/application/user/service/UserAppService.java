@@ -14,6 +14,11 @@ import org.xhy.community.domain.session.service.DeviceSessionDomainService;
 import org.xhy.community.domain.session.service.TokenIpMappingDomainService;
 import org.xhy.community.domain.config.service.UserSessionConfigService;
 import org.xhy.community.domain.config.valueobject.UserSessionConfig;
+import org.xhy.community.domain.subscription.service.SubscriptionDomainService;
+import org.xhy.community.domain.subscription.service.SubscriptionPlanDomainService;
+import org.xhy.community.domain.subscription.entity.UserSubscriptionEntity;
+import org.xhy.community.application.subscription.assembler.UserSubscriptionAssembler;
+import org.xhy.community.application.subscription.dto.UserSubscriptionDTO;
 
 @Service
 public class UserAppService {
@@ -23,17 +28,23 @@ public class UserAppService {
     private final DeviceSessionDomainService deviceSessionDomainService;
     private final UserSessionConfigService userSessionConfigService;
     private final TokenIpMappingDomainService tokenIpMappingDomainService;
+    private final SubscriptionDomainService subscriptionDomainService;
+    private final SubscriptionPlanDomainService subscriptionPlanDomainService;
 
     public UserAppService(UserDomainService userDomainService,
                           JwtUtil jwtUtil,
                           DeviceSessionDomainService deviceSessionDomainService,
                           UserSessionConfigService userSessionConfigService,
-                          TokenIpMappingDomainService tokenIpMappingDomainService) {
+                          TokenIpMappingDomainService tokenIpMappingDomainService,
+                          SubscriptionDomainService subscriptionDomainService,
+                          SubscriptionPlanDomainService subscriptionPlanDomainService) {
         this.userDomainService = userDomainService;
         this.jwtUtil = jwtUtil;
         this.deviceSessionDomainService = deviceSessionDomainService;
         this.userSessionConfigService = userSessionConfigService;
         this.tokenIpMappingDomainService = tokenIpMappingDomainService;
+        this.subscriptionDomainService = subscriptionDomainService;
+        this.subscriptionPlanDomainService = subscriptionPlanDomainService;
     }
     
     public LoginResponseDTO login(String email, String password, String ip) {
@@ -101,7 +112,26 @@ public class UserAppService {
     
     public UserDTO getCurrentUserInfo(String userId) {
         UserEntity user = userDomainService.getUserById(userId);
-        return UserAssembler.toDTO(user);
+        UserDTO dto = UserAssembler.toDTO(user);
+
+        // 附加当前有效套餐信息（若存在）
+        var actives = subscriptionDomainService.getUserActiveSubscriptions(userId);
+        if (actives != null && !actives.isEmpty()) {
+            // 取最新创建的订阅作为当前套餐
+            UserSubscriptionEntity current = actives.get(0);
+            String planName = subscriptionPlanDomainService
+                    .getSubscriptionPlanById(current.getSubscriptionPlanId())
+                    .getName();
+            UserSubscriptionDTO currentDto = UserSubscriptionAssembler.toDTOWithPlanName(current, planName);
+
+            dto.setCurrentSubscription(currentDto);
+            dto.setCurrentSubscriptionPlanId(current.getSubscriptionPlanId());
+            dto.setCurrentSubscriptionPlanName(planName);
+            dto.setCurrentSubscriptionStartTime(current.getStartTime());
+            dto.setCurrentSubscriptionEndTime(current.getEndTime());
+        }
+
+        return dto;
     }
     
     public UserPublicProfileDTO getUserPublicProfile(String userId) {

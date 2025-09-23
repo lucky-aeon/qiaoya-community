@@ -17,15 +17,9 @@ public class FollowDTO {
     private FollowStatus status;
     private LocalDateTime followTime;
     private LocalDateTime unfollowTime;
-    private LocalDateTime createTime;
-    private LocalDateTime updateTime;
     
-    // 扩展字段
-    private String followerName;      // 关注者姓名
-    private String followerAvatar;    // 关注者头像
+    // 内容展示字段（最小化）
     private String targetName;        // 被关注对象名称
-    private String targetDescription; // 被关注对象描述
-    private String authorName;        // 内容作者名称（针对课程、文章等）
     
     public FollowDTO() {}
     
@@ -51,24 +45,6 @@ public class FollowDTO {
     public LocalDateTime getUnfollowTime() { return unfollowTime; }
     public void setUnfollowTime(LocalDateTime unfollowTime) { this.unfollowTime = unfollowTime; }
     
-    public LocalDateTime getCreateTime() { return createTime; }
-    public void setCreateTime(LocalDateTime createTime) { this.createTime = createTime; }
-    
-    public LocalDateTime getUpdateTime() { return updateTime; }
-    public void setUpdateTime(LocalDateTime updateTime) { this.updateTime = updateTime; }
-    
-    public String getFollowerName() { return followerName; }
-    public void setFollowerName(String followerName) { this.followerName = followerName; }
-    
-    public String getFollowerAvatar() { return followerAvatar; }
-    public void setFollowerAvatar(String followerAvatar) { this.followerAvatar = followerAvatar; }
-    
     public String getTargetName() { return targetName; }
     public void setTargetName(String targetName) { this.targetName = targetName; }
-    
-    public String getTargetDescription() { return targetDescription; }
-    public void setTargetDescription(String targetDescription) { this.targetDescription = targetDescription; }
-    
-    public String getAuthorName() { return authorName; }
-    public void setAuthorName(String authorName) { this.authorName = authorName; }
 }

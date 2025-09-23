@@ -3,6 +3,8 @@ package org.xhy.community.application.follow.assembler;
 import org.springframework.beans.BeanUtils;
 import org.xhy.community.application.follow.dto.FollowDTO;
 import org.xhy.community.domain.follow.entity.FollowEntity;
+import org.xhy.community.domain.follow.query.FollowQuery;
+import org.xhy.community.interfaces.follow.request.FollowQueryRequest;
 
 import java.util.List;
 import java.util.Map;
@@ -38,49 +40,38 @@ public class FollowAssembler {
                 .map(FollowAssembler::toDTO)
                 .collect(Collectors.toList());
     }
-    
+
     /**
-     * 带扩展信息的实体转DTO
+     * 实体转DTO（并设置目标名称）
      */
-    public static FollowDTO toDTOWithExtendedInfo(FollowEntity entity, String followerName, 
-                                                 String followerAvatar, String targetName, 
-                                                 String targetDescription, String authorName) {
+    public static FollowDTO toDTOWithTargetName(FollowEntity entity, String targetName) {
         if (entity == null) {
             return null;
         }
-        
         FollowDTO dto = toDTO(entity);
-        dto.setFollowerName(followerName);
-        dto.setFollowerAvatar(followerAvatar);
         dto.setTargetName(targetName);
-        dto.setTargetDescription(targetDescription);
-        dto.setAuthorName(authorName);
-        
         return dto;
     }
     
     /**
-     * 批量转换带扩展信息的DTO列表
+     * 批量转换并设置目标名称
      */
-    public static List<FollowDTO> toDTOListWithExtendedInfo(List<FollowEntity> entities,
-                                                           Map<String, String> followerNames,
-                                                           Map<String, String> followerAvatars,
-                                                           Map<String, String> targetNames,
-                                                           Map<String, String> targetDescriptions,
-                                                           Map<String, String> authorNames) {
+    public static List<FollowDTO> toDTOListWithTargetNames(List<FollowEntity> entities, Map<String, String> targetNameMap) {
         if (entities == null) {
             return null;
         }
-        
         return entities.stream()
-                .map(entity -> toDTOWithExtendedInfo(
-                    entity,
-                    followerNames != null ? followerNames.get(entity.getFollowerId()) : null,
-                    followerAvatars != null ? followerAvatars.get(entity.getFollowerId()) : null,
-                    targetNames != null ? targetNames.get(entity.getTargetId()) : null,
-                    targetDescriptions != null ? targetDescriptions.get(entity.getTargetId()) : null,
-                    authorNames != null ? authorNames.get(entity.getTargetId()) : null
-                ))
+                .map(entity -> toDTOWithTargetName(entity, targetNameMap != null ? targetNameMap.get(entity.getTargetId()) : null))
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * from request -> domain query (我的关注)
+     */
+    public static FollowQuery fromRequest(FollowQueryRequest request, String followerId) {
+        FollowQuery query = new FollowQuery(request.getPageNum(), request.getPageSize());
+        query.setFollowerId(followerId);
+        query.setTargetType(request.getTargetType());
+        return query;
     }
 }

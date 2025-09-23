@@ -10,6 +10,12 @@ import org.xhy.community.domain.follow.entity.FollowEntity;
 import org.xhy.community.domain.follow.service.FollowDomainService;
 import org.xhy.community.domain.follow.valueobject.FollowTargetType;
 import org.xhy.community.infrastructure.config.UserContext;
+import org.xhy.community.interfaces.follow.request.FollowQueryRequest;
+import org.xhy.community.domain.follow.query.FollowQuery;
+import org.xhy.community.domain.user.service.UserDomainService;
+import org.xhy.community.domain.post.service.PostDomainService;
+import org.xhy.community.domain.course.service.CourseDomainService;
+import org.xhy.community.domain.course.service.ChapterDomainService;
 
 import java.util.HashMap;
 import java.util.List;
@@ -23,9 +29,21 @@ import java.util.Map;
 public class FollowAppService {
     
     private final FollowDomainService followDomainService;
-    
-    public FollowAppService(FollowDomainService followDomainService) {
+    private final UserDomainService userDomainService;
+    private final PostDomainService postDomainService;
+    private final CourseDomainService courseDomainService;
+    private final ChapterDomainService chapterDomainService;
+
+    public FollowAppService(FollowDomainService followDomainService,
+                            UserDomainService userDomainService,
+                            PostDomainService postDomainService,
+                            CourseDomainService courseDomainService,
+                            ChapterDomainService chapterDomainService) {
         this.followDomainService = followDomainService;
+        this.userDomainService = userDomainService;
+        this.postDomainService = postDomainService;
+        this.courseDomainService = courseDomainService;
+        this.chapterDomainService = chapterDomainService;
     }
     
     /**
@@ -62,100 +80,57 @@ public class FollowAppService {
     /**
      * 获取我的关注列表
      */
-    public IPage<FollowDTO> getMyFollowings(FollowTargetType targetType, Integer pageNum, Integer pageSize) {
+    public IPage<FollowDTO> getMyFollowings(FollowQueryRequest request) {
         String followerId = UserContext.getCurrentUserId();
-        
-        IPage<FollowEntity> entityPage = followDomainService.getUserFollowings(
-            followerId, targetType, pageNum, pageSize);
-        
-        // 基础转换
-        List<FollowDTO> dtoList = FollowAssembler.toDTOList(entityPage.getRecords());
-        
+
+        FollowQuery query = FollowAssembler.fromRequest(request, followerId);
+        IPage<FollowEntity> entityPage = followDomainService.getUserFollowings(query);
+
+        List<FollowEntity> records = entityPage.getRecords();
+
+        // 按类型收集目标ID，批量查询名称，避免N+1
+        java.util.Set<String> userIds = new java.util.HashSet<>();
+        java.util.Set<String> postIds = new java.util.HashSet<>();
+        java.util.Set<String> courseIds = new java.util.HashSet<>();
+        java.util.Set<String> chapterIds = new java.util.HashSet<>();
+
+        for (FollowEntity e : records) {
+            if (e.getTargetType() == null || e.getTargetId() == null) continue;
+            switch (e.getTargetType()) {
+                case USER -> userIds.add(e.getTargetId());
+                case POST -> postIds.add(e.getTargetId());
+                case COURSE -> courseIds.add(e.getTargetId());
+                case CHAPTER -> chapterIds.add(e.getTargetId());
+            }
+        }
+
+        java.util.Map<String, String> nameMap = new java.util.HashMap<>();
+        if (!userIds.isEmpty()) {
+            // userDomainService返回实体，再取name
+            java.util.Map<String, org.xhy.community.domain.user.entity.UserEntity> users =
+                userDomainService.getUserEntityMapByIds(userIds);
+            for (var entry : users.entrySet()) {
+                nameMap.put(entry.getKey(), entry.getValue() != null ? entry.getValue().getName() : null);
+            }
+        }
+        if (!postIds.isEmpty()) {
+            nameMap.putAll(postDomainService.getPostTitleMapByIds(postIds));
+        }
+        if (!courseIds.isEmpty()) {
+            nameMap.putAll(courseDomainService.getCourseTitleMapByIds(courseIds));
+        }
+        if (!chapterIds.isEmpty()) {
+            nameMap.putAll(chapterDomainService.getChapterTitleMapByIds(chapterIds));
+        }
+
+        // 转换为DTO列表并填充targetName
+        List<FollowDTO> dtoList = FollowAssembler.toDTOListWithTargetNames(records, nameMap);
+
         // 构建分页结果
         IPage<FollowDTO> dtoPage = new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(
             entityPage.getCurrent(), entityPage.getSize(), entityPage.getTotal());
         dtoPage.setRecords(dtoList);
-        
+
         return dtoPage;
-    }
-    
-    /**
-     * 获取目标对象的关注者列表
-     */
-    public IPage<FollowDTO> getFollowers(String targetId, FollowTargetType targetType, 
-                                        Integer pageNum, Integer pageSize) {
-        IPage<FollowEntity> entityPage = followDomainService.getFollowersPaged(
-            targetId, targetType, pageNum, pageSize);
-        
-        // 基础转换
-        List<FollowDTO> dtoList = FollowAssembler.toDTOList(entityPage.getRecords());
-        
-        // 构建分页结果
-        IPage<FollowDTO> dtoPage = new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(
-            entityPage.getCurrent(), entityPage.getSize(), entityPage.getTotal());
-        dtoPage.setRecords(dtoList);
-        
-        return dtoPage;
-    }
-    
-    /**
-     * 获取关注统计信息
-     */
-    public FollowStatisticsDTO getFollowStatistics(String targetId, FollowTargetType targetType) {
-        FollowStatisticsDTO statistics = new FollowStatisticsDTO();
-        
-        if (targetId != null && targetType != null) {
-            // 查询特定目标的关注者数量
-            long followersCount = followDomainService.countFollowers(targetId, targetType);
-            statistics.setTotalFollowers(followersCount);
-            statistics.setTargetId(targetId);
-            statistics.setTargetType(targetType);
-        }
-        
-        return statistics;
-    }
-    
-    /**
-     * 获取用户关注统计信息
-     */
-    public FollowStatisticsDTO getUserFollowStatistics(String userId) {
-        if (userId == null) {
-            userId = UserContext.getCurrentUserId();
-        }
-        
-        FollowStatisticsDTO statistics = new FollowStatisticsDTO();
-        statistics.setUserId(userId);
-        
-        // 统计各类型的关注数量
-        Map<FollowTargetType, Long> followingsByType = new HashMap<>();
-        for (FollowTargetType type : FollowTargetType.values()) {
-            long count = followDomainService.countFollowings(userId, type);
-            followingsByType.put(type, count);
-        }
-        
-        // 计算总关注数
-        long totalFollowings = followingsByType.values().stream()
-                .mapToLong(Long::longValue)
-                .sum();
-        
-        statistics.setTotalFollowings(totalFollowings);
-        statistics.setFollowingsByType(followingsByType);
-        
-        return statistics;
-    }
-    
-    /**
-     * 批量检查关注状态
-     */
-    public Map<String, Boolean> batchCheckFollowStatus(List<String> targetIds, FollowTargetType targetType) {
-        String followerId = UserContext.getCurrentUserId();
-        Map<String, Boolean> statusMap = new HashMap<>();
-        
-        for (String targetId : targetIds) {
-            boolean isFollowing = followDomainService.isFollowing(followerId, targetId, targetType);
-            statusMap.put(targetId, isFollowing);
-        }
-        
-        return statusMap;
     }
 }
