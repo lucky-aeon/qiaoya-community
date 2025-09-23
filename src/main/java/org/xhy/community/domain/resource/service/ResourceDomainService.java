@@ -8,6 +8,7 @@ import org.springframework.util.StringUtils;
 import org.xhy.community.domain.resource.entity.ResourceEntity;
 import org.xhy.community.domain.resource.repository.ResourceRepository;
 import org.xhy.community.domain.resource.valueobject.ResourceType;
+import org.xhy.community.domain.common.valueobject.AccessLevel;
 import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.infrastructure.exception.ResourceErrorCode;
 import org.xhy.community.infrastructure.service.AliyunOssService;
@@ -96,13 +97,19 @@ public class ResourceDomainService {
     }
     
     public IPage<ResourceEntity> getUserResources(ResourceQuery query) {
+        return getResources(query, AccessLevel.USER);
+    }
+
+    public IPage<ResourceEntity> getResources(ResourceQuery query, AccessLevel accessLevel) {
         Page<ResourceEntity> page = new Page<>(query.getPageNum(), query.getPageSize());
-        
+
         LambdaQueryWrapper<ResourceEntity> queryWrapper = new LambdaQueryWrapper<ResourceEntity>()
-                .eq(StringUtils.hasText(query.getUserId()), ResourceEntity::getUserId, query.getUserId())
+                // 仅在用户级访问时添加用户隔离条件
+                .eq(accessLevel == AccessLevel.USER && StringUtils.hasText(query.getUserId()),
+                        ResourceEntity::getUserId, query.getUserId())
                 .eq(query.getResourceType() != null, ResourceEntity::getResourceType, query.getResourceType())
                 .orderByDesc(ResourceEntity::getCreateTime);
-        
+
         return resourceRepository.selectPage(page, queryWrapper);
     }
     

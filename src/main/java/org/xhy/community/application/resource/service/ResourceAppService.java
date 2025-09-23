@@ -10,6 +10,7 @@ import org.xhy.community.application.resource.dto.UploadCredentialsDTO;
 import org.xhy.community.domain.resource.entity.ResourceEntity;
 import org.xhy.community.domain.resource.service.ResourceDomainService;
 import org.xhy.community.domain.resource.valueobject.ResourceType;
+import org.xhy.community.domain.common.valueobject.AccessLevel;
 import org.xhy.community.infrastructure.config.AliyunOssProperties;
 import org.xhy.community.infrastructure.config.UserContext;
 import org.xhy.community.interfaces.resource.request.OssCallbackRequest;
@@ -82,7 +83,7 @@ public class ResourceAppService {
         query.setUserId(userId);
         query.setResourceType(resourceType);
         
-        IPage<ResourceEntity> page = resourceDomainService.getUserResources(query);
+        IPage<ResourceEntity> page = resourceDomainService.getResources(query, AccessLevel.USER);
         
         return ResourceAssembler.toPagedResourceDTO(page);
     }
