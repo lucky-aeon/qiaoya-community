@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.xhy.community.domain.notification.context.NotificationData;
 import org.xhy.community.domain.notification.entity.NotificationEntity;
+import org.xhy.community.domain.notification.query.NotificationQuery;
 import org.xhy.community.domain.notification.repository.NotificationRepository;
 import org.xhy.community.domain.notification.template.NotificationTemplate;
 import org.xhy.community.domain.notification.template.NotificationTemplateRegistry;
@@ -172,15 +173,15 @@ public class NotificationDomainService {
     /**
      * 获取用户站内通知列表
      */
-    public IPage<NotificationEntity> getUserNotifications(String userId, Integer pageNum, Integer pageSize) {
-        Page<NotificationEntity> page = new Page<>(pageNum, pageSize);
-        
-        LambdaQueryWrapper<NotificationEntity> queryWrapper = 
+    public IPage<NotificationEntity> getUserNotifications(NotificationQuery query) {
+        Page<NotificationEntity> page = new Page<>(query.getPageNum(), query.getPageSize());
+
+        LambdaQueryWrapper<NotificationEntity> queryWrapper =
             new LambdaQueryWrapper<NotificationEntity>()
-                .eq(NotificationEntity::getRecipientId, userId)
+                .eq(NotificationEntity::getRecipientId, query.getUserId())
                 .eq(NotificationEntity::getChannelType, ChannelType.IN_APP)
                 .orderByDesc(NotificationEntity::getCreateTime);
-        
+
         return notificationRepository.selectPage(page, queryWrapper);
     }
     

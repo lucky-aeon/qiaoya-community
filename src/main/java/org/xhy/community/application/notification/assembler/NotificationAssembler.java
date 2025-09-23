@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.beans.BeanUtils;
 import org.xhy.community.application.notification.dto.NotificationDTO;
 import org.xhy.community.domain.notification.entity.NotificationEntity;
+import org.xhy.community.domain.notification.query.NotificationQuery;
+import org.xhy.community.interfaces.notification.request.NotificationQueryRequest;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -67,5 +69,19 @@ public class NotificationAssembler {
         dtoPage.setRecords(dtoList);
         
         return dtoPage;
+    }
+
+    /**
+     * 请求对象转查询对象
+     */
+    public static NotificationQuery toQuery(NotificationQueryRequest request, String userId) {
+        if (request == null) {
+            return null;
+        }
+
+        NotificationQuery query = new NotificationQuery();
+        BeanUtils.copyProperties(request, query);
+        query.setUserId(userId);
+        return query;
     }
 }
