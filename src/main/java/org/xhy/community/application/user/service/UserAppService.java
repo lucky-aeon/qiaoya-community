@@ -135,4 +135,13 @@ public class UserAppService {
         UserEntity user = userDomainService.getUserById(userId);
         return UserAssembler.toPublicProfileDTO(user);
     }
+
+    /**
+     * 判断用户是否管理员
+     * 供接口层拦截器使用，避免直接依赖领域服务。
+     */
+    public boolean isAdmin(String userId) {
+        UserEntity user = userDomainService.getUserById(userId);
+        return user != null && user.isAdmin();
+    }
 }

@@ -45,4 +45,12 @@ public class DeviceSessionAppService {
 
         deviceSessionDomainService.removeActiveIp(userId, ip);
     }
+
+    /**
+     * 校验指定用户在给定IP上的会话是否被允许（是否活跃）
+     * 供接口层拦截器调用，避免直接依赖领域服务。
+     */
+    public boolean isIpAllowed(String userId, String ip) {
+        return deviceSessionDomainService.isIpActive(userId, ip);
+    }
 }

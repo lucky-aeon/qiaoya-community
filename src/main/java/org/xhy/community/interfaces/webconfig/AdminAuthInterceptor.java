@@ -7,8 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.servlet.HandlerInterceptor;
-import org.xhy.community.domain.user.entity.UserEntity;
-import org.xhy.community.domain.user.service.UserDomainService;
+import org.xhy.community.application.user.service.UserAppService;
 import org.xhy.community.infrastructure.config.JwtUtil;
 import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.infrastructure.exception.UserErrorCode;
@@ -19,11 +18,11 @@ public class AdminAuthInterceptor implements HandlerInterceptor {
     private static final Logger log = LoggerFactory.getLogger(AdminAuthInterceptor.class);
 
     private final JwtUtil jwtUtil;
-    private final UserDomainService userDomainService;
+    private final UserAppService userAppService;
 
-    public AdminAuthInterceptor(JwtUtil jwtUtil, UserDomainService userDomainService) {
+    public AdminAuthInterceptor(JwtUtil jwtUtil, UserAppService userAppService) {
         this.jwtUtil = jwtUtil;
-        this.userDomainService = userDomainService;
+        this.userAppService = userAppService;
     }
 
     @Override
@@ -37,9 +36,7 @@ public class AdminAuthInterceptor implements HandlerInterceptor {
         }
 
         try {
-            UserEntity user = userDomainService.getUserById(userId);
-
-            if (!user.isAdmin()) {
+            if (!userAppService.isAdmin(userId)) {
                 log.warn("非管理员用户尝试访问管理员接口: userId={}, path={}", userId, request.getRequestURI());
                 response.setStatus(HttpServletResponse.SC_FORBIDDEN);
                 return false;

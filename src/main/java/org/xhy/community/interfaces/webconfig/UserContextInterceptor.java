@@ -8,8 +8,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.xhy.community.application.subscription.service.UserSubscriptionAppService;
-import org.xhy.community.domain.session.service.DeviceSessionDomainService;
-import org.xhy.community.domain.session.service.TokenBlacklistDomainService;
+import org.xhy.community.application.session.service.DeviceSessionAppService;
+import org.xhy.community.application.session.service.TokenBlacklistAppService;
 import org.xhy.community.infrastructure.config.JwtUtil;
 import org.xhy.community.infrastructure.config.UserContext;
 import org.xhy.community.infrastructure.util.ClientIpUtil;
@@ -21,17 +21,17 @@ public class UserContextInterceptor implements HandlerInterceptor {
 
     private final JwtUtil jwtUtil;
     private final UserSubscriptionAppService userSubscriptionAppService;
-    private final DeviceSessionDomainService deviceSessionDomainService;
-    private final TokenBlacklistDomainService tokenBlacklistDomainService;
+    private final DeviceSessionAppService deviceSessionAppService;
+    private final TokenBlacklistAppService tokenBlacklistAppService;
 
     public UserContextInterceptor(JwtUtil jwtUtil,
                                   UserSubscriptionAppService userSubscriptionAppService,
-                                  DeviceSessionDomainService deviceSessionDomainService,
-                                  TokenBlacklistDomainService tokenBlacklistDomainService) {
+                                  DeviceSessionAppService deviceSessionAppService,
+                                  TokenBlacklistAppService tokenBlacklistAppService) {
         this.jwtUtil = jwtUtil;
         this.userSubscriptionAppService = userSubscriptionAppService;
-        this.deviceSessionDomainService = deviceSessionDomainService;
-        this.tokenBlacklistDomainService = tokenBlacklistDomainService;
+        this.deviceSessionAppService = deviceSessionAppService;
+        this.tokenBlacklistAppService = tokenBlacklistAppService;
     }
 
     @Override
@@ -43,7 +43,7 @@ public class UserContextInterceptor implements HandlerInterceptor {
 
             // 基于 IP 的设备白名单检查（无锁，纯读操作）
             String ip = ClientIpUtil.getClientIp(request);
-            boolean ipAllowed = deviceSessionDomainService.isIpActive(userId, ip);
+            boolean ipAllowed = deviceSessionAppService.isIpAllowed(userId, ip);
             if (!ipAllowed) {
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 return false;
@@ -82,7 +82,7 @@ public class UserContextInterceptor implements HandlerInterceptor {
             String token = authorization.substring(7);
 
             // 首先检查token是否在黑名单中
-            if (tokenBlacklistDomainService.isBlacklisted(token)) {
+            if (tokenBlacklistAppService.isBlacklisted(token)) {
                 log.warn("Token已被列入黑名单: {}", token.substring(0, Math.min(token.length(), 20)) + "...");
                 return null;
             }
