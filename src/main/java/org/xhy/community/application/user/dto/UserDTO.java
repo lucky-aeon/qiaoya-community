@@ -1,5 +1,6 @@
 package org.xhy.community.application.user.dto;
 
+import org.xhy.community.domain.user.valueobject.UserRole;
 import org.xhy.community.domain.user.valueobject.UserStatus;
 
 import java.time.LocalDateTime;
@@ -14,6 +15,7 @@ public class UserDTO {
     private UserStatus status;
     private Boolean emailNotificationEnabled;
     private Integer maxConcurrentDevices;
+    private UserRole role;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
     
@@ -53,4 +55,12 @@ public class UserDTO {
     
     public LocalDateTime getUpdateTime() { return updateTime; }
     public void setUpdateTime(LocalDateTime updateTime) { this.updateTime = updateTime; }
+
+    public UserRole getRole() {
+        return role;
+    }
+
+    public void setRole(UserRole role) {
+        this.role = role;
+    }
 }
