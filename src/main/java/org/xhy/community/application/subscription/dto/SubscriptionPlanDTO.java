@@ -17,6 +17,10 @@ public class SubscriptionPlanDTO {
     private Integer validityMonths;
     
     private BigDecimal price;
+
+    private BigDecimal originalPrice;
+
+    private Boolean recommended;
     
     private SubscriptionPlanStatus status;
     
@@ -43,6 +47,12 @@ public class SubscriptionPlanDTO {
     
     public BigDecimal getPrice() { return price; }
     public void setPrice(BigDecimal price) { this.price = price; }
+
+    public BigDecimal getOriginalPrice() { return originalPrice; }
+    public void setOriginalPrice(BigDecimal originalPrice) { this.originalPrice = originalPrice; }
+
+    public Boolean getRecommended() { return recommended; }
+    public void setRecommended(Boolean recommended) { this.recommended = recommended; }
     
     public SubscriptionPlanStatus getStatus() { return status; }
     public void setStatus(SubscriptionPlanStatus status) { this.status = status; }

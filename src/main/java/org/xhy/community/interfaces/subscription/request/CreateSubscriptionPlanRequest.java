@@ -27,6 +27,11 @@ public class CreateSubscriptionPlanRequest {
     @NotNull(message = "价格不能为空")
     @DecimalMin(value = "0.00", message = "价格不能为负数")
     private BigDecimal price;
+
+    @DecimalMin(value = "0.00", message = "原价不能为负数")
+    private BigDecimal originalPrice;
+
+    private Boolean recommended;
     
     @Valid
     @Size(max = 20, message = "权益列表最多包含20项")
@@ -46,6 +51,12 @@ public class CreateSubscriptionPlanRequest {
     
     public BigDecimal getPrice() { return price; }
     public void setPrice(BigDecimal price) { this.price = price; }
+
+    public BigDecimal getOriginalPrice() { return originalPrice; }
+    public void setOriginalPrice(BigDecimal originalPrice) { this.originalPrice = originalPrice; }
+
+    public Boolean getRecommended() { return recommended; }
+    public void setRecommended(Boolean recommended) { this.recommended = recommended; }
     
     public List<String> getBenefits() { return benefits; }
     public void setBenefits(List<String> benefits) { this.benefits = benefits; }

@@ -15,6 +15,10 @@ public class AppSubscriptionPlanDTO {
 
     private BigDecimal price;
 
+    private BigDecimal originalPrice;
+
+    private Boolean recommended;
+
     private List<String> benefits;
 
     public AppSubscriptionPlanDTO() {
@@ -34,6 +38,12 @@ public class AppSubscriptionPlanDTO {
 
     public BigDecimal getPrice() { return price; }
     public void setPrice(BigDecimal price) { this.price = price; }
+
+    public BigDecimal getOriginalPrice() { return originalPrice; }
+    public void setOriginalPrice(BigDecimal originalPrice) { this.originalPrice = originalPrice; }
+
+    public Boolean getRecommended() { return recommended; }
+    public void setRecommended(Boolean recommended) { this.recommended = recommended; }
 
     public List<String> getBenefits() { return benefits; }
     public void setBenefits(List<String> benefits) { this.benefits = benefits; }
