@@ -114,7 +114,6 @@ public class UpdateLogDomainService {
      * 创建更新日志聚合（原子操作）
      * 同时创建日志主体和变更详情
      */
-    @Transactional(rollbackFor = Exception.class)
     public UpdateLogEntity createUpdateLogAggregate(UpdateLogEntity updateLog, List<UpdateLogChangeEntity> changes) {
         // 校验版本号唯一性
         if (isVersionExists(updateLog.getVersion(), null)) {
@@ -138,9 +137,9 @@ public class UpdateLogDomainService {
                         change.setDeleted(false);
                     }
                 }
+                // 循环插入，避免使用不存在的批量方法
+                this.updateLogChangeRepository.insert(change);
             }
-            // 批量插入变更详情（使用 MyBatis-Plus 循环插入，避免手写 SQL）
-            this.updateLogChangeRepository.insert(changes);
         }
 
         return updateLog;
@@ -166,9 +165,8 @@ public class UpdateLogDomainService {
         if (!CollectionUtils.isEmpty(changes)) {
             for (UpdateLogChangeEntity change : changes) {
                 change.setUpdateLogId(updateLog.getId());
+                this.updateLogChangeRepository.insert(change);
             }
-            // 批量插入变更详情（使用 MyBatis-Plus 循环插入，避免手写 SQL）
-            this.updateLogChangeRepository.insert(changes);
         }
 
         return updateLog;

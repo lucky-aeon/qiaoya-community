@@ -10,6 +10,7 @@ import org.xhy.community.domain.course.repository.CourseRepository;
 import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.infrastructure.exception.CourseErrorCode;
 import org.xhy.community.domain.course.query.CourseQuery;
+import org.xhy.community.domain.course.valueobject.CourseStatus;
 
 import java.util.Collection;
 import java.util.List;
@@ -69,6 +70,7 @@ public class CourseDomainService {
         Page<CourseEntity> page = new Page<>(query.getPageNum(), query.getPageSize());
         
         LambdaQueryWrapper<CourseEntity> queryWrapper = new LambdaQueryWrapper<CourseEntity>()
+                .eq(CourseEntity::getStatus, CourseStatus.COMPLETED)
                 .like(StringUtils.hasText(query.getTitle()), CourseEntity::getTitle, query.getTitle())
                 .orderByDesc(CourseEntity::getCreateTime);
         

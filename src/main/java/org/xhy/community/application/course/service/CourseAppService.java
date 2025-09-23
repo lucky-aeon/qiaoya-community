@@ -101,6 +101,9 @@ public class CourseAppService {
     public FrontCourseDetailDTO getAppCourseDetail(String courseId) {
         // 获取课程信息
         CourseEntity course = courseDomainService.getCourseById(courseId);
+        if (course.getStatus() != CourseStatus.COMPLETED) {
+            throw new BusinessException(CourseErrorCode.COURSE_NOT_FOUND);
+        }
 
         // 获取作者信息
         Map<String, UserEntity> authorMap = userDomainService.getUserEntityMapByIds(

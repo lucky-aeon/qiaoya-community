@@ -40,9 +40,24 @@ public class AliyunOssService {
     public AliyunOssService(AliyunOssProperties ossProperties) {
         this.ossProperties = ossProperties;
     }
+
+    /**
+     * 统一标准化 Key：去除所有前导斜杠
+     */
+    private static String sanitizeKey(String key) {
+        if (key == null) return "";
+        String k = key.trim();
+        while (k.startsWith("/")) {
+            k = k.substring(1);
+        }
+        return k;
+    }
     
     public Map<String, Object> getStsCredentials(String fileKey) {
         try {
+            // 统一标准化：OSS 对象名不能以 '/' 开头
+            String sanitizedKey = sanitizeKey(fileKey);
+
             DefaultProfile profile = DefaultProfile.getProfile(
                     ossProperties.getRegion(),
                     ossProperties.getAccessKeyId(),
@@ -57,13 +72,14 @@ public class AliyunOssService {
             request.setRoleArn(ossProperties.getRoleArn());
             request.setRoleSessionName(DEFAULT_ROLE_SESSION_NAME);
             request.setDurationSeconds(DEFAULT_DURATION_SECONDS);
-            request.setPolicy(generateDynamicPolicy(fileKey));
+            // 会话策略：授权到具体对象（bucket/object），避免隐式拒绝
+            request.setPolicy(generateDynamicPolicy(sanitizedKey));
             
             AssumeRoleResponse response = client.getAcsResponse(request);
             AssumeRoleResponse.Credentials credentials = response.getCredentials();
             
             // 生成上传策略 - 使用STS临时AccessKeySecret计算签名
-            Map<String, Object> uploadPolicy = generateUploadPolicy(fileKey, credentials.getAccessKeySecret());
+            Map<String, Object> uploadPolicy = generateUploadPolicy(sanitizedKey, credentials.getAccessKeySecret());
             
             Map<String, Object> result = new HashMap<>();
             result.put("accessKeyId", credentials.getAccessKeyId());
@@ -75,7 +91,7 @@ public class AliyunOssService {
             result.put("endpoint", ossProperties.getEndpoint());
             result.put("policy", uploadPolicy.get("policy"));
             result.put("signature", uploadPolicy.get("signature"));
-            result.put("key", fileKey);
+            result.put("key", sanitizedKey);
             result.put("callback", generateCallback());
             
             return result;
@@ -84,35 +100,35 @@ public class AliyunOssService {
         }
     }
     
-    private String generateDynamicPolicy(String fileKey) {
-        // 根据传入的 fileKey 精确限制可上传的对象，避免与前端 key 不一致导致鉴权失败
-        // 注意：这里直接使用传入的 fileKey（包括可能存在的前导斜杠），确保与实际上传对象完全一致
-        return String.format(
-            "{\n" +
-            "  \"Version\": \"1\",\n" +
-            "  \"Statement\": [\n" +
-            "    {\n" +
-            "      \"Effect\": \"Allow\",\n" +
-            "      \"Action\": [\n" +
-            "        \"oss:PutObject\",\n" +
-            "        \"oss:PostObject\"\n" +
-            "      ],\n" +
-            "      \"Resource\": \"acs:oss:*:*:%s%s\"\n" +
-            "    }\n" +
-            "  ]\n" +
-            "}",
-            ossProperties.getBucketName(),
-            fileKey
-        );
+    /**
+     * 生成 STS 会话策略：授权到具体对象（或可改为用户前缀）
+     * Resource 格式必须是：acs:oss:*:*:bucket/object
+     */
+    private String generateDynamicPolicy(String objectKey) {
+        String sanitizedKey = sanitizeKey(objectKey);
+        String resourceExact = String.format("acs:oss:*:*:%s/%s", ossProperties.getBucketName(), sanitizedKey);
+        return "{\n" +
+               "  \"Version\": \"1\",\n" +
+               "  \"Statement\": [\n" +
+               "    {\n" +
+               "      \"Effect\": \"Allow\",\n" +
+               "      \"Action\": [\n" +
+               "        \"oss:PutObject\",\n" +
+               "        \"oss:PostObject\"\n" +
+               "      ],\n" +
+               "      \"Resource\": \"" + resourceExact + "\"\n" +
+               "    }\n" +
+               "  ]\n" +
+               "}";
     }
     
     private Map<String, Object> generateUploadPolicy(String fileKey, String tempAccessKeySecret) {
         try {
+            String sanitizedKey = sanitizeKey(fileKey);
             LocalDateTime expiration = LocalDateTime.now().plusSeconds(DEFAULT_DURATION_SECONDS);
             String expirationString = expiration.atZone(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT);
             
-            // 构建上传策略
-            // 与前端提交的 key 完全一致，避免签名校验不通过
+            // 构建上传策略（表单策略）：与前端提交的 key 完全一致
             String policyDocument = String.format(
                 "{\n" +
                 "  \"expiration\": \"%s\",\n" +
@@ -124,7 +140,7 @@ public class AliyunOssService {
                 "}",
                 expirationString,
                 ossProperties.getBucketName(),
-                fileKey
+                sanitizedKey
             );
             
             String encodedPolicy = Base64.getEncoder().encodeToString(policyDocument.getBytes("UTF-8"));
@@ -179,7 +195,7 @@ public class AliyunOssService {
             Date expiration = new Date(System.currentTimeMillis() + ossProperties.getPresignedUrlExpiration() * 1000);
             GeneratePresignedUrlRequest request = new GeneratePresignedUrlRequest(
                     ossProperties.getBucketName(), 
-                    fileKey
+                    sanitizeKey(fileKey)
             );
             request.setExpiration(expiration);
             
@@ -198,7 +214,7 @@ public class AliyunOssService {
         );
         
         try {
-            ossClient.deleteObject(ossProperties.getBucketName(), fileKey);
+            ossClient.deleteObject(ossProperties.getBucketName(), sanitizeKey(fileKey));
         } finally {
             ossClient.shutdown();
         }
@@ -212,30 +228,9 @@ public class AliyunOssService {
         );
         
         try {
-            return ossClient.doesObjectExist(ossProperties.getBucketName(), fileKey);
+            return ossClient.doesObjectExist(ossProperties.getBucketName(), sanitizeKey(fileKey));
         } finally {
             ossClient.shutdown();
         }
-    }
-    
-    public String uploadFile(String fileKey, InputStream inputStream, String contentType) {
-        OSS ossClient = new OSSClientBuilder().build(
-                ossProperties.getEndpoint(),
-                ossProperties.getAccessKeyId(),
-                ossProperties.getAccessKeySecret()
-        );
-        
-        try {
-            ossClient.putObject(ossProperties.getBucketName(), fileKey, inputStream);
-            return fileKey;
-        } finally {
-            ossClient.shutdown();
-        }
-    }
-    
-    public boolean verifyOssCallback(String authorizationHeader, String callbackBody, String publicKeyUrl) {
-        // OSS回调签名验证逻辑
-        // 这里简化实现，实际使用时需要验证OSS的公钥签名
-        return true; // 简化处理，实际项目中需要实现完整的签名验证
     }
 }

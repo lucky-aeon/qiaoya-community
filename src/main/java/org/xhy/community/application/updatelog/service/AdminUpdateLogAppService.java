@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import org.apache.catalina.User;
 import org.springframework.stereotype.Service;
 import org.xhy.community.application.updatelog.assembler.UpdateLogAssembler;
+import org.springframework.transaction.annotation.Transactional;
 import org.xhy.community.application.updatelog.dto.UpdateLogDTO;
 import org.xhy.community.domain.updatelog.entity.UpdateLogEntity;
 import org.xhy.community.domain.updatelog.entity.UpdateLogChangeEntity;
@@ -36,6 +37,7 @@ public class AdminUpdateLogAppService {
      * 创建更新日志聚合
      * 接收完整的Request对象，包含日志信息和变更详情
      */
+    @Transactional(rollbackFor = Exception.class)
     public UpdateLogDTO createUpdateLog(CreateUpdateLogRequest request, String authorId) {
         // 转换Request为聚合实体
         UpdateLogEntity updateLog = UpdateLogAssembler.fromCreateRequest(request, authorId);
@@ -52,6 +54,7 @@ public class AdminUpdateLogAppService {
      * 更新更新日志聚合
      * 全量更新，包含日志信息和变更详情
      */
+    @Transactional(rollbackFor = Exception.class)
     public UpdateLogDTO updateUpdateLog(String updateLogId, UpdateUpdateLogRequest request) {
         // 转换Request为聚合实体
         UpdateLogEntity updateLog = UpdateLogAssembler.fromUpdateRequest(request, updateLogId);

@@ -40,7 +40,7 @@ public class ResourceDomainService {
         
         try {
             // 上传文件到OSS
-            aliyunOssService.uploadFile(fileKey, inputStream, contentType);
+//            aliyunOssService.uploadFile(fileKey, inputStream, contentType);
             
             // 创建资源实体
             ResourceEntity resource = new ResourceEntity();
@@ -113,10 +113,7 @@ public class ResourceDomainService {
         return resourceRepository.selectPage(page, queryWrapper);
     }
     
-    public boolean verifyOssCallback(String authorization, String callbackBody, String publicKeyUrl) {
-        return aliyunOssService.verifyOssCallback(authorization, callbackBody, publicKeyUrl);
-    }
-    
+
     public ResourceEntity saveResourceFromCallback(String fileKey, String originalName, String mimeType, Long size) {
         // 从fileKey中提取userId
         String userId = extractUserIdFromFileKey(fileKey);
