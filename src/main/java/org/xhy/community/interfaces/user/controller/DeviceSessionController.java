@@ -30,15 +30,11 @@ public class DeviceSessionController {
      */
     @GetMapping("/active")
     public ApiResponse<List<ActiveSessionDTO>> getActiveSessions(HttpServletRequest request) {
-        try {
-            String userId = UserContext.getCurrentUserId();
-            String currentIp = ClientIpUtil.getClientIp(request);
+        String userId = UserContext.getCurrentUserId();
+        String currentIp = ClientIpUtil.getClientIp(request);
 
-            List<ActiveSessionDTO> activeSessions = deviceSessionAppService.getUserActiveSessions(userId, currentIp);
-            return ApiResponse.success("获取活跃设备列表成功", activeSessions);
-        } catch (IllegalArgumentException e) {
-            return ApiResponse.error(400, e.getMessage());
-        }
+        List<ActiveSessionDTO> activeSessions = deviceSessionAppService.getUserActiveSessions(userId, currentIp);
+        return ApiResponse.success("获取活跃设备列表成功", activeSessions);
     }
 
     /**
@@ -47,12 +43,8 @@ public class DeviceSessionController {
      */
     @DeleteMapping("/active/{ip}")
     public ApiResponse<Void> removeActiveSession(@PathVariable String ip) {
-        try {
-            String userId = UserContext.getCurrentUserId();
-            deviceSessionAppService.removeUserActiveSession(userId, ip);
-            return ApiResponse.success("设备下线成功", null);
-        } catch (IllegalArgumentException e) {
-            return ApiResponse.error(400, e.getMessage());
-        }
+        String userId = UserContext.getCurrentUserId();
+        deviceSessionAppService.removeUserActiveSession(userId, ip);
+        return ApiResponse.success("设备下线成功");
     }
 }

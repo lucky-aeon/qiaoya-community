@@ -122,9 +122,6 @@ public class UserAppService {
             String planName = subscriptionPlanDomainService
                     .getSubscriptionPlanById(current.getSubscriptionPlanId())
                     .getName();
-            UserSubscriptionDTO currentDto = UserSubscriptionAssembler.toDTOWithPlanName(current, planName);
-
-            dto.setCurrentSubscription(currentDto);
             dto.setCurrentSubscriptionPlanId(current.getSubscriptionPlanId());
             dto.setCurrentSubscriptionPlanName(planName);
             dto.setCurrentSubscriptionStartTime(current.getStartTime());

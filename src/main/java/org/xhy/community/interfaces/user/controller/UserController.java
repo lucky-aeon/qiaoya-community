@@ -37,13 +37,9 @@ public class UserController {
      */
     @PutMapping("/profile")
     public ApiResponse<UserDTO> updateProfile(@Valid @RequestBody UpdateProfileRequest request) {
-        try {
-            String userId = UserContext.getCurrentUserId();
-            UserDTO user = userAppService.updateProfile(userId, request.getDescription());
-            return ApiResponse.success("简介修改成功", user);
-        } catch (IllegalArgumentException e) {
-            return ApiResponse.error(400, e.getMessage());
-        }
+        String userId = UserContext.getCurrentUserId();
+        UserDTO user = userAppService.updateProfile(userId, request.getDescription());
+        return ApiResponse.success("简介修改成功", user);
     }
     
     /**
@@ -58,13 +54,9 @@ public class UserController {
      */
     @PutMapping("/password")
     public ApiResponse<UserDTO> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
-        try {
-            String userId = UserContext.getCurrentUserId();
-            UserDTO user = userAppService.changePassword(userId, request.getOldPassword(), request.getNewPassword());
-            return ApiResponse.success("密码修改成功", user);
-        } catch (IllegalArgumentException e) {
-            return ApiResponse.error(400, e.getMessage());
-        }
+        String userId = UserContext.getCurrentUserId();
+        UserDTO user = userAppService.changePassword(userId, request.getOldPassword(), request.getNewPassword());
+        return ApiResponse.success("密码修改成功", user);
     }
     
     /**
@@ -76,13 +68,9 @@ public class UserController {
      */
     @PutMapping("/email-notification")
     public ApiResponse<UserDTO> toggleEmailNotification() {
-        try {
-            String userId = UserContext.getCurrentUserId();
-            UserDTO user = userAppService.toggleEmailNotification(userId);
-            return ApiResponse.success("邮箱通知设置修改成功", user);
-        } catch (IllegalArgumentException e) {
-            return ApiResponse.error(400, e.getMessage());
-        }
+        String userId = UserContext.getCurrentUserId();
+        UserDTO user = userAppService.toggleEmailNotification(userId);
+        return ApiResponse.success("邮箱通知设置修改成功", user);
     }
     
     /**
@@ -95,13 +83,9 @@ public class UserController {
      */
     @GetMapping("")
     public ApiResponse<UserDTO> getCurrentUserInfo() {
-        try {
-            String userId = UserContext.getCurrentUserId();
-            UserDTO user = userAppService.getCurrentUserInfo(userId);
-            return ApiResponse.success(user);
-        } catch (IllegalArgumentException e) {
-            return ApiResponse.error(400, e.getMessage());
-        }
+        String userId = UserContext.getCurrentUserId();
+        UserDTO user = userAppService.getCurrentUserInfo(userId);
+        return ApiResponse.success(user);
     }
     
     /**
@@ -115,12 +99,8 @@ public class UserController {
      */
     @GetMapping("/{userId}")
     public ApiResponse<UserPublicProfileDTO> getUserPublicProfile(@PathVariable String userId) {
-        try {
-            UserPublicProfileDTO user = userAppService.getUserPublicProfile(userId);
-            return ApiResponse.success(user);
-        } catch (IllegalArgumentException e) {
-            return ApiResponse.error(400, e.getMessage());
-        }
+        UserPublicProfileDTO user = userAppService.getUserPublicProfile(userId);
+        return ApiResponse.success(user);
     }
 
     /**

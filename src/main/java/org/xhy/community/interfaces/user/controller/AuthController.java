@@ -43,13 +43,9 @@ public class AuthController {
         failureType = ActivityType.LOGIN_FAILED
     )
     public ApiResponse<LoginResponseDTO> login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest) {
-        try {
-            String ip = ClientIpUtil.getClientIp(httpRequest);
-            LoginResponseDTO loginResponse = userAppService.login(request.getEmail(), request.getPassword(), ip);
-            return ApiResponse.success("登录成功", loginResponse);
-        } catch (IllegalArgumentException e) {
-            return ApiResponse.error(400, e.getMessage());
-        }
+        String ip = ClientIpUtil.getClientIp(httpRequest);
+        LoginResponseDTO loginResponse = userAppService.login(request.getEmail(), request.getPassword(), ip);
+        return ApiResponse.success("登录成功", loginResponse);
     }
     
     /**
@@ -69,15 +65,11 @@ public class AuthController {
         failureType = ActivityType.REGISTER_FAILED
     )
     public ApiResponse<UserDTO> register(@Valid @RequestBody RegisterRequest request) {
-        try {
-            UserDTO user = userAppService.register(
-                request.getEmail(), 
-                request.getEmailVerificationCode(), 
+        UserDTO user = userAppService.register(
+                request.getEmail(),
+                request.getEmailVerificationCode(),
                 request.getPassword()
-            );
-            return ApiResponse.success("注册成功", user);
-        } catch (IllegalArgumentException e) {
-            return ApiResponse.error(400, e.getMessage());
-        }
+        );
+        return ApiResponse.success("注册成功", user);
     }
 }

@@ -20,8 +20,6 @@ public class UserDTO {
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
 
-    // 当前套餐信息扩展字段
-    private UserSubscriptionDTO currentSubscription;
     private String currentSubscriptionPlanId;
     private String currentSubscriptionPlanName;
     private LocalDateTime currentSubscriptionStartTime;
@@ -70,14 +68,6 @@ public class UserDTO {
 
     public void setRole(UserRole role) {
         this.role = role;
-    }
-
-    public UserSubscriptionDTO getCurrentSubscription() {
-        return currentSubscription;
-    }
-
-    public void setCurrentSubscription(UserSubscriptionDTO currentSubscription) {
-        this.currentSubscription = currentSubscription;
     }
 
     public String getCurrentSubscriptionPlanId() {
