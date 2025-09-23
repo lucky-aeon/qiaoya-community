@@ -7,10 +7,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.xhy.community.domain.subscription.entity.UserSubscriptionEntity;
 import org.xhy.community.domain.subscription.repository.UserSubscriptionRepository;
-import org.xhy.community.domain.subscription.service.SubscriptionPlanDomainService;
+import org.xhy.community.domain.subscription.repository.SubscriptionPlanRepository;
 import org.xhy.community.domain.subscription.entity.SubscriptionPlanEntity;
 import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.infrastructure.exception.SubscriptionErrorCode;
+import org.xhy.community.infrastructure.exception.SubscriptionPlanErrorCode;
 import org.xhy.community.domain.subscription.query.SubscriptionQuery;
 
 import java.time.LocalDateTime;
@@ -20,18 +21,18 @@ import java.util.List;
 public class SubscriptionDomainService {
     
     private final UserSubscriptionRepository userSubscriptionRepository;
-    private final SubscriptionPlanDomainService subscriptionPlanDomainService;
+    private final SubscriptionPlanRepository subscriptionPlanRepository;
     
     public SubscriptionDomainService(UserSubscriptionRepository userSubscriptionRepository,
-                                   SubscriptionPlanDomainService subscriptionPlanDomainService) {
+                                     SubscriptionPlanRepository subscriptionPlanRepository) {
         this.userSubscriptionRepository = userSubscriptionRepository;
-        this.subscriptionPlanDomainService = subscriptionPlanDomainService;
+        this.subscriptionPlanRepository = subscriptionPlanRepository;
     }
     
     
     public UserSubscriptionEntity createSubscriptionFromCDK(String userId, String subscriptionPlanId, String cdkCode) {
         // 验证套餐存在，如果不存在会自动抛出 PLAN_NOT_FOUND 异常
-        SubscriptionPlanEntity plan = subscriptionPlanDomainService.getSubscriptionPlanById(subscriptionPlanId);
+        SubscriptionPlanEntity plan = getSubscriptionPlanOrThrow(subscriptionPlanId);
 
         // 检查重复订阅
         if (checkActiveSubscriptionExists(userId, plan.getId())) {
@@ -54,7 +55,7 @@ public class SubscriptionDomainService {
      */
     public UserSubscriptionEntity createSystemGiftSubscription(String userId, String subscriptionPlanId) {
         // 验证套餐存在
-        SubscriptionPlanEntity plan = subscriptionPlanDomainService.getSubscriptionPlanById(subscriptionPlanId);
+        SubscriptionPlanEntity plan = getSubscriptionPlanOrThrow(subscriptionPlanId);
 
         // 检查是否已存在该套餐的有效订阅
         if (checkActiveSubscriptionExists(userId, plan.getId())) {
@@ -77,6 +78,14 @@ public class SubscriptionDomainService {
         LocalDateTime endTime = now.plusMonths(plan.getValidityMonths());
         
         return new UserSubscriptionEntity(userId, plan.getId(), now, endTime, cdkCode);
+    }
+
+    private SubscriptionPlanEntity getSubscriptionPlanOrThrow(String planId) {
+        SubscriptionPlanEntity plan = subscriptionPlanRepository.selectById(planId);
+        if (plan == null) {
+            throw new BusinessException(SubscriptionPlanErrorCode.SUBSCRIPTION_PLAN_NOT_FOUND);
+        }
+        return plan;
     }
     
     public boolean checkActiveSubscriptionExists(String userId, String planId) {

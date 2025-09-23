@@ -14,7 +14,8 @@
       "WebFetch(domain:help.aliyun.com)",
       "Bash(curl:*)",
       "Bash(find:*)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Read(//Users/xhy/GoLandProjects/community/cmd/community/routers/frontend/**)"
     ],
     "deny": [],
     "ask": []

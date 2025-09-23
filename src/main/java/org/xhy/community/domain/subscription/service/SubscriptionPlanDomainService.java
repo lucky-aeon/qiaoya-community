@@ -9,8 +9,6 @@ import org.xhy.community.domain.subscription.entity.SubscriptionPlanEntity;
 import org.xhy.community.domain.subscription.entity.SubscriptionPlanCourseEntity;
 import org.xhy.community.domain.subscription.repository.SubscriptionPlanRepository;
 import org.xhy.community.domain.subscription.repository.SubscriptionPlanCourseRepository;
-import org.xhy.community.application.subscription.dto.SimpleSubscriptionPlanDTO;
-import org.xhy.community.application.subscription.assembler.SubscriptionPlanAssembler;
 import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.infrastructure.exception.SubscriptionPlanErrorCode;
 import org.xhy.community.domain.subscription.query.SubscriptionPlanQuery;
@@ -91,14 +89,26 @@ public class SubscriptionPlanDomainService {
     }
 
     
-    public List<SimpleSubscriptionPlanDTO> getAllSimpleSubscriptionPlans() {
-        List<SubscriptionPlanEntity> entities = subscriptionPlanRepository.selectList(
+    /**
+     * 获取所有订阅计划实体，按创建时间倒序。
+     * 分层约束：仅返回领域实体，DTO 转换在 Application 层完成。
+     */
+    public List<SubscriptionPlanEntity> getAllSubscriptionPlans() {
+        return subscriptionPlanRepository.selectList(
             new LambdaQueryWrapper<SubscriptionPlanEntity>()
                 .orderByDesc(SubscriptionPlanEntity::getCreateTime)
         );
-        return entities.stream()
-                      .map(SubscriptionPlanAssembler::toSimpleDTO)
-                      .collect(Collectors.toList());
+    }
+
+    /**
+     * 校验订阅计划是否包含指定课程。
+     */
+    public boolean planIncludesCourse(String subscriptionPlanId, String courseId) {
+        LambdaQueryWrapper<SubscriptionPlanCourseEntity> queryWrapper =
+            new LambdaQueryWrapper<SubscriptionPlanCourseEntity>()
+                .eq(SubscriptionPlanCourseEntity::getSubscriptionPlanId, subscriptionPlanId)
+                .eq(SubscriptionPlanCourseEntity::getCourseId, courseId);
+        return subscriptionPlanCourseRepository.exists(queryWrapper);
     }
     
     public List<String> getSubscriptionPlanCourseIds(String subscriptionPlanId) {

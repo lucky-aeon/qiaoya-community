@@ -7,8 +7,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.xhy.community.domain.course.entity.CourseEntity;
 import org.xhy.community.domain.course.repository.CourseRepository;
-import org.xhy.community.application.course.dto.SimpleCourseDTO;
-import org.xhy.community.application.course.assembler.CourseAssembler;
 import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.infrastructure.exception.CourseErrorCode;
 import org.xhy.community.domain.course.query.CourseQuery;
@@ -16,9 +14,6 @@ import org.xhy.community.domain.course.query.CourseQuery;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-
-import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
@@ -80,14 +75,15 @@ public class CourseDomainService {
         return courseRepository.selectPage(page, queryWrapper);
     }
     
-    public List<SimpleCourseDTO> getAllSimpleCourses() {
-        List<CourseEntity> entities = courseRepository.selectList(
+    /**
+     * 获取所有课程实体，按创建时间倒序。
+     * 分层约束：仅返回领域实体，DTO 转换在 Application 层完成。
+     */
+    public List<CourseEntity> getAllCourses() {
+        return courseRepository.selectList(
             new LambdaQueryWrapper<CourseEntity>()
                 .orderByDesc(CourseEntity::getCreateTime)
         );
-        return entities.stream()
-                      .map(CourseAssembler::toSimpleDTO)
-                      .collect(Collectors.toList());
     }
     
     /**

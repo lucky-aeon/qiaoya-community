@@ -62,8 +62,8 @@ public class AliyunOssService {
             AssumeRoleResponse response = client.getAcsResponse(request);
             AssumeRoleResponse.Credentials credentials = response.getCredentials();
             
-            // 生成上传策略
-            Map<String, Object> uploadPolicy = generateUploadPolicy(fileKey);
+            // 生成上传策略 - 使用STS临时AccessKeySecret计算签名
+            Map<String, Object> uploadPolicy = generateUploadPolicy(fileKey, credentials.getAccessKeySecret());
             
             Map<String, Object> result = new HashMap<>();
             result.put("accessKeyId", credentials.getAccessKeyId());
@@ -85,7 +85,8 @@ public class AliyunOssService {
     }
     
     private String generateDynamicPolicy(String fileKey) {
-        // 根据fileKey动态生成policy，限制用户只能上传到指定路径
+        // 根据传入的 fileKey 精确限制可上传的对象，避免与前端 key 不一致导致鉴权失败
+        // 注意：这里直接使用传入的 fileKey（包括可能存在的前导斜杠），确保与实际上传对象完全一致
         return String.format(
             "{\n" +
             "  \"Version\": \"1\",\n" +
@@ -96,38 +97,41 @@ public class AliyunOssService {
             "        \"oss:PutObject\",\n" +
             "        \"oss:PostObject\"\n" +
             "      ],\n" +
-            "      \"Resource\": \"acs:oss:*:*:%s/uploads/*\"\n" +
+            "      \"Resource\": \"acs:oss:*:*:%s%s\"\n" +
             "    }\n" +
             "  ]\n" +
             "}",
-            ossProperties.getBucketName()
+            ossProperties.getBucketName(),
+            fileKey
         );
     }
     
-    private Map<String, Object> generateUploadPolicy(String fileKey) {
+    private Map<String, Object> generateUploadPolicy(String fileKey, String tempAccessKeySecret) {
         try {
             LocalDateTime expiration = LocalDateTime.now().plusSeconds(DEFAULT_DURATION_SECONDS);
             String expirationString = expiration.atZone(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT);
             
             // 构建上传策略
+            // 与前端提交的 key 完全一致，避免签名校验不通过
             String policyDocument = String.format(
                 "{\n" +
                 "  \"expiration\": \"%s\",\n" +
                 "  \"conditions\": [\n" +
                 "    {\"bucket\": \"%s\"},\n" +
-                "    [\"starts-with\", \"$key\", \"uploads/\"],\n" +
+                "    [\"eq\", \"$key\", \"%s\"],\n" +
                 "    [\"content-length-range\", 0, 104857600]\n" +
                 "  ]\n" +
                 "}",
                 expirationString,
-                ossProperties.getBucketName()
+                ossProperties.getBucketName(),
+                fileKey
             );
             
             String encodedPolicy = Base64.getEncoder().encodeToString(policyDocument.getBytes("UTF-8"));
             
-            // 计算签名
+            // 计算签名 - 使用STS临时AccessKeySecret
             Mac mac = Mac.getInstance("HmacSHA1");
-            mac.init(new SecretKeySpec(ossProperties.getAccessKeySecret().getBytes("UTF-8"), "HmacSHA1"));
+            mac.init(new SecretKeySpec(tempAccessKeySecret.getBytes("UTF-8"), "HmacSHA1"));
             String signature = Base64.getEncoder().encodeToString(mac.doFinal(encodedPolicy.getBytes("UTF-8")));
             
             Map<String, Object> result = new HashMap<>();

@@ -89,10 +89,9 @@ public class ResourceAppService {
     }
 
     private String generateFileKey(String userId, String originalName) {
-        String date = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd"));
         String uuid = UUID.randomUUID().toString();
         String extension = getFileExtension(originalName);
-        return String.format("uploads/%s/%s/%s.%s", userId, date, uuid, extension);
+        return String.format("%s/%s.%s", userId, uuid, extension);
     }
     
     private String getFileExtension(String filename) {

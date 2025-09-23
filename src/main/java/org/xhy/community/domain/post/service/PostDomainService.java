@@ -13,6 +13,7 @@ import org.xhy.community.domain.post.entity.CategoryEntity;
 import org.xhy.community.domain.post.entity.PostEntity;
 import org.xhy.community.infrastructure.exception.PostErrorCode;
 import org.xhy.community.domain.post.repository.PostRepository;
+import org.xhy.community.domain.post.repository.CategoryRepository;
 import org.xhy.community.domain.post.valueobject.PostStatus;
 
 import java.time.LocalDateTime;
@@ -25,15 +26,15 @@ import java.util.stream.Collectors;
 public class PostDomainService {
     
     private final PostRepository postRepository;
-    private final CategoryDomainService categoryDomainService;
+    private final CategoryRepository categoryRepository;
     
-    public PostDomainService(PostRepository postRepository, CategoryDomainService categoryDomainService) {
+    public PostDomainService(PostRepository postRepository, CategoryRepository categoryRepository) {
         this.postRepository = postRepository;
-        this.categoryDomainService = categoryDomainService;
+        this.categoryRepository = categoryRepository;
     }
     
     public PostEntity createPost(PostEntity post) {
-        CategoryEntity category = categoryDomainService.getCategoryById(post.getCategoryId());
+        CategoryEntity category = categoryRepository.selectById(post.getCategoryId());
         if (category == null) {
             throw new BusinessException(PostErrorCode.CATEGORY_NOT_FOUND);
         }
@@ -75,7 +76,7 @@ public class PostDomainService {
     
     public PostEntity updatePost(PostEntity post, String authorId) {
         // 验证分类是否可用
-        CategoryEntity category = categoryDomainService.getCategoryById(post.getCategoryId());
+        CategoryEntity category = categoryRepository.selectById(post.getCategoryId());
         if (category == null) {
             throw new BusinessException(PostErrorCode.CATEGORY_NOT_FOUND);
         }
@@ -116,7 +117,7 @@ public class PostDomainService {
         }
         
         // 验证分类是否可用
-        CategoryEntity category = categoryDomainService.getCategoryById(post.getCategoryId());
+        CategoryEntity category = categoryRepository.selectById(post.getCategoryId());
         if (category == null) {
             throw new BusinessException(PostErrorCode.CATEGORY_NOT_FOUND);
         }
@@ -272,7 +273,7 @@ public class PostDomainService {
                     .eq(CategoryEntity::getIsActive, true)
                     .select(CategoryEntity::getId);
             
-            java.util.List<CategoryEntity> categories = categoryDomainService.getCategories(categoryWrapper);
+            java.util.List<CategoryEntity> categories = categoryRepository.selectList(categoryWrapper);
             if (categories.isEmpty()) {
                 // 如果没有找到符合条件的分类，返回空结果
                 return new Page<>(query.getPageNum(), query.getPageSize(), 0);

@@ -1,12 +1,11 @@
 package org.xhy.community.application.permission.service;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.springframework.stereotype.Service;
 import org.xhy.community.domain.subscription.entity.SubscriptionPlanCourseEntity;
 import org.xhy.community.domain.subscription.entity.UserSubscriptionEntity;
-import org.xhy.community.domain.subscription.repository.SubscriptionPlanCourseRepository;
-import org.xhy.community.domain.subscription.repository.UserSubscriptionRepository;
 import org.xhy.community.domain.user.service.UserDomainService;
+import org.xhy.community.domain.subscription.service.SubscriptionDomainService;
+import org.xhy.community.domain.subscription.service.SubscriptionPlanDomainService;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -19,15 +18,15 @@ import java.util.List;
 public class UserPermissionAppService {
     
     private final UserDomainService userDomainService;
-    private final UserSubscriptionRepository userSubscriptionRepository;
-    private final SubscriptionPlanCourseRepository subscriptionPlanCourseRepository;
+    private final SubscriptionDomainService subscriptionDomainService;
+    private final SubscriptionPlanDomainService subscriptionPlanDomainService;
     
     public UserPermissionAppService(UserDomainService userDomainService,
-                                  UserSubscriptionRepository userSubscriptionRepository,
-                                  SubscriptionPlanCourseRepository subscriptionPlanCourseRepository) {
+                                    SubscriptionDomainService subscriptionDomainService,
+                                    SubscriptionPlanDomainService subscriptionPlanDomainService) {
         this.userDomainService = userDomainService;
-        this.userSubscriptionRepository = userSubscriptionRepository;
-        this.subscriptionPlanCourseRepository = subscriptionPlanCourseRepository;
+        this.subscriptionDomainService = subscriptionDomainService;
+        this.subscriptionPlanDomainService = subscriptionPlanDomainService;
     }
     
     /**
@@ -59,7 +58,7 @@ public class UserPermissionAppService {
      */
     private boolean hasSubscriptionCourseAccess(String userId, String courseId) {
         // 查询用户当前有效的订阅
-        List<UserSubscriptionEntity> activeSubscriptions = getActiveSubscriptions(userId);
+        List<UserSubscriptionEntity> activeSubscriptions = subscriptionDomainService.getUserActiveSubscriptions(userId);
         
         if (activeSubscriptions.isEmpty()) {
             return false;
@@ -81,25 +80,15 @@ public class UserPermissionAppService {
     private List<UserSubscriptionEntity> getActiveSubscriptions(String userId) {
         LocalDateTime now = LocalDateTime.now();
         
-        LambdaQueryWrapper<UserSubscriptionEntity> queryWrapper = 
-            new LambdaQueryWrapper<UserSubscriptionEntity>()
-                .eq(UserSubscriptionEntity::getUserId, userId)
-                .le(UserSubscriptionEntity::getStartTime, now)
-                .gt(UserSubscriptionEntity::getEndTime, now);
-        
-        return userSubscriptionRepository.selectList(queryWrapper);
+        // 已移至 SubscriptionDomainService
+        return subscriptionDomainService.getUserActiveSubscriptions(userId);
     }
     
     /**
      * 检查套餐是否包含指定课程
      */
     private boolean subscriptionIncludesCourse(String subscriptionPlanId, String courseId) {
-        LambdaQueryWrapper<SubscriptionPlanCourseEntity> queryWrapper = 
-            new LambdaQueryWrapper<SubscriptionPlanCourseEntity>()
-                .eq(SubscriptionPlanCourseEntity::getSubscriptionPlanId, subscriptionPlanId)
-                .eq(SubscriptionPlanCourseEntity::getCourseId, courseId);
-        
-        return subscriptionPlanCourseRepository.exists(queryWrapper);
+        return subscriptionPlanDomainService.planIncludesCourse(subscriptionPlanId, courseId);
     }
     
     /**

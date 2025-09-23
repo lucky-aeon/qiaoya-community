@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.xhy.community.application.resource.dto.ResourceDTO;
 import org.xhy.community.application.resource.service.ResourceAppService;
+import org.xhy.community.infrastructure.config.ApiResponse;
 import org.xhy.community.interfaces.resource.request.OssCallbackRequest;
 
 import java.util.Map;
@@ -35,7 +36,7 @@ public class PublicResourceController {
      * @return 回调处理结果，返回给OSS服务的响应
      */
     @PostMapping("/oss-callback")
-    public ResponseEntity<Map<String, String>> handleOssCallback(
+    public ApiResponse<ResourceDTO> handleOssCallback(
             @Valid OssCallbackRequest callbackRequest,
             HttpServletRequest request
     ) {
@@ -43,7 +44,6 @@ public class PublicResourceController {
         // 简化签名验证 - 可以通过IP白名单或其他方式验证 TODO
         ResourceDTO resource = resourceAppService.handleOssCallback(callbackRequest);
         
-        Map<String, String> response = Map.of("Status", "OK");
-        return ResponseEntity.ok(response);
+        return ApiResponse.success(resource);
     }
 }

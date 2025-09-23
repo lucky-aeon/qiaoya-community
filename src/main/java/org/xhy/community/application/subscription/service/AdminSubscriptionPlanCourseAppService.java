@@ -3,6 +3,8 @@ package org.xhy.community.application.subscription.service;
 import org.springframework.stereotype.Service;
 import org.xhy.community.application.subscription.dto.SimpleSubscriptionPlanDTO;
 import org.xhy.community.application.course.dto.SimpleCourseDTO;
+import org.xhy.community.application.subscription.assembler.SubscriptionPlanAssembler;
+import org.xhy.community.application.course.assembler.CourseAssembler;
 import org.xhy.community.domain.subscription.service.SubscriptionPlanDomainService;
 import org.xhy.community.domain.course.service.CourseDomainService;
 import org.xhy.community.interfaces.subscription.request.UpdateSubscriptionPlanCoursesRequest;
@@ -22,11 +24,17 @@ public class AdminSubscriptionPlanCourseAppService {
     }
     
     public List<SimpleSubscriptionPlanDTO> getSimpleSubscriptionPlans() {
-        return subscriptionPlanDomainService.getAllSimpleSubscriptionPlans();
+        return subscriptionPlanDomainService.getAllSubscriptionPlans()
+                .stream()
+                .map(SubscriptionPlanAssembler::toSimpleDTO)
+                .toList();
     }
     
     public List<SimpleCourseDTO> getSimpleCourses() {
-        return courseDomainService.getAllSimpleCourses();
+        return courseDomainService.getAllCourses()
+                .stream()
+                .map(CourseAssembler::toSimpleDTO)
+                .toList();
     }
     
     public List<String> getSubscriptionPlanCourseIds(String planId) {
