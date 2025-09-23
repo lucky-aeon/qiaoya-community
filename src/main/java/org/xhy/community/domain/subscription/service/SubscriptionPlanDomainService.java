@@ -14,6 +14,7 @@ import org.xhy.community.application.subscription.assembler.SubscriptionPlanAsse
 import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.infrastructure.exception.SubscriptionPlanErrorCode;
 import org.xhy.community.domain.subscription.query.SubscriptionPlanQuery;
+import org.xhy.community.domain.subscription.valueobject.SubscriptionPlanStatus;
 
 import java.util.stream.Collectors;
 
@@ -106,7 +107,16 @@ public class SubscriptionPlanDomainService {
                          .map(SubscriptionPlanCourseEntity::getCourseId)
                          .collect(Collectors.toList());
     }
-    
+
+    public List<SubscriptionPlanEntity> getActiveSubscriptionPlans() {
+        LambdaQueryWrapper<SubscriptionPlanEntity> queryWrapper =
+            new LambdaQueryWrapper<SubscriptionPlanEntity>()
+                .eq(SubscriptionPlanEntity::getStatus, SubscriptionPlanStatus.ACTIVE)
+                .orderByAsc(SubscriptionPlanEntity::getLevel);
+
+        return subscriptionPlanRepository.selectList(queryWrapper);
+    }
+
     private void validateUniqueSubscriptionPlanName(String name, String excludeId) {
         LambdaQueryWrapper<SubscriptionPlanEntity> queryWrapper = 
             new LambdaQueryWrapper<SubscriptionPlanEntity>()
