@@ -26,6 +26,7 @@ public class PostDTO {
     private List<String> tags;
     private QAResolveStatus resolveStatus;
     private LocalDateTime solvedAt;
+    private org.xhy.community.domain.post.valueobject.CategoryType categoryType;
     
     public PostDTO() {
     }
@@ -84,4 +85,7 @@ public class PostDTO {
 
     public LocalDateTime getSolvedAt() { return solvedAt; }
     public void setSolvedAt(LocalDateTime solvedAt) { this.solvedAt = solvedAt; }
+
+    public org.xhy.community.domain.post.valueobject.CategoryType getCategoryType() { return categoryType; }
+    public void setCategoryType(org.xhy.community.domain.post.valueobject.CategoryType categoryType) { this.categoryType = categoryType; }
 }

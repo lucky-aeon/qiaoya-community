@@ -53,8 +53,12 @@ public class PostAppService {
         
         // 调用Domain层进行业务处理和保存
         PostEntity createdPost = postDomainService.createPost(post);
-        
-        return PostAssembler.toDTO(createdPost);
+        PostDTO dto = PostAssembler.toDTO(createdPost);
+        CategoryEntity category = categoryDomainService.getCategoryById(createdPost.getCategoryId());
+        if (category != null) {
+            dto.setCategoryType(category.getType());
+        }
+        return dto;
     }
     
     public PostDTO updatePost(String postId, UpdatePostRequest request, String authorId) {
@@ -64,14 +68,23 @@ public class PostAppService {
 
         // 调用Domain层进行更新（包含权限校验和分类验证）
         PostEntity updatedPost = postDomainService.updatePost(postEntity, authorId);
-        
-        return PostAssembler.toDTO(updatedPost);
+        PostDTO dto = PostAssembler.toDTO(updatedPost);
+        CategoryEntity category = categoryDomainService.getCategoryById(updatedPost.getCategoryId());
+        if (category != null) {
+            dto.setCategoryType(category.getType());
+        }
+        return dto;
     }
     
     public PostDTO getPostById(String postId, String currentUserId) {
         // Domain层已经处理了所有异常情况，直接转换即可
         PostEntity post = postDomainService.getUserPostById(postId, currentUserId);
-        return PostAssembler.toDTO(post);
+        PostDTO dto = PostAssembler.toDTO(post);
+        CategoryEntity category = categoryDomainService.getCategoryById(post.getCategoryId());
+        if (category != null) {
+            dto.setCategoryType(category.getType());
+        }
+        return dto;
     }
     
     public IPage<PostDTO> getUserPosts(String authorId, PostQueryRequest request) {
@@ -80,7 +93,19 @@ public class PostAppService {
         
         // 转换为DTO分页结果
         Page<PostDTO> dtoPage = new Page<>(entityPage.getCurrent(), entityPage.getSize(), entityPage.getTotal());
-        List<PostDTO> dtoList = PostAssembler.toDTOList(entityPage.getRecords());
+        List<PostEntity> records = entityPage.getRecords();
+        List<PostDTO> dtoList = PostAssembler.toDTOList(records);
+        if (!records.isEmpty()) {
+            java.util.Set<String> categoryIds = records.stream().map(PostEntity::getCategoryId).collect(java.util.stream.Collectors.toSet());
+            List<CategoryEntity> categories = categoryDomainService.getCategoriesByIds(categoryIds);
+            java.util.Map<String, org.xhy.community.domain.post.valueobject.CategoryType> typeMap = categories.stream()
+                    .collect(java.util.stream.Collectors.toMap(CategoryEntity::getId, CategoryEntity::getType));
+            for (int i = 0; i < records.size(); i++) {
+                PostEntity pe = records.get(i);
+                PostDTO dto = dtoList.get(i);
+                dto.setCategoryType(typeMap.get(pe.getCategoryId()));
+            }
+        }
         dtoPage.setRecords(dtoList);
         
         return dtoPage;
@@ -137,10 +162,19 @@ public class PostAppService {
                     CategoryEntity::getId,
                     CategoryEntity::getName
                 ));
+        java.util.Map<String, org.xhy.community.domain.post.valueobject.CategoryType> categoryTypes = categories.stream()
+                .collect(java.util.stream.Collectors.toMap(
+                    CategoryEntity::getId,
+                    CategoryEntity::getType
+                ));
         
         // 组装FrontPostDTO
         List<FrontPostDTO> dtoList = posts.stream()
-                .map(post -> FrontPostAssembler.toDTO(post, authorMap, categoryNames))
+                .map(post -> {
+                    FrontPostDTO dto = FrontPostAssembler.toDTO(post, authorMap, categoryNames);
+                    dto.setCategoryType(categoryTypes.get(post.getCategoryId()));
+                    return dto;
+                })
                 .toList();
         
         Page<FrontPostDTO> dtoPage = new Page<>(entityPage.getCurrent(), entityPage.getSize(), entityPage.getTotal());
@@ -170,6 +204,9 @@ public class PostAppService {
         String categoryName = category != null ? category.getName() : null;
         
         FrontPostDetailDTO dto = FrontPostDetailAssembler.toDTO(post, author, categoryName);
+        if (category != null) {
+            dto.setCategoryType(category.getType());
+        }
         // 问答帖子返回采纳评论ID集合，供前台渲染
         if (category != null && category.getType() == org.xhy.community.domain.post.valueobject.CategoryType.QA) {
             java.util.Set<String> ids = postDomainService.getAcceptedCommentIds(post.getId());
@@ -181,12 +218,22 @@ public class PostAppService {
     @Transactional(rollbackFor = Exception.class)
     public PostDTO acceptComment(String postId, String commentId, String operatorId) {
         PostEntity post = postDomainService.acceptComment(postId, commentId, operatorId, AccessLevel.USER);
-        return PostAssembler.toDTO(post);
+        PostDTO dto = PostAssembler.toDTO(post);
+        CategoryEntity category = categoryDomainService.getCategoryById(post.getCategoryId());
+        if (category != null) {
+            dto.setCategoryType(category.getType());
+        }
+        return dto;
     }
 
     @Transactional(rollbackFor = Exception.class)
     public PostDTO revokeAcceptance(String postId, String commentId, String operatorId) {
         PostEntity post = postDomainService.revokeAcceptance(postId, commentId, operatorId, AccessLevel.USER);
-        return PostAssembler.toDTO(post);
+        PostDTO dto = PostAssembler.toDTO(post);
+        CategoryEntity category = categoryDomainService.getCategoryById(post.getCategoryId());
+        if (category != null) {
+            dto.setCategoryType(category.getType());
+        }
+        return dto;
     }
 }

@@ -92,12 +92,22 @@ public class AdminPostAppService {
     @Transactional(rollbackFor = Exception.class)
     public PostDTO forceAcceptComment(String postId, String commentId, String adminId) {
         PostEntity post = postDomainService.acceptComment(postId, commentId, adminId, AccessLevel.ADMIN);
-        return org.xhy.community.application.post.assembler.PostAssembler.toDTO(post);
+        PostDTO dto = org.xhy.community.application.post.assembler.PostAssembler.toDTO(post);
+        CategoryEntity category = categoryDomainService.getCategoryById(post.getCategoryId());
+        if (category != null) {
+            dto.setCategoryType(category.getType());
+        }
+        return dto;
     }
 
     @Transactional(rollbackFor = Exception.class)
     public PostDTO forceRevokeAcceptance(String postId, String commentId, String adminId) {
         PostEntity post = postDomainService.revokeAcceptance(postId, commentId, adminId, AccessLevel.ADMIN);
-        return org.xhy.community.application.post.assembler.PostAssembler.toDTO(post);
+        PostDTO dto = org.xhy.community.application.post.assembler.PostAssembler.toDTO(post);
+        CategoryEntity category = categoryDomainService.getCategoryById(post.getCategoryId());
+        if (category != null) {
+            dto.setCategoryType(category.getType());
+        }
+        return dto;
     }
 }

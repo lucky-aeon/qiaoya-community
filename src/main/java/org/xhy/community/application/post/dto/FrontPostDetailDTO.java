@@ -1,5 +1,7 @@
 package org.xhy.community.application.post.dto;
 
+import org.xhy.community.domain.post.valueobject.CategoryType;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -19,6 +21,7 @@ public class FrontPostDetailDTO {
     private String authorDescription;
     private String authorId;
     private String categoryName;
+    private CategoryType categoryType;
     private Integer likeCount;
     private Integer viewCount;
     private Integer commentCount;
@@ -57,6 +60,8 @@ public class FrontPostDetailDTO {
 
     public String getCategoryName() { return categoryName; }
     public void setCategoryName(String categoryName) { this.categoryName = categoryName; }
+    public org.xhy.community.domain.post.valueobject.CategoryType getCategoryType() { return categoryType; }
+    public void setCategoryType(org.xhy.community.domain.post.valueobject.CategoryType categoryType) { this.categoryType = categoryType; }
     
     public Integer getLikeCount() { return likeCount; }
     public void setLikeCount(Integer likeCount) { this.likeCount = likeCount; }

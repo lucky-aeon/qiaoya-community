@@ -12,6 +12,7 @@ public class FrontPostDTO {
     private String authorName;
     private String authorAvatar;
     private String categoryName;
+    private org.xhy.community.domain.post.valueobject.CategoryType categoryType;
     private Integer likeCount;
     private Integer viewCount;
     private Integer commentCount;
@@ -42,6 +43,8 @@ public class FrontPostDTO {
 
     public String getCategoryName() { return categoryName; }
     public void setCategoryName(String categoryName) { this.categoryName = categoryName; }
+    public org.xhy.community.domain.post.valueobject.CategoryType getCategoryType() { return categoryType; }
+    public void setCategoryType(org.xhy.community.domain.post.valueobject.CategoryType categoryType) { this.categoryType = categoryType; }
     
     public Integer getLikeCount() { return likeCount; }
     public void setLikeCount(Integer likeCount) { this.likeCount = likeCount; }
