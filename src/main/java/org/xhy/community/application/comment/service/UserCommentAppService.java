@@ -73,7 +73,10 @@ public class UserCommentAppService {
         
         IPage<CommentEntity> commentPage = commentDomainService.getUserRelatedComments(query);
         
-        return commentPage.convert(this::convertCommentEntityToDTO);
+        IPage<CommentDTO> dtoPage = commentPage.convert(this::convertCommentEntityToDTO);
+        // 补充业务名称（文章/课程/章节标题）
+        fillBusinessNames(dtoPage.getRecords());
+        return dtoPage;
     }
     
     public IPage<CommentDTO> getBusinessComments(BusinessCommentQueryRequest request) {
@@ -117,6 +120,44 @@ public class UserCommentAppService {
                 if (replyUser != null) {
                     dto.setReplyUserName(replyUser.getName());
                 }
+            }
+        }
+    }
+
+    private void fillBusinessNames(List<CommentDTO> dtos) {
+        if (dtos == null || dtos.isEmpty()) {
+            return;
+        }
+
+        Set<String> postIds = dtos.stream()
+                .filter(dto -> dto.getBusinessType() == BusinessType.POST)
+                .map(CommentDTO::getBusinessId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        Set<String> courseIds = dtos.stream()
+                .filter(dto -> dto.getBusinessType() == BusinessType.COURSE)
+                .map(CommentDTO::getBusinessId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        Set<String> chapterIds = dtos.stream()
+                .filter(dto -> dto.getBusinessType() == BusinessType.CHAPTER)
+                .map(CommentDTO::getBusinessId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        Map<String, String> postTitleMap = postDomainService.getPostTitleMapByIds(postIds);
+        Map<String, String> courseTitleMap = courseDomainService.getCourseTitleMapByIds(courseIds);
+        Map<String, String> chapterTitleMap = chapterDomainService.getChapterTitleMapByIds(chapterIds);
+
+        for (CommentDTO dto : dtos) {
+            if (dto.getBusinessType() == BusinessType.POST) {
+                dto.setBusinessName(postTitleMap.get(dto.getBusinessId()));
+            } else if (dto.getBusinessType() == BusinessType.COURSE) {
+                dto.setBusinessName(courseTitleMap.get(dto.getBusinessId()));
+            } else if (dto.getBusinessType() == BusinessType.CHAPTER) {
+                dto.setBusinessName(chapterTitleMap.get(dto.getBusinessId()));
             }
         }
     }

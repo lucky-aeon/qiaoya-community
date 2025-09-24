@@ -5,6 +5,9 @@ import org.springframework.stereotype.Service;
 import org.xhy.community.application.course.assembler.CourseAssembler;
 import org.xhy.community.application.course.dto.FrontCourseDTO;
 import org.xhy.community.application.course.dto.FrontCourseDetailDTO;
+import org.xhy.community.application.course.dto.PublicCourseDTO;
+import org.xhy.community.application.course.dto.PublicCourseDetailDTO;
+import org.xhy.community.application.course.assembler.PublicCourseAssembler;
 import org.xhy.community.domain.course.entity.CourseEntity;
 import org.xhy.community.domain.course.entity.ChapterEntity;
 import org.xhy.community.domain.course.service.CourseDomainService;
@@ -12,10 +15,8 @@ import org.xhy.community.domain.course.service.ChapterDomainService;
 import org.xhy.community.domain.user.entity.UserEntity;
 import org.xhy.community.domain.user.service.UserDomainService;
 import org.xhy.community.domain.course.query.CourseQuery;
-import org.xhy.community.domain.course.valueobject.CourseStatus;
 import org.xhy.community.interfaces.course.request.AppCourseQueryRequest;
-import org.xhy.community.infrastructure.exception.BusinessException;
-import org.xhy.community.infrastructure.exception.CourseErrorCode;
+ 
 
 import java.util.List;
 import java.util.Map;
@@ -43,17 +44,17 @@ public class CourseAppService {
     
     /**
      * 分页查询前台课程列表
-     * 只返回已完成状态的课程
+     * 返回所有可见课程（包括更新中/已完成等状态）
      *
      * @param request 查询请求参数
      * @return 课程列表分页结果
      */
     public IPage<FrontCourseDTO> queryAppCourses(AppCourseQueryRequest request) {
-        // 转换查询参数，只查询已完成的课程
+        // 转换查询参数
         CourseQuery query = CourseAssembler.fromAppQueryRequest(request);
 
-        // 查询课程分页数据
-        IPage<CourseEntity> coursePage = courseDomainService.getPublishedPagedCourses(query);
+        // 查询课程分页数据（不限制为已完成）
+        IPage<CourseEntity> coursePage = courseDomainService.getPagedCourses(query);
         
         if (coursePage.getRecords().isEmpty()) {
             // 创建一个空的分页结果
@@ -90,10 +91,47 @@ public class CourseAppService {
         result.setRecords(frontCourseDTOs);
         return result;
     }
-    
+
+    /**
+     * 公开接口：分页查询课程列表（不返回敏感链接字段）
+     */
+    public IPage<PublicCourseDTO> queryPublicCourses(AppCourseQueryRequest request) {
+        CourseQuery query = CourseAssembler.fromAppQueryRequest(request);
+
+        IPage<CourseEntity> coursePage = courseDomainService.getPagedCourses(query);
+        if (coursePage.getRecords().isEmpty()) {
+            IPage<PublicCourseDTO> result = coursePage.convert(entity -> null);
+            result.setRecords(List.of());
+            return result;
+        }
+
+        Set<String> courseIds = coursePage.getRecords().stream()
+                .map(CourseEntity::getId)
+                .collect(java.util.stream.Collectors.toSet());
+        Map<String, Integer> chapterCountMap = getChapterCountMap(courseIds);
+
+        List<PublicCourseDTO> dtos = PublicCourseAssembler.toPublicDTOList(
+                coursePage.getRecords(), chapterCountMap
+        );
+
+        IPage<PublicCourseDTO> result = coursePage.convert(entity -> (PublicCourseDTO) null);
+        result.setRecords(dtos);
+        return result;
+    }
+
+    /**
+     * 公开接口：获取课程详情（不返回敏感链接字段）
+     */
+    public PublicCourseDetailDTO getPublicCourseDetail(String courseId) {
+        CourseEntity course = courseDomainService.getCourseById(courseId);
+
+        List<ChapterEntity> chapters = chapterDomainService.getChaptersByCourseId(courseId);
+        return PublicCourseAssembler.toPublicDetailDTO(course, chapters);
+    }
+
     /**
      * 获取前台课程详情
-     * 包含课程信息和章节列表
+     * 包含课程信息和章节列表，不限制课程状态
      *
      * @param courseId 课程ID
      * @return 课程详情信息
@@ -101,9 +139,6 @@ public class CourseAppService {
     public FrontCourseDetailDTO getAppCourseDetail(String courseId) {
         // 获取课程信息
         CourseEntity course = courseDomainService.getCourseById(courseId);
-        if (course.getStatus() != CourseStatus.COMPLETED) {
-            throw new BusinessException(CourseErrorCode.COURSE_NOT_FOUND);
-        }
 
         // 获取作者信息
         Map<String, UserEntity> authorMap = userDomainService.getUserEntityMapByIds(

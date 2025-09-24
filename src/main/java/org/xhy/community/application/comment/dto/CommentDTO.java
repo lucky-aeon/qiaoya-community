@@ -16,6 +16,7 @@ public class CommentDTO {
     private String replyUserName;
     private String businessId;
     private BusinessType businessType;
+    private String businessName;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
     
@@ -52,6 +53,9 @@ public class CommentDTO {
     
     public BusinessType getBusinessType() { return businessType; }
     public void setBusinessType(BusinessType businessType) { this.businessType = businessType; }
+    
+    public String getBusinessName() { return businessName; }
+    public void setBusinessName(String businessName) { this.businessName = businessName; }
     
     public LocalDateTime getCreateTime() { return createTime; }
     public void setCreateTime(LocalDateTime createTime) { this.createTime = createTime; }
