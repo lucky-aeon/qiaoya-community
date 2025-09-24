@@ -62,7 +62,7 @@ public class PostEntity extends BaseEntity {
         this.content = content;
         this.authorId = authorId;
         this.categoryId = categoryId;
-        this.status = PostStatus.DRAFT;
+        this.status = PostStatus.PUBLISHED;
         this.likeCount = 0;
         this.viewCount = 0;
         this.commentCount = 0;

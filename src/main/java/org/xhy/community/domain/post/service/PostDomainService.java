@@ -38,11 +38,16 @@ public class PostDomainService {
         if (category == null) {
             throw new BusinessException(PostErrorCode.CATEGORY_NOT_FOUND);
         }
-        
+
         if (!category.getIsActive()) {
             throw new BusinessException(PostErrorCode.CATEGORY_DISABLED);
         }
-        
+
+        // 如果文章状态为已发布，设置发布时间
+        if (post.getStatus() == PostStatus.PUBLISHED) {
+            post.setPublishTime(LocalDateTime.now());
+        }
+
         postRepository.insert(post);
         return post;
     }
