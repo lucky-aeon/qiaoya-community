@@ -19,6 +19,7 @@ import org.xhy.community.domain.subscription.service.SubscriptionPlanDomainServi
 import org.xhy.community.domain.subscription.entity.UserSubscriptionEntity;
 import org.xhy.community.application.subscription.assembler.UserSubscriptionAssembler;
 import org.xhy.community.application.subscription.dto.UserSubscriptionDTO;
+import org.xhy.community.interfaces.user.request.UpdateProfileRequest;
 
 @Service
 public class UserAppService {
@@ -86,8 +87,10 @@ public class UserAppService {
         return UserAssembler.toDTO(user);
     }
     
-    public UserDTO updateProfile(String userId, String description) {
-        UserEntity user = userDomainService.updateUserProfile(userId, null, description, null);
+    public UserDTO updateProfile(String userId, UpdateProfileRequest request) {
+        // 统一更新路径：Request -> Assembler -> Entity -> Domain.update(entity)
+        UserEntity patch = UserAssembler.fromUpdateProfileRequest(request, userId);
+        UserEntity user = userDomainService.updateUserProfile(patch);
         return UserAssembler.toDTO(user);
     }
     

@@ -85,6 +85,37 @@ public class CategoryDomainService {
         
         categoryRepository.updateById(category);
     }
+
+    /**
+     * 统一更新路径：使用实体进行更新
+     * 仅允许更新名称、描述、图标，保持与原有更新范围一致
+     */
+    public CategoryEntity updateCategory(CategoryEntity updated) {
+        if (updated == null || updated.getId() == null) {
+            throw new BusinessException(PostErrorCode.CATEGORY_NOT_FOUND);
+        }
+
+        CategoryEntity category = getCategoryById(updated.getId());
+
+        // 名称变更需要做唯一性校验（在同父级、同类型下）
+        if (updated.getName() != null && !updated.getName().equals(category.getName())) {
+            if (isCategoryNameExists(updated.getName(), category.getType(), category.getParentId(), category.getId())) {
+                throw new BusinessException(PostErrorCode.CATEGORY_NAME_EXISTS);
+            }
+            category.setName(updated.getName());
+        }
+
+        if (updated.getDescription() != null) {
+            category.setDescription(updated.getDescription());
+        }
+
+        if (updated.getIcon() != null) {
+            category.setIcon(updated.getIcon());
+        }
+
+        categoryRepository.updateById(category);
+        return category;
+    }
     
     public void activateCategory(String categoryId) {
         CategoryEntity category = getCategoryById(categoryId);

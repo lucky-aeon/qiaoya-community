@@ -97,6 +97,34 @@ public class TestimonialDomainService {
         return testimonial;
     }
 
+    /**
+     * 统一更新路径：使用实体进行更新（仅允许内容与评分变更）
+     */
+    public TestimonialEntity updateTestimonialIfPending(TestimonialEntity updated, String userId) {
+        TestimonialEntity testimonial = getTestimonialById(updated.getId());
+
+        if (!testimonial.getUserId().equals(userId)) {
+            throw new BusinessException(TestimonialErrorCode.UNAUTHORIZED_MODIFY);
+        }
+
+        if (!testimonial.canBeModified()) {
+            throw new BusinessException(TestimonialErrorCode.TESTIMONIAL_NOT_MODIFIABLE);
+        }
+
+        if (!StringUtils.hasText(updated.getContent())) {
+            throw new BusinessException(TestimonialErrorCode.CONTENT_EMPTY);
+        }
+
+        Integer rating = updated.getRating();
+        if (rating == null || rating < 1 || rating > 5) {
+            throw new BusinessException(TestimonialErrorCode.INVALID_RATING);
+        }
+
+        testimonial.updateContent(updated.getContent().trim(), rating);
+        testimonialRepository.updateById(testimonial);
+        return testimonial;
+    }
+
     public TestimonialEntity changeStatus(String testimonialId, TestimonialStatus newStatus) {
         TestimonialEntity testimonial = getTestimonialById(testimonialId);
 

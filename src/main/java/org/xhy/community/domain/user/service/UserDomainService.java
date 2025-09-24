@@ -78,6 +78,17 @@ public class UserDomainService {
         return user;
     }
 
+    /**
+     * 统一更新路径：使用实体进行资料更新
+     * 仅合并非空字段
+     */
+    public UserEntity updateUserProfile(UserEntity patch) {
+        UserEntity user = getUserById(patch.getId());
+        user.updateProfile(patch.getName(), patch.getDescription(), patch.getAvatar());
+        userRepository.updateById(user);
+        return user;
+    }
+
     public UserEntity changeUserEmail(String userId, String newEmail) {
         UserEntity user = getUserById(userId);
         user.changeEmail(newEmail.trim().toLowerCase());

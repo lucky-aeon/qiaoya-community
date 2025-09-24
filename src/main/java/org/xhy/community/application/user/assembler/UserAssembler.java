@@ -26,4 +26,19 @@ public class UserAssembler {
         BeanUtils.copyProperties(entity, dto);
         return dto;
     }
+
+    /**
+     * 将更新资料请求转换为用户实体（仅包含需要更新的字段）
+     */
+    public static UserEntity fromUpdateProfileRequest(org.xhy.community.interfaces.user.request.UpdateProfileRequest request, String userId) {
+        if (request == null) {
+            return null;
+        }
+
+        UserEntity entity = new UserEntity();
+        entity.setId(userId);
+        entity.setDescription(request.getDescription());
+        entity.setAvatar(request.getAvatar());
+        return entity;
+    }
 }

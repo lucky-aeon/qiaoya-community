@@ -65,15 +65,11 @@ public class AdminCategoryAppService {
     }
     
     public CategoryDTO updateCategory(String categoryId, UpdateCategoryRequest request) {
-        categoryDomainService.updateCategory(
-            categoryId,
-            request.getName(),
-            request.getDescription(),
-            request.getIcon()
-        );
-        
-        CategoryEntity updatedCategory = categoryDomainService.getCategoryById(categoryId);
-        return CategoryAssembler.toDTO(updatedCategory);
+        // 统一更新路径：Request -> Assembler -> Entity -> Domain.update(entity)
+        CategoryEntity category = CategoryAssembler.fromUpdateRequest(request, categoryId);
+
+        CategoryEntity updated = categoryDomainService.updateCategory(category);
+        return CategoryAssembler.toDTO(updated);
     }
     
     public void deleteCategory(String categoryId) {

@@ -31,10 +31,9 @@ public class TestimonialAppService {
     }
 
     public TestimonialDTO updateMyTestimonial(String testimonialId, UpdateTestimonialRequest request, String userId) {
-        TestimonialEntity updatedTestimonial = testimonialDomainService.updateTestimonialIfPending(
-            testimonialId, userId, request.getContent(), request.getRating()
-        );
-
-        return TestimonialAssembler.toDTO(updatedTestimonial);
+        // 统一更新路径：Request -> Assembler -> Entity -> Domain.update(entity)
+        TestimonialEntity patch = TestimonialAssembler.fromUpdateRequest(request, testimonialId);
+        TestimonialEntity updated = testimonialDomainService.updateTestimonialIfPending(patch, userId);
+        return TestimonialAssembler.toDTO(updated);
     }
 }
