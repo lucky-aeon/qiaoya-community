@@ -20,6 +20,9 @@ import org.xhy.community.domain.subscription.entity.UserSubscriptionEntity;
 import org.xhy.community.application.subscription.assembler.UserSubscriptionAssembler;
 import org.xhy.community.application.subscription.dto.UserSubscriptionDTO;
 import org.xhy.community.interfaces.user.request.UpdateProfileRequest;
+import org.xhy.community.domain.auth.service.EmailVerificationDomainService;
+import org.xhy.community.infrastructure.email.EmailService;
+import org.xhy.community.infrastructure.exception.AuthErrorCode;
 
 @Service
 public class UserAppService {
@@ -31,6 +34,8 @@ public class UserAppService {
     private final TokenIpMappingDomainService tokenIpMappingDomainService;
     private final SubscriptionDomainService subscriptionDomainService;
     private final SubscriptionPlanDomainService subscriptionPlanDomainService;
+    private final EmailVerificationDomainService emailVerificationDomainService;
+    private final EmailService emailService;
 
     public UserAppService(UserDomainService userDomainService,
                           JwtUtil jwtUtil,
@@ -38,7 +43,9 @@ public class UserAppService {
                           UserSessionConfigService userSessionConfigService,
                           TokenIpMappingDomainService tokenIpMappingDomainService,
                           SubscriptionDomainService subscriptionDomainService,
-                          SubscriptionPlanDomainService subscriptionPlanDomainService) {
+                          SubscriptionPlanDomainService subscriptionPlanDomainService,
+                          EmailVerificationDomainService emailVerificationDomainService,
+                          EmailService emailService) {
         this.userDomainService = userDomainService;
         this.jwtUtil = jwtUtil;
         this.deviceSessionDomainService = deviceSessionDomainService;
@@ -46,6 +53,8 @@ public class UserAppService {
         this.tokenIpMappingDomainService = tokenIpMappingDomainService;
         this.subscriptionDomainService = subscriptionDomainService;
         this.subscriptionPlanDomainService = subscriptionPlanDomainService;
+        this.emailVerificationDomainService = emailVerificationDomainService;
+        this.emailService = emailService;
     }
     
     public LoginResponseDTO login(String email, String password, String ip) {
@@ -82,9 +91,33 @@ public class UserAppService {
         if (userDomainService.isEmailExists(email, null)) {
             throw new BusinessException(UserErrorCode.EMAIL_EXISTS);
         }
-        
+        // 验证邮箱邀请码（通过后自动删除）
+        emailVerificationDomainService.verifyAndConsume(email, emailVerificationCode);
+
         UserEntity user = userDomainService.registerUser(email, password);
         return UserAssembler.toDTO(user);
+    }
+
+    /**
+     * 发送注册邮箱邀请码（带IP频控与封禁）。
+     */
+    public void sendRegisterEmailCode(String email, String ip) {
+        // 如果邮箱已存在，直接报错（避免骚扰）
+        if (userDomainService.isEmailExists(email, null)) {
+            throw new BusinessException(UserErrorCode.EMAIL_EXISTS);
+        }
+
+        // 生成并缓存邀请码（含IP限频/封禁逻辑）
+        String code = emailVerificationDomainService.requestEmailInviteCode(email, ip);
+
+        // 发送邮件（基础设施层）
+        String subject = "【敲鸭社区】注册邀请码";
+        String content = "<p>您的注册邀请码为：<b>" + code + "</b></p>" +
+                "<p>有效期5分钟，请勿泄露。</p>";
+        boolean sent = emailService.sendEmail(email, subject, content);
+        if (!sent) {
+            throw new BusinessException(AuthErrorCode.EMAIL_SEND_FAILED, "邮件发送失败，请稍后再试");
+        }
     }
     
     public UserDTO updateProfile(String userId, UpdateProfileRequest request) {

@@ -10,6 +10,7 @@ import org.xhy.community.infrastructure.config.ApiResponse;
 import org.xhy.community.infrastructure.util.ClientIpUtil;
 import org.xhy.community.interfaces.user.request.LoginRequest;
 import org.xhy.community.interfaces.user.request.RegisterRequest;
+import org.xhy.community.interfaces.user.request.SendEmailCodeRequest;
 import org.xhy.community.infrastructure.annotation.LogUserActivity;
 import org.xhy.community.domain.common.valueobject.ActivityType;
 
@@ -46,6 +47,17 @@ public class AuthController {
         String ip = ClientIpUtil.getClientIp(httpRequest);
         LoginResponseDTO loginResponse = userAppService.login(request.getEmail(), request.getPassword(), ip);
         return ApiResponse.success("登录成功", loginResponse);
+    }
+
+    /**
+     * 发送注册邮箱邀请码
+     * 进行IP频控：同一IP每天最多3次；超过后封禁7天
+     */
+    @PostMapping("/register/email-code")
+    public ApiResponse<Void> sendRegisterEmailCode(@Valid @RequestBody SendEmailCodeRequest request, HttpServletRequest httpRequest) {
+        String ip = ClientIpUtil.getClientIp(httpRequest);
+        userAppService.sendRegisterEmailCode(request.getEmail(), ip);
+        return ApiResponse.success("邮箱邀请码已发送");
     }
     
     /**
