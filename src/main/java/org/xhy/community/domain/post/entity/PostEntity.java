@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import org.xhy.community.domain.common.entity.BaseEntity;
 import org.xhy.community.domain.post.valueobject.PostStatus;
 import org.xhy.community.infrastructure.converter.PostStatusConverter;
+import org.xhy.community.domain.post.valueobject.QAResolveStatus;
+import org.xhy.community.infrastructure.converter.QAResolveStatusConverter;
 import org.xhy.community.infrastructure.converter.UniversalListConverter;
 
 import java.time.LocalDateTime;
@@ -50,6 +52,13 @@ public class PostEntity extends BaseEntity {
     /** 标签，JSON格式存储 */
     @TableField(typeHandler = UniversalListConverter.class)
     private List<String> tags;
+
+    /** 问答解决状态，仅问答类型使用 */
+    @TableField(typeHandler = QAResolveStatusConverter.class)
+    private QAResolveStatus resolveStatus;
+
+    /** 首次被采纳时间 */
+    private LocalDateTime solvedAt;
     
     /** 发布时间 */
     private LocalDateTime publishTime;
@@ -108,4 +117,10 @@ public class PostEntity extends BaseEntity {
 
     public List<String> getTags() { return tags; }
     public void setTags(List<String> tags) { this.tags = tags; }
+
+    public QAResolveStatus getResolveStatus() { return resolveStatus; }
+    public void setResolveStatus(QAResolveStatus resolveStatus) { this.resolveStatus = resolveStatus; }
+
+    public LocalDateTime getSolvedAt() { return solvedAt; }
+    public void setSolvedAt(LocalDateTime solvedAt) { this.solvedAt = solvedAt; }
 }

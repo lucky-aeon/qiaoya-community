@@ -2,12 +2,17 @@ package org.xhy.community.interfaces.post.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.xhy.community.application.post.dto.AdminPostDTO;
+import org.xhy.community.application.post.dto.PostDTO;
 import org.xhy.community.application.post.service.AdminPostAppService;
 import org.xhy.community.infrastructure.config.ApiResponse;
+import org.xhy.community.infrastructure.config.UserContext;
 import org.xhy.community.interfaces.post.request.AdminPostQueryRequest;
+import org.springframework.web.bind.annotation.PathVariable;
 
 /**
  * 管理员文章管理控制器
@@ -36,5 +41,25 @@ public class AdminPostController {
     public ApiResponse<IPage<AdminPostDTO>> getAdminPosts(AdminPostQueryRequest request) {
         IPage<AdminPostDTO> posts = adminPostAppService.getAdminPosts(request);
         return ApiResponse.success(posts);
+    }
+
+    /**
+     * 管理员强制采纳评论
+     */
+    @PostMapping("/{postId}/accept/{commentId}")
+    public ApiResponse<PostDTO> forceAccept(@PathVariable String postId, @PathVariable String commentId) {
+        String adminId = UserContext.getCurrentUserId();
+        PostDTO post = adminPostAppService.forceAcceptComment(postId, commentId, adminId);
+        return ApiResponse.success("已强制采纳", post);
+    }
+
+    /**
+     * 管理员强制撤销采纳
+     */
+    @DeleteMapping("/{postId}/accept/{commentId}")
+    public ApiResponse<PostDTO> forceRevoke(@PathVariable String postId, @PathVariable String commentId) {
+        String adminId = UserContext.getCurrentUserId();
+        PostDTO post = adminPostAppService.forceRevokeAcceptance(postId, commentId, adminId);
+        return ApiResponse.success("已强制撤销采纳", post);
     }
 }

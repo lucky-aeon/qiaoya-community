@@ -149,4 +149,24 @@ public class UserPostController {
         PostDTO post = postAppService.changePostStatus(id, targetStatus, currentUserId);
         return ApiResponse.success("修改成功",post);
     }
+
+    /**
+     * 采纳评论（作者）
+     */
+    @PostMapping("/{postId}/accept/{commentId}")
+    public ApiResponse<PostDTO> acceptComment(@PathVariable String postId, @PathVariable String commentId) {
+        String currentUserId = UserContext.getCurrentUserId();
+        PostDTO post = postAppService.acceptComment(postId, commentId, currentUserId);
+        return ApiResponse.success("已采纳", post);
+    }
+
+    /**
+     * 撤销采纳（作者）
+     */
+    @DeleteMapping("/{postId}/accept/{commentId}")
+    public ApiResponse<PostDTO> revokeAcceptance(@PathVariable String postId, @PathVariable String commentId) {
+        String currentUserId = UserContext.getCurrentUserId();
+        PostDTO post = postAppService.revokeAcceptance(postId, commentId, currentUserId);
+        return ApiResponse.success("已撤销采纳", post);
+    }
 }

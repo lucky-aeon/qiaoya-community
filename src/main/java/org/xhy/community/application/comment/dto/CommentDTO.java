@@ -19,6 +19,7 @@ public class CommentDTO {
     private String businessName;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
+    private Boolean accepted;
     
     public CommentDTO() {
     }
@@ -62,4 +63,7 @@ public class CommentDTO {
     
     public LocalDateTime getUpdateTime() { return updateTime; }
     public void setUpdateTime(LocalDateTime updateTime) { this.updateTime = updateTime; }
+
+    public Boolean getAccepted() { return accepted; }
+    public void setAccepted(Boolean accepted) { this.accepted = accepted; }
 }

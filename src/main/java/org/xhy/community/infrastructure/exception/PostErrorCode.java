@@ -15,7 +15,11 @@ public enum PostErrorCode implements ErrorCode {
     POST_NOT_PUBLISHED(4010, "只有已发布的文章才能置顶"),
     PARENT_CATEGORY_NOT_FOUND(4011, "父分类不存在"),
     CATEGORY_TYPE_MISMATCH(4012, "子分类类型必须与父分类类型一致"),
-    CATEGORY_NOT_EXISTS(4013, "分类不存在");
+    CATEGORY_NOT_EXISTS(4013, "分类不存在"),
+    NOT_QA_CATEGORY(4014, "该文章不是问答类型"),
+    UNAUTHORIZED_ACCEPT(4015, "只能由文章作者进行采纳或撤销"),
+    COMMENT_NOT_BELONG_POST(4016, "该评论不属于当前文章"),
+    ACCEPTANCE_NOT_FOUND(4017, "未找到采纳记录");
     
     private final int code;
     private final String message;

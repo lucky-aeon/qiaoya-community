@@ -18,6 +18,7 @@ import org.xhy.community.interfaces.comment.request.CommentQueryRequest;
 import org.xhy.community.interfaces.comment.request.CreateCommentRequest;
 import org.xhy.community.interfaces.comment.request.BusinessCommentQueryRequest;
 import org.xhy.community.domain.comment.query.CommentQuery;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
@@ -63,7 +64,10 @@ public class UserCommentAppService {
         return CommentAssembler.toDTO(createdComment);
     }
     
+    @Transactional(rollbackFor = Exception.class)
     public void deleteComment(String commentId, String userId) {
+        // 删除评论前，清理采纳关系并维护帖子状态
+        postDomainService.removeAcceptanceByCommentId(commentId);
         commentDomainService.deleteComment(commentId, userId);
     }
     
@@ -77,7 +81,26 @@ public class UserCommentAppService {
         Map<String, UserEntity> userMap = buildUserMapFromComments(commentPage.getRecords());
         TitleMaps titleMaps = buildTitleMapsFromComments(commentPage.getRecords());
         
-        return commentPage.convert(entity -> toCommentDTOEnriched(entity, userMap, titleMaps));
+        IPage<CommentDTO> dtoPage = commentPage.convert(entity -> toCommentDTOEnriched(entity, userMap, titleMaps));
+
+        // 标记被采纳（仅对文章评论）
+        Set<String> postIds = commentPage.getRecords().stream()
+                .filter(c -> c.getBusinessType() == BusinessType.POST)
+                .map(CommentEntity::getBusinessId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        if (!postIds.isEmpty()) {
+            Map<String, Set<String>> acceptedMap = postDomainService.getAcceptedCommentIdsMap(postIds);
+            for (CommentDTO dto : dtoPage.getRecords()) {
+                if (dto.getBusinessType() == BusinessType.POST) {
+                    Set<String> acceptedIds = acceptedMap.get(dto.getBusinessId());
+                    if (acceptedIds != null) {
+                        dto.setAccepted(acceptedIds.contains(dto.getId()));
+                    }
+                }
+            }
+        }
+        return dtoPage;
     }
     
     public IPage<CommentDTO> getBusinessComments(BusinessCommentQueryRequest request) {
@@ -88,7 +111,15 @@ public class UserCommentAppService {
         
         Map<String, UserEntity> userMap = buildUserMapFromComments(commentPage.getRecords());
         TitleMaps titleMaps = buildTitleMapsFromComments(commentPage.getRecords());
-        return commentPage.convert(entity -> toCommentDTOEnriched(entity, userMap, titleMaps));
+        IPage<CommentDTO> dtoPage = commentPage.convert(entity -> toCommentDTOEnriched(entity, userMap, titleMaps));
+        // 标记被采纳（仅对文章评论）
+        if (request.getBusinessType() == BusinessType.POST) {
+            Set<String> acceptedIds = postDomainService.getAcceptedCommentIds(request.getBusinessId());
+            for (CommentDTO dto : dtoPage.getRecords()) {
+                dto.setAccepted(acceptedIds.contains(dto.getId()));
+            }
+        }
+        return dtoPage;
     }
     
     private CommentDTO toCommentDTOEnriched(CommentEntity entity,

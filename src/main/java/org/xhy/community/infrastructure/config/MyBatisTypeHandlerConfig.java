@@ -53,6 +53,8 @@ import org.xhy.community.domain.course.valueobject.CourseResource;
 import org.xhy.community.domain.config.valueobject.SystemConfigType;
 import org.xhy.community.infrastructure.converter.SystemConfigTypeConverter;
 import org.xhy.community.infrastructure.converter.*;
+import org.xhy.community.domain.post.valueobject.QAResolveStatus;
+import org.xhy.community.infrastructure.converter.QAResolveStatusConverter;
 
 import jakarta.annotation.PostConstruct;
 
@@ -82,6 +84,7 @@ public class MyBatisTypeHandlerConfig {
         typeHandlerRegistry.register(CategoryType.class, new CategoryTypeConverter());
         typeHandlerRegistry.register(CourseStatus.class, new CourseStatusConverter());
         typeHandlerRegistry.register(BusinessType.class, new BusinessTypeConverter());
+        typeHandlerRegistry.register(QAResolveStatus.class, new QAResolveStatusConverter());
         typeHandlerRegistry.register(ResourceType.class, new ResourceTypeConverter());
         typeHandlerRegistry.register(SubscriptionPlanStatus.class, new SubscriptionPlanStatusConverter());
         typeHandlerRegistry.register(SubscriptionStatus.class, new SubscriptionStatusConverter());
@@ -108,7 +111,7 @@ public class MyBatisTypeHandlerConfig {
         // 依赖@TableField(typeHandler = XxxConverter.class)注解来指定具体的转换器
         // CourseEntity中的字段会根据@TableField注解自动选择对应的转换器
 
-        log.info("手动注册类型处理器：UserStatusConverter, UserRoleConverter, PostStatusConverter, CategoryTypeConverter, CourseStatusConverter, BusinessTypeConverter, ResourceTypeConverter, SubscriptionPlanStatusConverter, SubscriptionStatusConverter, CDKTypeConverter, CDKStatusConverter, CDKAcquisitionTypeConverter, OrderTypeConverter, ActivityTypeConverter, FollowTargetTypeConverter, FollowStatusConverter, NotificationTypeConverter, ChannelTypeConverter, NotificationStatusConverter, UpdateLogStatusConverter, ChangeTypeConverter, TestimonialStatusConverter, MapJsonTypeHandler");
+        log.info("手动注册类型处理器：UserStatusConverter, UserRoleConverter, PostStatusConverter, CategoryTypeConverter, CourseStatusConverter, BusinessTypeConverter, QAResolveStatusConverter, ResourceTypeConverter, SubscriptionPlanStatusConverter, SubscriptionStatusConverter, CDKTypeConverter, CDKStatusConverter, CDKAcquisitionTypeConverter, OrderTypeConverter, ActivityTypeConverter, FollowTargetTypeConverter, FollowStatusConverter, NotificationTypeConverter, ChannelTypeConverter, NotificationStatusConverter, UpdateLogStatusConverter, ChangeTypeConverter, TestimonialStatusConverter, MapJsonTypeHandler");
         log.info("已注册的类型处理器总数: {}", typeHandlerRegistry.getTypeHandlers().size());
     }
 }

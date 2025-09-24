@@ -25,6 +25,8 @@ public class FrontPostDetailDTO {
     private Boolean isTop;
     private LocalDateTime publishTime;
     private List<String> tags;
+    // 问答帖子：前端用于渲染采纳标记
+    private java.util.List<String> acceptedCommentIds;
     
     public FrontPostDetailDTO() {}
     
@@ -93,5 +95,13 @@ public class FrontPostDetailDTO {
 
     public void setTags(List<String> tags) {
         this.tags = tags;
+    }
+
+    public java.util.List<String> getAcceptedCommentIds() {
+        return acceptedCommentIds;
+    }
+
+    public void setAcceptedCommentIds(java.util.List<String> acceptedCommentIds) {
+        this.acceptedCommentIds = acceptedCommentIds;
     }
 }

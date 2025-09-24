@@ -1,6 +1,7 @@
 package org.xhy.community.application.post.dto;
 
 import org.xhy.community.domain.post.valueobject.PostStatus;
+import org.xhy.community.domain.post.valueobject.QAResolveStatus;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -23,6 +24,8 @@ public class PostDTO {
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
     private List<String> tags;
+    private QAResolveStatus resolveStatus;
+    private LocalDateTime solvedAt;
     
     public PostDTO() {
     }
@@ -75,4 +78,10 @@ public class PostDTO {
 
     public List<String> getTags() { return tags; }
     public void setTags(List<String> tags) { this.tags = tags; }
+
+    public QAResolveStatus getResolveStatus() { return resolveStatus; }
+    public void setResolveStatus(QAResolveStatus resolveStatus) { this.resolveStatus = resolveStatus; }
+
+    public LocalDateTime getSolvedAt() { return solvedAt; }
+    public void setSolvedAt(LocalDateTime solvedAt) { this.solvedAt = solvedAt; }
 }

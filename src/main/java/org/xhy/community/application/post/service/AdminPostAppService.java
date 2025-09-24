@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.stereotype.Service;
 import org.xhy.community.application.post.assembler.AdminPostAssembler;
 import org.xhy.community.application.post.dto.AdminPostDTO;
+import org.xhy.community.application.post.dto.PostDTO;
 import org.xhy.community.domain.common.valueobject.AccessLevel;
 import org.xhy.community.domain.post.entity.CategoryEntity;
 import org.xhy.community.domain.post.entity.PostEntity;
@@ -14,6 +15,7 @@ import org.xhy.community.domain.post.service.PostDomainService;
 import org.xhy.community.domain.user.entity.UserEntity;
 import org.xhy.community.domain.user.service.UserDomainService;
 import org.xhy.community.interfaces.post.request.AdminPostQueryRequest;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
@@ -85,5 +87,17 @@ public class AdminPostAppService {
         dtoPage.setRecords(dtoList);
         
         return dtoPage;
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public PostDTO forceAcceptComment(String postId, String commentId, String adminId) {
+        PostEntity post = postDomainService.acceptComment(postId, commentId, adminId, AccessLevel.ADMIN);
+        return org.xhy.community.application.post.assembler.PostAssembler.toDTO(post);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public PostDTO forceRevokeAcceptance(String postId, String commentId, String adminId) {
+        PostEntity post = postDomainService.revokeAcceptance(postId, commentId, adminId, AccessLevel.ADMIN);
+        return org.xhy.community.application.post.assembler.PostAssembler.toDTO(post);
     }
 }

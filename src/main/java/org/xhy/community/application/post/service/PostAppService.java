@@ -26,6 +26,7 @@ import org.xhy.community.interfaces.post.request.CreatePostRequest;
 import org.xhy.community.interfaces.post.request.PostQueryRequest;
 import org.xhy.community.interfaces.post.request.AppPostQueryRequest;
 import org.xhy.community.interfaces.post.request.UpdatePostRequest;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
@@ -85,7 +86,10 @@ public class PostAppService {
         return dtoPage;
     }
     
+    @Transactional(rollbackFor = Exception.class)
     public void deletePost(String postId, String authorId) {
+        // 先清理采纳关系，再删除文章
+        postDomainService.removeAllAcceptancesByPostId(postId);
         postDomainService.deletePost(postId, authorId);
     }
     
@@ -165,6 +169,24 @@ public class PostAppService {
         CategoryEntity category = categoryDomainService.getCategoryById(post.getCategoryId());
         String categoryName = category != null ? category.getName() : null;
         
-        return FrontPostDetailAssembler.toDTO(post, author, categoryName);
+        FrontPostDetailDTO dto = FrontPostDetailAssembler.toDTO(post, author, categoryName);
+        // 问答帖子返回采纳评论ID集合，供前台渲染
+        if (category != null && category.getType() == org.xhy.community.domain.post.valueobject.CategoryType.QA) {
+            java.util.Set<String> ids = postDomainService.getAcceptedCommentIds(post.getId());
+            dto.setAcceptedCommentIds(new java.util.ArrayList<>(ids));
+        }
+        return dto;
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public PostDTO acceptComment(String postId, String commentId, String operatorId) {
+        PostEntity post = postDomainService.acceptComment(postId, commentId, operatorId, AccessLevel.USER);
+        return PostAssembler.toDTO(post);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public PostDTO revokeAcceptance(String postId, String commentId, String operatorId) {
+        PostEntity post = postDomainService.revokeAcceptance(postId, commentId, operatorId, AccessLevel.USER);
+        return PostAssembler.toDTO(post);
     }
 }
