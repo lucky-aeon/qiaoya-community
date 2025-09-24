@@ -10,8 +10,10 @@ public class LatestCommentDTO {
     private String content;
     private String commentUserId;
     private String commentUserName;
+    private String commentUserAvatar;
     private String replyUserId;
     private String replyUserName;
+    private String replyUserAvatar;
     private String businessId;
     private BusinessType businessType;
     private String businessTypeName;
@@ -33,12 +35,16 @@ public class LatestCommentDTO {
 
     public String getCommentUserName() { return commentUserName; }
     public void setCommentUserName(String commentUserName) { this.commentUserName = commentUserName; }
+    public String getCommentUserAvatar() { return commentUserAvatar; }
+    public void setCommentUserAvatar(String commentUserAvatar) { this.commentUserAvatar = commentUserAvatar; }
 
     public String getReplyUserId() { return replyUserId; }
     public void setReplyUserId(String replyUserId) { this.replyUserId = replyUserId; }
 
     public String getReplyUserName() { return replyUserName; }
     public void setReplyUserName(String replyUserName) { this.replyUserName = replyUserName; }
+    public String getReplyUserAvatar() { return replyUserAvatar; }
+    public void setReplyUserAvatar(String replyUserAvatar) { this.replyUserAvatar = replyUserAvatar; }
 
     public String getBusinessId() { return businessId; }
     public void setBusinessId(String businessId) { this.businessId = businessId; }

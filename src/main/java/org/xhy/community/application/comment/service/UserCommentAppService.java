@@ -185,6 +185,7 @@ public class UserCommentAppService {
         UserEntity commentUser = userMap.get(comment.getCommentUserId());
         if (commentUser != null) {
             dto.setCommentUserName(commentUser.getName());
+            dto.setCommentUserAvatar(commentUser.getAvatar());
         }
 
         // 设置被回复用户昵称
@@ -192,6 +193,7 @@ public class UserCommentAppService {
             UserEntity replyUser = userMap.get(comment.getReplyUserId());
             if (replyUser != null) {
                 dto.setReplyUserName(replyUser.getName());
+                dto.setReplyUserAvatar(replyUser.getAvatar());
             }
         }
 

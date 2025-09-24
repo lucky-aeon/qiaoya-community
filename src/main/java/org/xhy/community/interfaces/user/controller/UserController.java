@@ -1,7 +1,11 @@
 package org.xhy.community.interfaces.user.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.xhy.community.application.user.dto.UserDTO;
 import org.xhy.community.application.user.dto.UserPublicProfileDTO;
@@ -38,8 +42,8 @@ public class UserController {
     @PutMapping("/profile")
     public ApiResponse<UserDTO> updateProfile(@Valid @RequestBody UpdateProfileRequest request) {
         String userId = UserContext.getCurrentUserId();
-        UserDTO user = userAppService.updateProfile(userId, request.getDescription());
-        return ApiResponse.success("简介修改成功", user);
+        UserDTO user = userAppService.updateProfile(userId, request);
+        return ApiResponse.success("个人资料修改成功", user);
     }
     
     /**
@@ -112,7 +116,24 @@ public class UserController {
      * @return 会话有效时返回成功状态
      */
     @GetMapping("/heartbeat")
-    public ApiResponse<Void> heartbeat() {
+    public ApiResponse<Void> heartbeat(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            HttpServletRequest request,
+            HttpServletResponse response
+    ) {
+        // 续签资源访问会话 Cookie（RAUTH），确保 <img>/<a> 访问不中断
+        if (StringUtils.hasText(authorization) && authorization.startsWith("Bearer ")) {
+            String token = authorization.substring(7);
+            boolean isSecure = request.isSecure() || "https".equalsIgnoreCase(request.getHeader("X-Forwarded-Proto"));
+            ResponseCookie cookie = ResponseCookie.from("RAUTH", token)
+                    .httpOnly(true)
+                    .secure(isSecure)
+                    .sameSite("Lax")
+                    .path("/api/public/resource")
+                    .maxAge(900) // 15分钟滑动续签
+                    .build();
+            response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+        }
         return ApiResponse.success();
     }
 }
