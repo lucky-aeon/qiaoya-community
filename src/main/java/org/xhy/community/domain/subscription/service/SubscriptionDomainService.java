@@ -16,9 +16,14 @@ import org.xhy.community.domain.subscription.query.SubscriptionQuery;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class SubscriptionDomainService {
+
+    private static final Logger log = LoggerFactory.getLogger(SubscriptionDomainService.class);
     
     private final UserSubscriptionRepository userSubscriptionRepository;
     private final SubscriptionPlanRepository subscriptionPlanRepository;
@@ -57,20 +62,22 @@ public class SubscriptionDomainService {
         // 验证套餐存在
         SubscriptionPlanEntity plan = getSubscriptionPlanOrThrow(subscriptionPlanId);
 
-        // 检查是否已存在该套餐的有效订阅
-        if (checkActiveSubscriptionExists(userId, plan.getId())) {
-            // 系统赠送的套餐如果已存在，不抛异常，直接返回null表示跳过
+        try {
+            // 创建系统赠送的订阅记录，cdkCode为null，使用套餐本身的有效期
+            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime endTime = now.plusMonths(plan.getValidityMonths());
+
+            UserSubscriptionEntity subscription = new UserSubscriptionEntity(userId, plan.getId(), now, endTime, null);
+            userSubscriptionRepository.insert(subscription);
+
+            log.info("成功为用户 {} 创建系统赠送套餐: {}", userId, subscriptionPlanId);
+            return subscription;
+
+        } catch (DataIntegrityViolationException e) {
+            // 唯一约束违反 = 用户已有有效套餐，这是正常情况，静默成功
+            log.debug("用户 {} 已有有效套餐，跳过系统赠送套餐创建: {}", userId, subscriptionPlanId);
             return null;
         }
-
-        // 创建系统赠送的订阅记录，cdkCode为null，使用套餐本身的有效期
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime endTime = now.plusMonths(plan.getValidityMonths());
-
-        UserSubscriptionEntity subscription = new UserSubscriptionEntity(userId, plan.getId(), now, endTime, null);
-        userSubscriptionRepository.insert(subscription);
-
-        return subscription;
     }
     
     private UserSubscriptionEntity createSubscription(String userId, SubscriptionPlanEntity plan, String cdkCode) {
@@ -122,6 +129,18 @@ public class SubscriptionDomainService {
                 .orderByDesc(UserSubscriptionEntity::getCreateTime);
 
         return userSubscriptionRepository.selectList(queryWrapper);
+    }
+
+    public boolean hasAnyActiveSubscription(String userId) {
+        LocalDateTime now = LocalDateTime.now();
+        LambdaQueryWrapper<UserSubscriptionEntity> queryWrapper =
+            new LambdaQueryWrapper<UserSubscriptionEntity>()
+                .eq(UserSubscriptionEntity::getUserId, userId)
+                .le(UserSubscriptionEntity::getStartTime, now)
+                .gt(UserSubscriptionEntity::getEndTime, now)
+                .last("LIMIT 1");
+
+        return userSubscriptionRepository.exists(queryWrapper);
     }
     
     public IPage<UserSubscriptionEntity> getPagedUserSubscriptions(SubscriptionQuery query) {

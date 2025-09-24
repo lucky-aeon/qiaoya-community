@@ -1,6 +1,7 @@
 package org.xhy.community.application.user.service;
 
 import org.springframework.stereotype.Service;
+import org.springframework.context.ApplicationEventPublisher;
 import org.xhy.community.application.user.assembler.UserAssembler;
 import org.xhy.community.application.user.dto.LoginResponseDTO;
 import org.xhy.community.application.user.dto.UserDTO;
@@ -23,6 +24,7 @@ import org.xhy.community.interfaces.user.request.UpdateProfileRequest;
 import org.xhy.community.domain.auth.service.EmailVerificationDomainService;
 import org.xhy.community.infrastructure.email.EmailService;
 import org.xhy.community.infrastructure.exception.AuthErrorCode;
+import org.xhy.community.domain.user.event.UserLoginEvent;
 
 @Service
 public class UserAppService {
@@ -36,6 +38,7 @@ public class UserAppService {
     private final SubscriptionPlanDomainService subscriptionPlanDomainService;
     private final EmailVerificationDomainService emailVerificationDomainService;
     private final EmailService emailService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public UserAppService(UserDomainService userDomainService,
                           JwtUtil jwtUtil,
@@ -45,7 +48,8 @@ public class UserAppService {
                           SubscriptionDomainService subscriptionDomainService,
                           SubscriptionPlanDomainService subscriptionPlanDomainService,
                           EmailVerificationDomainService emailVerificationDomainService,
-                          EmailService emailService) {
+                          EmailService emailService,
+                          ApplicationEventPublisher eventPublisher) {
         this.userDomainService = userDomainService;
         this.jwtUtil = jwtUtil;
         this.deviceSessionDomainService = deviceSessionDomainService;
@@ -55,6 +59,7 @@ public class UserAppService {
         this.subscriptionPlanDomainService = subscriptionPlanDomainService;
         this.emailVerificationDomainService = emailVerificationDomainService;
         this.emailService = emailService;
+        this.eventPublisher = eventPublisher;
     }
     
     public LoginResponseDTO login(String email, String password, String ip) {
@@ -82,6 +87,9 @@ public class UserAppService {
 
         // 建立token和IP的映射关系，用于后续设备下线时能找到对应token
         tokenIpMappingDomainService.mapTokenToIp(user.getId(), ip, token, sessionConfig.getTtl());
+
+        // 发布用户登录事件
+        eventPublisher.publishEvent(new UserLoginEvent(this, user.getId(), user.getEmail(), ip));
 
         return new LoginResponseDTO(token, this.getCurrentUserInfo(user.getId()));
     }
