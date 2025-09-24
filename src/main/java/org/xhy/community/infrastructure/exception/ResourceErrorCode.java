@@ -9,7 +9,10 @@ public enum ResourceErrorCode implements ErrorCode {
     ACCESS_DENIED(5004, "无权访问此资源"),
     FILE_SIZE_EXCEEDED(5005, "文件大小超出限制"),
     INVALID_FILE_TYPE(5006, "不支持的文件类型"),
-    PRESIGNED_URL_GENERATION_FAILED(5007, "生成预签名URL失败");
+    PRESIGNED_URL_GENERATION_FAILED(5007, "生成预签名URL失败"),
+    STS_CREDENTIALS_FAILED(5008, "获取STS凭证失败"),
+    UPLOAD_POLICY_GENERATION_FAILED(5009, "生成上传策略失败"),
+    CALLBACK_PARAM_GENERATION_FAILED(5010, "生成回调参数失败");
     
     private final int code;
     private final String message;

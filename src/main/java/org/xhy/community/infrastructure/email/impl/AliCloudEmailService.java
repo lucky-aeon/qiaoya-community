@@ -155,7 +155,10 @@ public class AliCloudEmailService implements EmailService {
      */
     private String generateMessageID(String mailFrom) {
         if (!mailFrom.contains("@")) {
-            throw new IllegalArgumentException("Invalid email format: " + mailFrom);
+            throw new org.xhy.community.infrastructure.exception.ValidationException(
+                org.xhy.community.infrastructure.config.ValidationErrorCode.EMAIL_FORMAT_INVALID,
+                "Invalid email format: " + mailFrom
+            );
         }
         String domain = mailFrom.split("@")[1];
         UUID uuid = UUID.randomUUID();

@@ -12,6 +12,9 @@ import com.aliyuncs.profile.DefaultProfile;
 import com.aliyuncs.sts.model.v20150401.AssumeRoleRequest;
 import com.aliyuncs.sts.model.v20150401.AssumeRoleResponse;
 import org.springframework.stereotype.Service;
+import org.xhy.community.infrastructure.exception.SystemException;
+import org.xhy.community.infrastructure.exception.BusinessException;
+import org.xhy.community.infrastructure.exception.ResourceErrorCode;
 import org.xhy.community.infrastructure.config.AliyunOssProperties;
 
 import javax.crypto.Mac;
@@ -96,7 +99,7 @@ public class AliyunOssService {
             
             return result;
         } catch (Exception e) {
-            throw new RuntimeException("获取STS凭证失败", e);
+            throw new SystemException(ResourceErrorCode.STS_CREDENTIALS_FAILED, e.getMessage(), e);
         }
     }
     
@@ -156,7 +159,7 @@ public class AliyunOssService {
             
             return result;
         } catch (Exception e) {
-            throw new RuntimeException("生成上传策略失败", e);
+            throw new SystemException(ResourceErrorCode.UPLOAD_POLICY_GENERATION_FAILED, e.getMessage(), e);
         }
     }
     
@@ -180,7 +183,7 @@ public class AliyunOssService {
             
             return Base64.getEncoder().encodeToString(callbackJson.getBytes("UTF-8"));
         } catch (Exception e) {
-            throw new RuntimeException("生成回调参数失败", e);
+            throw new SystemException(ResourceErrorCode.CALLBACK_PARAM_GENERATION_FAILED, e.getMessage(), e);
         }
     }
     
