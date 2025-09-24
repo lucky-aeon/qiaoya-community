@@ -21,5 +21,8 @@ public class AdminIpAppService {
                 .map(info -> new BannedIpDTO(info.getIp(), info.getExpireAt(), info.getRemainSeconds()))
                 .collect(Collectors.toList());
     }
-}
 
+    public void unbanIp(String ip) {
+        emailVerificationDomainService.unbanIp(ip);
+    }
+}

@@ -149,6 +149,21 @@ public class EmailVerificationDomainService {
         return result;
     }
 
+    /**
+     * 解除指定IP封禁，并重置当日计数。
+     */
+    public void unbanIp(String ip) {
+        if (!StringUtils.hasText(ip)) {
+            return;
+        }
+        // 移除封禁标记
+        redis.delete(keyIpBan(ip));
+        // 从被封禁集合中移除
+        redis.opsForZSet().remove(KEY_IP_BAN_SET, ip);
+        // 重置当日计数，避免立刻再次封禁
+        redis.delete(keyIpDaily(ip));
+    }
+
     private String generate6DigitCode() {
         Random r = new Random();
         int num = 100000 + r.nextInt(900000);
