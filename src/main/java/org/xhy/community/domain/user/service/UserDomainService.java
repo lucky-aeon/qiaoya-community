@@ -183,7 +183,11 @@ public class UserDomainService {
         if (user == null) {
             return false;
         }
-        return user.isActive() && verifyPassword(password, user.getPassword());
+        if (!user.isActive()){
+            throw new BusinessException(UserErrorCode.USER_BANNED);
+        }
+
+        return verifyPassword(password, user.getPassword());
     }
     
     public boolean isEmailExists(String email, String excludeUserId) {

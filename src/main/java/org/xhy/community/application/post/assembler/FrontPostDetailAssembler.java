@@ -23,13 +23,14 @@ public class FrontPostDetailAssembler {
         if (author != null) {
             dto.setAuthorName(author.getName());
             dto.setAuthorAvatar(author.getAvatar());
+            dto.setAuthorDescription(author.getDescription());
         }
         dto.setCategoryName(categoryName);
 
         return dto;
     }
 
-    public static FrontPostDetailDTO toDTO(PostEntity entity, String authorName, String authorAvatar, String categoryName) {
+    public static FrontPostDetailDTO toDTO(PostEntity entity, String authorName, String authorAvatar, String authorDescription, String categoryName) {
         if (entity == null) {
             return null;
         }
@@ -40,12 +41,13 @@ public class FrontPostDetailAssembler {
         // 设置关联信息
         dto.setAuthorName(authorName);
         dto.setAuthorAvatar(authorAvatar);
+        dto.setAuthorDescription(authorDescription);
         dto.setCategoryName(categoryName);
 
         return dto;
     }
 
     public static FrontPostDetailDTO toDTO(PostEntity entity, String authorName, String categoryName) {
-        return toDTO(entity, authorName, null, categoryName);
+        return toDTO(entity, authorName, null, null, categoryName);
     }
 }

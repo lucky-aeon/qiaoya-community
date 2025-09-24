@@ -10,6 +10,7 @@ import org.springframework.web.servlet.HandlerInterceptor;
 import org.xhy.community.application.subscription.service.UserSubscriptionAppService;
 import org.xhy.community.application.session.service.DeviceSessionAppService;
 import org.xhy.community.application.session.service.TokenBlacklistAppService;
+import org.xhy.community.application.user.service.UserAppService;
 import org.xhy.community.infrastructure.config.JwtUtil;
 import org.xhy.community.infrastructure.config.UserContext;
 import org.xhy.community.infrastructure.util.ClientIpUtil;
@@ -23,15 +24,18 @@ public class UserContextInterceptor implements HandlerInterceptor {
     private final UserSubscriptionAppService userSubscriptionAppService;
     private final DeviceSessionAppService deviceSessionAppService;
     private final TokenBlacklistAppService tokenBlacklistAppService;
+    private final UserAppService userAppService;
 
     public UserContextInterceptor(JwtUtil jwtUtil,
                                   UserSubscriptionAppService userSubscriptionAppService,
                                   DeviceSessionAppService deviceSessionAppService,
-                                  TokenBlacklistAppService tokenBlacklistAppService) {
+                                  TokenBlacklistAppService tokenBlacklistAppService,
+                                  UserAppService userAppService) {
         this.jwtUtil = jwtUtil;
         this.userSubscriptionAppService = userSubscriptionAppService;
         this.deviceSessionAppService = deviceSessionAppService;
         this.tokenBlacklistAppService = tokenBlacklistAppService;
+        this.userAppService = userAppService;
     }
 
     @Override
@@ -45,6 +49,14 @@ public class UserContextInterceptor implements HandlerInterceptor {
             String ip = ClientIpUtil.getClientIp(request);
             boolean ipAllowed = deviceSessionAppService.isIpAllowed(userId, ip);
             if (!ipAllowed) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                return false;
+            }
+
+            // 用户状态检查：确保用户处于激活状态
+            boolean userActive = userAppService.isUserActive(userId);
+            if (!userActive) {
+                log.warn("访问被拒绝：用户已被禁用，userId={}", userId);
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 return false;
             }

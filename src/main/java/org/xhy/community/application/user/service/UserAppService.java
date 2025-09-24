@@ -63,7 +63,6 @@ public class UserAppService {
         }
 
         UserEntity user = userDomainService.getUserByEmail(email);
-        UserDTO userDTO = UserAssembler.toDTO(user);
 
         // 获取用户会话配置
         UserSessionConfig sessionConfig = userSessionConfigService.getUserSessionConfig();
@@ -84,7 +83,7 @@ public class UserAppService {
         // 建立token和IP的映射关系，用于后续设备下线时能找到对应token
         tokenIpMappingDomainService.mapTokenToIp(user.getId(), ip, token, sessionConfig.getTtl());
 
-        return new LoginResponseDTO(token, userDTO);
+        return new LoginResponseDTO(token, this.getCurrentUserInfo(user.getId()));
     }
     
     public UserDTO register(String email, String emailVerificationCode, String password) {
@@ -170,6 +169,19 @@ public class UserAppService {
     public UserPublicProfileDTO getUserPublicProfile(String userId) {
         UserEntity user = userDomainService.getUserById(userId);
         return UserAssembler.toPublicProfileDTO(user);
+    }
+
+    /**
+     * 判断用户是否处于激活状态
+     */
+    public boolean isUserActive(String userId) {
+        try {
+            UserEntity user = userDomainService.getUserById(userId);
+            return user != null && user.isActive();
+        } catch (Exception e) {
+            // 如果用户不存在或查询失败，返回false
+            return false;
+        }
     }
 
     /**
