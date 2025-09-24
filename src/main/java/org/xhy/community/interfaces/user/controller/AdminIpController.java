@@ -37,7 +37,7 @@ public class AdminIpController {
     /**
      * 解除指定IP的封禁
      */
-    @DeleteMapping("/{ip}")
+    @DeleteMapping("/{ip:.+}")
     public ApiResponse<Void> unbanIp(@PathVariable("ip") String ip) {
         adminIpAppService.unbanIp(ip);
         return ApiResponse.success("IP已解除封禁");

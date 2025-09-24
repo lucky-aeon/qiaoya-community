@@ -7,12 +7,15 @@ import org.xhy.community.application.user.dto.LoginResponseDTO;
 import org.xhy.community.application.user.dto.UserDTO;
 import org.xhy.community.application.user.service.UserAppService;
 import org.xhy.community.infrastructure.config.ApiResponse;
+import org.xhy.community.infrastructure.config.JwtUtil;
 import org.xhy.community.infrastructure.util.ClientIpUtil;
 import org.xhy.community.interfaces.user.request.LoginRequest;
 import org.xhy.community.interfaces.user.request.RegisterRequest;
 import org.xhy.community.interfaces.user.request.SendEmailCodeRequest;
 import org.xhy.community.infrastructure.annotation.LogUserActivity;
 import org.xhy.community.domain.common.valueobject.ActivityType;
+
+import java.util.HashMap;
 
 /**
  * 用户认证控制器
@@ -24,9 +27,12 @@ import org.xhy.community.domain.common.valueobject.ActivityType;
 public class AuthController {
     
     private final UserAppService userAppService;
-    
-    public AuthController(UserAppService userAppService) {
+
+    private final JwtUtil jwtUtil;
+
+    public AuthController(UserAppService userAppService, JwtUtil jwtUtil) {
         this.userAppService = userAppService;
+        this.jwtUtil = jwtUtil;
     }
     
     /**
@@ -76,12 +82,16 @@ public class AuthController {
         successType = ActivityType.REGISTER_SUCCESS,
         failureType = ActivityType.REGISTER_FAILED
     )
-    public ApiResponse<UserDTO> register(@Valid @RequestBody RegisterRequest request) {
+    public ApiResponse<HashMap<String, Object>> register(@Valid @RequestBody RegisterRequest request) {
         UserDTO user = userAppService.register(
                 request.getEmail(),
                 request.getEmailVerificationCode(),
                 request.getPassword()
         );
-        return ApiResponse.success("注册成功", user);
+        HashMap<String, Object> res = new HashMap<>();
+        String token = jwtUtil.generateToken(user.getId(), user.getEmail());
+        res.put("user",user);
+        res.put("token",token);
+        return ApiResponse.success("注册成功", res);
     }
 }

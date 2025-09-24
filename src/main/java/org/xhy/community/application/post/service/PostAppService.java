@@ -57,14 +57,12 @@ public class PostAppService {
     }
     
     public PostDTO updatePost(String postId, UpdatePostRequest request, String authorId) {
-        // 获取现有文章进行权限校验和基础信息获取
-        PostEntity existingPost = postDomainService.getUserPostById(postId, authorId);
-        
+
         // 通过Assembler更新Entity
-        PostAssembler.updateEntityFromRequest(existingPost, request);
-        
+        PostEntity postEntity = PostAssembler.updateEntityFromRequest(postId, request);
+
         // 调用Domain层进行更新（包含权限校验和分类验证）
-        PostEntity updatedPost = postDomainService.updatePost(existingPost, authorId);
+        PostEntity updatedPost = postDomainService.updatePost(postEntity, authorId);
         
         return PostAssembler.toDTO(updatedPost);
     }

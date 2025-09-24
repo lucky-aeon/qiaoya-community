@@ -148,7 +148,7 @@ public class CommentDomainService {
         return commentRepository.selectList(
             new LambdaQueryWrapper<CommentEntity>()
                 .orderByDesc(CommentEntity::getCreateTime)
-                .last("LIMIT 10")
+                .last("LIMIT 5")
         );
     }
 }
