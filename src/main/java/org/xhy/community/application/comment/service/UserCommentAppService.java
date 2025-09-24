@@ -73,10 +73,11 @@ public class UserCommentAppService {
         
         IPage<CommentEntity> commentPage = commentDomainService.getUserRelatedComments(query);
         
-        IPage<CommentDTO> dtoPage = commentPage.convert(this::convertCommentEntityToDTO);
-        // 补充业务名称（文章/课程/章节标题）
-        fillBusinessNames(dtoPage.getRecords());
-        return dtoPage;
+        // 统一构建用户与业务标题映射，避免重复与 N+1
+        Map<String, UserEntity> userMap = buildUserMapFromComments(commentPage.getRecords());
+        TitleMaps titleMaps = buildTitleMapsFromComments(commentPage.getRecords());
+        
+        return commentPage.convert(entity -> toCommentDTOEnriched(entity, userMap, titleMaps));
     }
     
     public IPage<CommentDTO> getBusinessComments(BusinessCommentQueryRequest request) {
@@ -85,65 +86,76 @@ public class UserCommentAppService {
             request.getPageNum(), request.getPageSize()
         );
         
-        return commentPage.convert(this::convertCommentEntityToDTO);
+        Map<String, UserEntity> userMap = buildUserMapFromComments(commentPage.getRecords());
+        TitleMaps titleMaps = buildTitleMapsFromComments(commentPage.getRecords());
+        return commentPage.convert(entity -> toCommentDTOEnriched(entity, userMap, titleMaps));
     }
     
-    private CommentDTO convertCommentEntityToDTO(CommentEntity entity) {
+    private CommentDTO toCommentDTOEnriched(CommentEntity entity,
+                                            Map<String, UserEntity> userMap,
+                                            TitleMaps titleMaps) {
         CommentDTO dto = CommentAssembler.toDTO(entity);
-        fillUserNames(dto);
+
+        // 用户昵称
+        UserEntity commentUser = userMap.get(dto.getCommentUserId());
+        if (commentUser != null) {
+            dto.setCommentUserName(commentUser.getName());
+        }
+        if (dto.getReplyUserId() != null) {
+            UserEntity replyUser = userMap.get(dto.getReplyUserId());
+            if (replyUser != null) {
+                dto.setReplyUserName(replyUser.getName());
+            }
+        }
+
+        // 业务名称
+        dto.setBusinessName(resolveBusinessName(dto.getBusinessType(), dto.getBusinessId(), titleMaps));
         return dto;
     }
-    
-    private void fillUserNames(CommentDTO dto) {
-        Set<String> userIds = Set.of(dto.getCommentUserId())
-            .stream()
-            .filter(Objects::nonNull)
-            .collect(Collectors.toSet());
-        
-        if (dto.getReplyUserId() != null) {
-            userIds = List.of(dto.getCommentUserId(), dto.getReplyUserId())
-                .stream()
+
+    private Map<String, UserEntity> buildUserMapFromComments(List<CommentEntity> comments) {
+        if (comments == null || comments.isEmpty()) {
+            return Map.of();
+        }
+
+        Set<String> userIds = comments.stream()
+                .flatMap(comment -> comment.getReplyUserId() != null
+                        ? Stream.of(comment.getCommentUserId(), comment.getReplyUserId())
+                        : Stream.of(comment.getCommentUserId()))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
-        }
-        
-        if (!userIds.isEmpty()) {
-            Map<String, UserEntity> userMap = userDomainService.getUserEntityMapByIds(userIds);
+        return userDomainService.getUserEntityMapByIds(userIds);
+    }
 
-            UserEntity commentUser = userMap.get(dto.getCommentUserId());
-            if (commentUser != null) {
-                dto.setCommentUserName(commentUser.getName());
-            }
-
-            if (dto.getReplyUserId() != null) {
-                UserEntity replyUser = userMap.get(dto.getReplyUserId());
-                if (replyUser != null) {
-                    dto.setReplyUserName(replyUser.getName());
-                }
-            }
+    private static class TitleMaps {
+        Map<String, String> postTitleMap;
+        Map<String, String> courseTitleMap;
+        Map<String, String> chapterTitleMap;
+        TitleMaps(Map<String, String> p, Map<String, String> c, Map<String, String> ch) {
+            this.postTitleMap = p; this.courseTitleMap = c; this.chapterTitleMap = ch;
         }
     }
 
-    private void fillBusinessNames(List<CommentDTO> dtos) {
-        if (dtos == null || dtos.isEmpty()) {
-            return;
+    private TitleMaps buildTitleMapsFromComments(List<CommentEntity> comments) {
+        if (comments == null || comments.isEmpty()) {
+            return new TitleMaps(Map.of(), Map.of(), Map.of());
         }
 
-        Set<String> postIds = dtos.stream()
-                .filter(dto -> dto.getBusinessType() == BusinessType.POST)
-                .map(CommentDTO::getBusinessId)
+        Set<String> postIds = comments.stream()
+                .filter(comment -> BusinessType.POST.equals(comment.getBusinessType()))
+                .map(CommentEntity::getBusinessId)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
-        Set<String> courseIds = dtos.stream()
-                .filter(dto -> dto.getBusinessType() == BusinessType.COURSE)
-                .map(CommentDTO::getBusinessId)
+        Set<String> courseIds = comments.stream()
+                .filter(comment -> BusinessType.COURSE.equals(comment.getBusinessType()))
+                .map(CommentEntity::getBusinessId)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
-        Set<String> chapterIds = dtos.stream()
-                .filter(dto -> dto.getBusinessType() == BusinessType.CHAPTER)
-                .map(CommentDTO::getBusinessId)
+        Set<String> chapterIds = comments.stream()
+                .filter(comment -> BusinessType.CHAPTER.equals(comment.getBusinessType()))
+                .map(CommentEntity::getBusinessId)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
@@ -151,15 +163,18 @@ public class UserCommentAppService {
         Map<String, String> courseTitleMap = courseDomainService.getCourseTitleMapByIds(courseIds);
         Map<String, String> chapterTitleMap = chapterDomainService.getChapterTitleMapByIds(chapterIds);
 
-        for (CommentDTO dto : dtos) {
-            if (dto.getBusinessType() == BusinessType.POST) {
-                dto.setBusinessName(postTitleMap.get(dto.getBusinessId()));
-            } else if (dto.getBusinessType() == BusinessType.COURSE) {
-                dto.setBusinessName(courseTitleMap.get(dto.getBusinessId()));
-            } else if (dto.getBusinessType() == BusinessType.CHAPTER) {
-                dto.setBusinessName(chapterTitleMap.get(dto.getBusinessId()));
-            }
+        return new TitleMaps(postTitleMap, courseTitleMap, chapterTitleMap);
+    }
+
+    private String resolveBusinessName(BusinessType type, String businessId, TitleMaps maps) {
+        if (type == null || businessId == null) {
+            return null;
         }
+        return switch (type) {
+            case POST -> maps.postTitleMap.get(businessId);
+            case COURSE -> maps.courseTitleMap.get(businessId);
+            case CHAPTER -> maps.chapterTitleMap.get(businessId);
+        };
     }
 
     public List<LatestCommentDTO> getLatestComments() {
@@ -169,41 +184,12 @@ public class UserCommentAppService {
             return List.of();
         }
 
-        // 批量查询用户信息（包括评论用户和被回复用户）
-        Set<String> userIds = comments.stream()
-                .flatMap(comment -> {
-                    if (comment.getReplyUserId() != null) {
-                        return Stream.of(comment.getCommentUserId(), comment.getReplyUserId());
-                    } else {
-                        return Stream.of(comment.getCommentUserId());
-                    }
-                })
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
-        Map<String, UserEntity> userMap = userDomainService.getUserEntityMapByIds(userIds);
-
-        // 按业务类型分组，分别批量查询文章标题、课程标题和章节标题
-        Set<String> postIds = comments.stream()
-                .filter(comment -> BusinessType.POST.equals(comment.getBusinessType()))
-                .map(CommentEntity::getBusinessId)
-                .collect(Collectors.toSet());
-
-        Set<String> courseIds = comments.stream()
-                .filter(comment -> BusinessType.COURSE.equals(comment.getBusinessType()))
-                .map(CommentEntity::getBusinessId)
-                .collect(Collectors.toSet());
-
-        Set<String> chapterIds = comments.stream()
-                .filter(comment -> BusinessType.CHAPTER.equals(comment.getBusinessType()))
-                .map(CommentEntity::getBusinessId)
-                .collect(Collectors.toSet());
-
-        Map<String, String> postTitleMap = postDomainService.getPostTitleMapByIds(postIds);
-        Map<String, String> courseTitleMap = courseDomainService.getCourseTitleMapByIds(courseIds);
-        Map<String, String> chapterTitleMap = chapterDomainService.getChapterTitleMapByIds(chapterIds);
+        // 批量查询用户信息与业务标题映射
+        Map<String, UserEntity> userMap = buildUserMapFromComments(comments);
+        TitleMaps titleMaps = buildTitleMapsFromComments(comments);
 
         return comments.stream()
-                .map(comment -> convertToLatestCommentDTO(comment, userMap, postTitleMap, courseTitleMap, chapterTitleMap))
+                .map(comment -> convertToLatestCommentDTO(comment, userMap, titleMaps.postTitleMap, titleMaps.courseTitleMap, titleMaps.chapterTitleMap))
                 .collect(Collectors.toList());
     }
 
@@ -239,13 +225,7 @@ public class UserCommentAppService {
         }
 
         // 设置业务名称
-        if (BusinessType.POST.equals(comment.getBusinessType())) {
-            dto.setBusinessName(postTitleMap.get(comment.getBusinessId()));
-        } else if (BusinessType.COURSE.equals(comment.getBusinessType())) {
-            dto.setBusinessName(courseTitleMap.get(comment.getBusinessId()));
-        } else if (BusinessType.CHAPTER.equals(comment.getBusinessType())) {
-            dto.setBusinessName(chapterTitleMap.get(comment.getBusinessId()));
-        }
+        dto.setBusinessName(resolveBusinessName(comment.getBusinessType(), comment.getBusinessId(), new TitleMaps(postTitleMap, courseTitleMap, chapterTitleMap)));
 
         return dto;
     }
