@@ -35,11 +35,11 @@ public class ResourceAppService {
         this.ossProperties = ossProperties;
     }
     
-    public UploadCredentialsDTO getUploadCredentials(String originalName, String contentType) {
+    public UploadCredentialsDTO getUploadCredentials(String originalName, String contentType, String token) {
         String userId = UserContext.getCurrentUserId();
         String fileKey = generateFileKey(userId, originalName);
         
-        Map<String, Object> credentials = resourceDomainService.getStsCredentials(fileKey);
+        Map<String, Object> credentials = resourceDomainService.getStsCredentials(fileKey, token);
         
         return ResourceAssembler.toUploadCredentialsDTO(credentials, ossProperties);
     }

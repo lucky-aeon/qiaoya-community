@@ -45,10 +45,10 @@ public class PublicResourceController {
     /**
      * 处理阿里云OSS上传回调
      * 接收阿里云OSS服务器的上传成功回调通知，并保存文件元数据
-     * 该接口由OSS服务调用，无需用户认证
+     * 回调参数需携带 token 并进行鉴权
      * 
-     * @param callbackRequest OSS回调请求参数，包含上传文件的元数据信息
-     * @param request HTTP请求对象，用于签名验证
+     * @param callbackRequest OSS回调请求参数，包含上传文件的元数据信息与鉴权token
+     * @param request HTTP请求对象
      * @return 回调处理结果，返回给OSS服务的响应
      */
     @PostMapping("/oss-callback")
@@ -56,8 +56,26 @@ public class PublicResourceController {
             @Valid OssCallbackRequest callbackRequest,
             HttpServletRequest request
     ) {
-        // OSS回调不需要用户认证，直接处理
-        // 简化签名验证 - 可以通过IP白名单或其他方式验证 TODO
+        // 读取并校验回调token
+        String token = callbackRequest.getToken();
+        if (!StringUtils.hasText(token)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("Status", "UNAUTHORIZED", "message", "missing token"));
+        }
+
+        // 黑名单校验
+        if (tokenBlacklistAppService.isBlacklisted(token)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("Status", "UNAUTHORIZED", "message", "token blacklisted"));
+        }
+
+        // JWT 有效性校验
+        if (!jwtUtil.validateToken(token)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("Status", "UNAUTHORIZED", "message", "invalid token"));
+        }
+
+        // 通过鉴权后再处理回调
         ResourceDTO resource = resourceAppService.handleOssCallback(callbackRequest);
         
         Map<String, Object> response = Map.of("Status", "OK","resource",resource);

@@ -42,10 +42,18 @@ public class ResourceController {
      * @return 上传凭证信息，包含STS临时凭证、OSS配置、上传策略和回调参数
      */
     @PostMapping("/upload-credentials")
-    public ApiResponse<UploadCredentialsDTO> getUploadCredentials(@Valid @RequestBody GetUploadCredentialsRequest request) {
+    public ApiResponse<UploadCredentialsDTO> getUploadCredentials(
+            @Valid @RequestBody GetUploadCredentialsRequest request,
+            @RequestHeader(value = "Authorization", required = false) String authorization
+    ) {
+        String token = null;
+        if (StringUtils.hasText(authorization) && authorization.startsWith("Bearer ")) {
+            token = authorization.substring(7);
+        }
         UploadCredentialsDTO credentials = resourceAppService.getUploadCredentials(
-                request.getOriginalName(), 
-                request.getContentType()
+                request.getOriginalName(),
+                request.getContentType(),
+                token
         );
         return ApiResponse.success(credentials);
     }

@@ -19,6 +19,9 @@ public class OssCallbackRequest {
     private Integer height;
     
     private Integer width;
+
+    @NotBlank(message = "token不能为空")
+    private String token;
     
     public String getFilename() {
         return filename;
@@ -58,5 +61,13 @@ public class OssCallbackRequest {
     
     public void setWidth(Integer width) {
         this.width = width;
+    }
+
+    public String getToken() {
+        return token;
+    }
+
+    public void setToken(String token) {
+        this.token = token;
     }
 }

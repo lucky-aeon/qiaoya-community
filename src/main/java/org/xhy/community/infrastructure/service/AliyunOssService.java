@@ -20,6 +20,7 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.InputStream;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
@@ -101,6 +102,50 @@ public class AliyunOssService {
             throw new SystemException(ResourceErrorCode.STS_CREDENTIALS_FAILED, e.getMessage(), e);
         }
     }
+
+    public Map<String, Object> getStsCredentials(String fileKey, String token) {
+        try {
+            String sanitizedKey = sanitizeKey(fileKey);
+
+            DefaultProfile profile = DefaultProfile.getProfile(
+                    ossProperties.getRegion(),
+                    ossProperties.getAccessKeyId(),
+                    ossProperties.getAccessKeySecret()
+            );
+
+            IAcsClient client = new DefaultAcsClient(profile);
+
+            AssumeRoleRequest request = new AssumeRoleRequest();
+            request.setMethod(MethodType.POST);
+            request.setProtocol(ProtocolType.HTTPS);
+            request.setRoleArn(ossProperties.getRoleArn());
+            request.setRoleSessionName(DEFAULT_ROLE_SESSION_NAME);
+            request.setDurationSeconds(DEFAULT_DURATION_SECONDS);
+            request.setPolicy(generateDynamicPolicy(sanitizedKey));
+
+            AssumeRoleResponse response = client.getAcsResponse(request);
+            AssumeRoleResponse.Credentials credentials = response.getCredentials();
+
+            Map<String, Object> uploadPolicy = generateUploadPolicy(sanitizedKey, credentials.getAccessKeySecret());
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("accessKeyId", credentials.getAccessKeyId());
+            result.put("accessKeySecret", credentials.getAccessKeySecret());
+            result.put("securityToken", credentials.getSecurityToken());
+            result.put("expiration", credentials.getExpiration());
+            result.put("region", ossProperties.getRegion());
+            result.put("bucket", ossProperties.getBucketName());
+            result.put("endpoint", ossProperties.getEndpoint());
+            result.put("policy", uploadPolicy.get("policy"));
+            result.put("signature", uploadPolicy.get("signature"));
+            result.put("key", sanitizedKey);
+            result.put("callback", generateCallback(token));
+
+            return result;
+        } catch (Exception e) {
+            throw new SystemException(ResourceErrorCode.STS_CREDENTIALS_FAILED, e.getMessage(), e);
+        }
+    }
     
     /**
      * 生成 STS 会话策略：授权到具体对象（或可改为用户前缀）
@@ -163,23 +208,32 @@ public class AliyunOssService {
     }
     
     private String generateCallback() {
+        return generateCallback(null);
+    }
+
+    private String generateCallback(String token) {
         if (ossProperties.getCallback().getUrl() == null) {
             return null;
         }
-        
+
         try {
-            Map<String, String> callback = new HashMap<>();
-            callback.put("callbackUrl", ossProperties.getCallback().getUrl());
-            callback.put("callbackBody", ossProperties.getCallback().getBody());
-            callback.put("callbackBodyType", ossProperties.getCallback().getBodyType());
-            
+            String callbackUrl = ossProperties.getCallback().getUrl();
+            String callbackBody = ossProperties.getCallback().getBody();
+            String callbackBodyType = ossProperties.getCallback().getBodyType();
+
+            if (token != null && !token.isEmpty()) {
+                String encoded = URLEncoder.encode(token, "UTF-8");
+                // 以 &token=xxx 形式附加
+                callbackBody = callbackBody + "&token=" + encoded;
+            }
+
             String callbackJson = String.format(
-                "{\"callbackUrl\":\"%s\",\"callbackBody\":\"%s\",\"callbackBodyType\":\"%s\"}",
-                callback.get("callbackUrl"),
-                callback.get("callbackBody"),
-                callback.get("callbackBodyType")
+                    "{\"callbackUrl\":\"%s\",\"callbackBody\":\"%s\",\"callbackBodyType\":\"%s\"}",
+                    callbackUrl,
+                    callbackBody,
+                    callbackBodyType
             );
-            
+
             return Base64.getEncoder().encodeToString(callbackJson.getBytes("UTF-8"));
         } catch (Exception e) {
             throw new SystemException(ResourceErrorCode.CALLBACK_PARAM_GENERATION_FAILED, e.getMessage(), e);

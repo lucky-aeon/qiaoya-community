@@ -63,6 +63,10 @@ public class ResourceDomainService {
     public Map<String, Object> getStsCredentials(String fileKey) {
         return aliyunOssService.getStsCredentials(fileKey);
     }
+
+    public Map<String, Object> getStsCredentials(String fileKey, String token) {
+        return aliyunOssService.getStsCredentials(fileKey, token);
+    }
     
     public String generatePresignedUploadUrl(String userId, String originalName, String contentType) {
         String fileKey = generateFileKey(userId, originalName);
