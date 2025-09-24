@@ -13,7 +13,6 @@ import com.aliyuncs.sts.model.v20150401.AssumeRoleRequest;
 import com.aliyuncs.sts.model.v20150401.AssumeRoleResponse;
 import org.springframework.stereotype.Service;
 import org.xhy.community.infrastructure.exception.SystemException;
-import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.infrastructure.exception.ResourceErrorCode;
 import org.xhy.community.infrastructure.config.AliyunOssProperties;
 
