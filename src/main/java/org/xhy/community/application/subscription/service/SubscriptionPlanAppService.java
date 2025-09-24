@@ -21,4 +21,9 @@ public class SubscriptionPlanAppService {
         List<SubscriptionPlanEntity> entities = subscriptionPlanDomainService.getActiveSubscriptionPlans();
         return SubscriptionPlanAssembler.toAppDTOList(entities);
     }
+
+    public List<AppSubscriptionPlanDTO> getActivePaidSubscriptionPlans() {
+        List<SubscriptionPlanEntity> entities = subscriptionPlanDomainService.getActivePaidSubscriptionPlans();
+        return SubscriptionPlanAssembler.toAppDTOList(entities);
+    }
 }

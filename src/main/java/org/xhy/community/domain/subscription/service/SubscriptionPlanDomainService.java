@@ -16,6 +16,7 @@ import org.xhy.community.domain.subscription.valueobject.SubscriptionPlanStatus;
 
 import java.util.stream.Collectors;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Service
@@ -122,6 +123,16 @@ public class SubscriptionPlanDomainService {
         LambdaQueryWrapper<SubscriptionPlanEntity> queryWrapper =
             new LambdaQueryWrapper<SubscriptionPlanEntity>()
                 .eq(SubscriptionPlanEntity::getStatus, SubscriptionPlanStatus.ACTIVE)
+                .orderByAsc(SubscriptionPlanEntity::getLevel);
+
+        return subscriptionPlanRepository.selectList(queryWrapper);
+    }
+
+    public List<SubscriptionPlanEntity> getActivePaidSubscriptionPlans() {
+        LambdaQueryWrapper<SubscriptionPlanEntity> queryWrapper =
+            new LambdaQueryWrapper<SubscriptionPlanEntity>()
+                .eq(SubscriptionPlanEntity::getStatus, SubscriptionPlanStatus.ACTIVE)
+                .gt(SubscriptionPlanEntity::getPrice, BigDecimal.ZERO)
                 .orderByAsc(SubscriptionPlanEntity::getLevel);
 
         return subscriptionPlanRepository.selectList(queryWrapper);
