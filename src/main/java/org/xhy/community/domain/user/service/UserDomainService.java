@@ -310,16 +310,25 @@ public class UserDomainService {
     
     /**
      * 获取用户的所有课程权限实体
-     * 
+     *
      * @param userId 用户ID
      * @return 用户课程权限实体列表
      */
     public List<UserCourseEntity> getUserCourseEntities(String userId) {
-        LambdaQueryWrapper<UserCourseEntity> queryWrapper = 
+        LambdaQueryWrapper<UserCourseEntity> queryWrapper =
             new LambdaQueryWrapper<UserCourseEntity>()
                 .eq(UserCourseEntity::getUserId, userId)
                 .orderByDesc(UserCourseEntity::getCreateTime);
-        
+
         return userCourseRepository.selectList(queryWrapper);
+    }
+
+    /**
+     * 获取社区总用户数
+     *
+     * @return 用户总数
+     */
+    public long getTotalUserCount() {
+        return userRepository.selectCount(null);
     }
 }

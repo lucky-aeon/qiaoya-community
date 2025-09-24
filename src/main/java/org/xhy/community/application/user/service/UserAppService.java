@@ -6,6 +6,7 @@ import org.xhy.community.application.user.assembler.UserAssembler;
 import org.xhy.community.application.user.dto.LoginResponseDTO;
 import org.xhy.community.application.user.dto.UserDTO;
 import org.xhy.community.application.user.dto.UserPublicProfileDTO;
+import org.xhy.community.application.user.dto.UserStatsDTO;
 import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.domain.user.entity.UserEntity;
 import org.xhy.community.infrastructure.exception.UserErrorCode;
@@ -199,5 +200,15 @@ public class UserAppService {
     public boolean isAdmin(String userId) {
         UserEntity user = userDomainService.getUserById(userId);
         return user != null && user.isAdmin();
+    }
+
+    /**
+     * 获取用户统计信息
+     *
+     * @return 用户统计DTO
+     */
+    public UserStatsDTO getUserStats() {
+        long totalCount = userDomainService.getTotalUserCount();
+        return new UserStatsDTO(totalCount);
     }
 }
