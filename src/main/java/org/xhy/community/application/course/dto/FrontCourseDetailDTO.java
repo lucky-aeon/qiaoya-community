@@ -26,6 +26,7 @@ public class FrontCourseDetailDTO {
     private Integer totalReadingTime;
     private BigDecimal originalPrice;
     private BigDecimal price;
+    private String coverImage;
     private String demoUrl;
     private List<CourseResource> resources;
     private LocalDateTime createTime;
@@ -103,6 +104,9 @@ public class FrontCourseDetailDTO {
 
     public BigDecimal getPrice() { return price; }
     public void setPrice(BigDecimal price) { this.price = price; }
+
+    public String getCoverImage() { return coverImage; }
+    public void setCoverImage(String coverImage) { this.coverImage = coverImage; }
 
     public String getDemoUrl() { return demoUrl; }
     public void setDemoUrl(String demoUrl) { this.demoUrl = demoUrl; }
