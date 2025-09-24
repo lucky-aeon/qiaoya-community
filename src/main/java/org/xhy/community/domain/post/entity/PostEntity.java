@@ -5,8 +5,10 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import org.xhy.community.domain.common.entity.BaseEntity;
 import org.xhy.community.domain.post.valueobject.PostStatus;
 import org.xhy.community.infrastructure.converter.PostStatusConverter;
+import org.xhy.community.infrastructure.converter.UniversalListConverter;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @TableName("posts")
 public class PostEntity extends BaseEntity {
@@ -44,6 +46,10 @@ public class PostEntity extends BaseEntity {
     
     /** 是否置顶 */
     private Boolean isTop;
+
+    /** 标签，JSON格式存储 */
+    @TableField(typeHandler = UniversalListConverter.class)
+    private List<String> tags;
     
     /** 发布时间 */
     private LocalDateTime publishTime;
@@ -99,4 +105,7 @@ public class PostEntity extends BaseEntity {
     
     public LocalDateTime getPublishTime() { return publishTime; }
     public void setPublishTime(LocalDateTime publishTime) { this.publishTime = publishTime; }
+
+    public List<String> getTags() { return tags; }
+    public void setTags(List<String> tags) { this.tags = tags; }
 }

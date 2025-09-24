@@ -1,6 +1,7 @@
 package org.xhy.community.application.post.dto;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 公开文章详情DTO
@@ -22,6 +23,7 @@ public class FrontPostDetailDTO {
     private Integer commentCount;
     private Boolean isTop;
     private LocalDateTime publishTime;
+    private List<String> tags;
     
     public FrontPostDetailDTO() {}
     
@@ -79,5 +81,13 @@ public class FrontPostDetailDTO {
 
     public void setTop(Boolean top) {
         isTop = top;
+    }
+
+    public List<String> getTags() {
+        return tags;
+    }
+
+    public void setTags(List<String> tags) {
+        this.tags = tags;
     }
 }

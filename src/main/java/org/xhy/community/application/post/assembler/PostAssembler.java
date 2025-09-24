@@ -66,29 +66,15 @@ public class PostAssembler {
         
         entity.setSummary(request.getSummary());
         entity.setCoverImage(request.getCoverImage());
+        entity.setTags(request.getTags());
         
         return entity;
     }
     
-    public static void updateEntityFromRequest(PostEntity entity, UpdatePostRequest request) {
-        if (entity == null || request == null) {
-            return;
-        }
-        
-        if (StringUtils.hasText(request.getTitle())) {
-            entity.setTitle(request.getTitle().trim());
-        }
-        
-        if (request.getContent() != null) {
-            entity.setContent(request.getContent());
-        }
-        
-        // 这些字段允许设置为null（清空）
-        entity.setSummary(request.getSummary());
-        entity.setCoverImage(request.getCoverImage());
-        
-        if (request.getCategoryId() != null) {
-            entity.setCategoryId(request.getCategoryId());
-        }
+    public static PostEntity updateEntityFromRequest(String id,UpdatePostRequest request) {
+        PostEntity postEntity = new PostEntity();
+        BeanUtils.copyProperties(request, postEntity);
+        postEntity.setId(id);
+        return postEntity;
     }
 }

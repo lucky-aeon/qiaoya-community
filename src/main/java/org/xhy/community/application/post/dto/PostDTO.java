@@ -3,6 +3,7 @@ package org.xhy.community.application.post.dto;
 import org.xhy.community.domain.post.valueobject.PostStatus;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class PostDTO {
     
@@ -21,6 +22,7 @@ public class PostDTO {
     private LocalDateTime publishTime;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
+    private List<String> tags;
     
     public PostDTO() {
     }
@@ -70,4 +72,7 @@ public class PostDTO {
     
     public LocalDateTime getUpdateTime() { return updateTime; }
     public void setUpdateTime(LocalDateTime updateTime) { this.updateTime = updateTime; }
+
+    public List<String> getTags() { return tags; }
+    public void setTags(List<String> tags) { this.tags = tags; }
 }

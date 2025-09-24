@@ -1,6 +1,7 @@
 package org.xhy.community.interfaces.post.request;
 
 import jakarta.validation.constraints.Size;
+import java.util.List;
 
 public class UpdatePostRequest {
     
@@ -17,6 +18,9 @@ public class UpdatePostRequest {
     private String coverImage;
     
     private String categoryId;
+
+    // 标签（可选）
+    private List<String> tags;
     
     public UpdatePostRequest() {
     }
@@ -36,4 +40,7 @@ public class UpdatePostRequest {
     
     public String getCategoryId() { return categoryId; }
     public void setCategoryId(String categoryId) { this.categoryId = categoryId; }
+
+    public List<String> getTags() { return tags; }
+    public void setTags(List<String> tags) { this.tags = tags; }
 }

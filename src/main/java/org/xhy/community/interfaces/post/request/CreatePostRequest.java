@@ -3,6 +3,7 @@ package org.xhy.community.interfaces.post.request;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import java.util.List;
 
 public class CreatePostRequest {
     
@@ -22,6 +23,9 @@ public class CreatePostRequest {
     
     @NotNull(message = "分类ID不能为空")
     private String categoryId;
+
+    // 标签（可选）
+    private List<String> tags;
     
     public CreatePostRequest() {
     }
@@ -41,4 +45,7 @@ public class CreatePostRequest {
     
     public String getCategoryId() { return categoryId; }
     public void setCategoryId(String categoryId) { this.categoryId = categoryId; }
+
+    public List<String> getTags() { return tags; }
+    public void setTags(List<String> tags) { this.tags = tags; }
 }
