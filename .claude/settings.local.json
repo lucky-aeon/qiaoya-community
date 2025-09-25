@@ -15,7 +15,8 @@
       "Bash(curl:*)",
       "Bash(find:*)",
       "Bash(mkdir:*)",
-      "Read(//Users/xhy/GoLandProjects/community/cmd/community/routers/frontend/**)"
+      "Read(//Users/xhy/GoLandProjects/community/cmd/community/routers/frontend/**)",
+      "Read(//Users/xhy/IdeaProjects/qiaoya-community/qiaoya-community-frontend/public/avatars/**)"
     ],
     "deny": [],
     "ask": []

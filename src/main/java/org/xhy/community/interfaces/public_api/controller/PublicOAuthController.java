@@ -1,4 +1,4 @@
-package org.xhy.community.interfaces.oauth.controller;
+package org.xhy.community.interfaces.public_api.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,7 +15,7 @@ import org.xhy.community.infrastructure.config.ApiResponse;
 import org.xhy.community.infrastructure.util.ClientIpUtil;
 
 @RestController
-@RequestMapping("/api/oauth/github")
+@RequestMapping("/api/public/oauth/github")
 public class PublicOAuthController {
 
     private final GithubAuthAppService githubAuthAppService;

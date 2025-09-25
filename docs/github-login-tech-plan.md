@@ -186,9 +186,9 @@ create unique index if not exists uniq_user_social_provider_open
 说明：API 层负责参数格式校验（@Valid）、鉴权与路由；App 层编排业务；Domain 层做业务规则校验。
 
 - 前台（未登录也可访问）
-  - `GET /api/oauth/github/url`
+  - `GET /api/public/oauth/github/url`
     - 出参：`AuthorizeUrlDTO { String url; String state; Long expireAt; }`
-  - `GET /api/oauth/github/callback?code=...&state=...`
+  - `GET /api/public/oauth/github/callback?code=...&state=...`
     - 出参：`AuthDTO { String token; Long expireAt; UserDTO user; Boolean newUser; }`
     - 说明：如采用浏览器跳转回前端，也可在服务端完成登录后 302 到前端携带 one-time code（可选方案）。
 
