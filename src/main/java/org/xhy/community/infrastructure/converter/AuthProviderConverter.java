@@ -1,0 +1,38 @@
+package org.xhy.community.infrastructure.converter;
+
+import org.apache.ibatis.type.BaseTypeHandler;
+import org.apache.ibatis.type.JdbcType;
+import org.apache.ibatis.type.MappedTypes;
+import org.xhy.community.domain.common.valueobject.AuthProvider;
+
+import java.sql.CallableStatement;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+@MappedTypes(AuthProvider.class)
+public class AuthProviderConverter extends BaseTypeHandler<AuthProvider> {
+    @Override
+    public void setNonNullParameter(PreparedStatement ps, int i, AuthProvider parameter, JdbcType jdbcType) throws SQLException {
+        ps.setString(i, parameter.name());
+    }
+
+    @Override
+    public AuthProvider getNullableResult(ResultSet rs, String columnName) throws SQLException {
+        String value = rs.getString(columnName);
+        return value != null ? AuthProvider.valueOf(value) : null;
+    }
+
+    @Override
+    public AuthProvider getNullableResult(ResultSet rs, int columnIndex) throws SQLException {
+        String value = rs.getString(columnIndex);
+        return value != null ? AuthProvider.valueOf(value) : null;
+    }
+
+    @Override
+    public AuthProvider getNullableResult(CallableStatement cs, int columnIndex) throws SQLException {
+        String value = cs.getString(columnIndex);
+        return value != null ? AuthProvider.valueOf(value) : null;
+    }
+}
+

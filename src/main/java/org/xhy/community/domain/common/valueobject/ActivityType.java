@@ -150,6 +150,32 @@ public enum ActivityType {
      * 激活CDK
      */
     ACTIVATE_CDK("激活CDK"),
+
+    // ==================== OAuth 登录/绑定 ====================
+    /**
+     * OAuth 获取授权地址
+     */
+    OAUTH_AUTHORIZE_URL("获取OAuth授权地址"),
+
+    /**
+     * OAuth 回调（登录）
+     */
+    OAUTH_CALLBACK("OAuth回调登录"),
+
+    /**
+     * OAuth 邮箱合并
+     */
+    OAUTH_EMAIL_MERGE("OAuth邮箱合并"),
+
+    /**
+     * OAuth 绑定
+     */
+    OAUTH_BIND("OAuth绑定"),
+
+    /**
+     * OAuth 解绑
+     */
+    OAUTH_UNBIND("OAuth解绑"),
     
     // ==================== 管理操作 ====================
     /**
@@ -226,6 +252,12 @@ public enum ActivityType {
             case START_LEARNING:
             case ACTIVATE_CDK:
                 return ActivityCategory.LEARNING;
+            case OAUTH_AUTHORIZE_URL:
+            case OAUTH_CALLBACK:
+            case OAUTH_EMAIL_MERGE:
+            case OAUTH_BIND:
+            case OAUTH_UNBIND:
+                return ActivityCategory.AUTHENTICATION;
                 
             case ADMIN_LOGIN:
             case ADMIN_UPDATE_USER:

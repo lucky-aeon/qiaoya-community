@@ -55,6 +55,8 @@ import org.xhy.community.infrastructure.converter.SystemConfigTypeConverter;
 import org.xhy.community.infrastructure.converter.*;
 import org.xhy.community.domain.post.valueobject.QAResolveStatus;
 import org.xhy.community.infrastructure.converter.QAResolveStatusConverter;
+import org.xhy.community.domain.common.valueobject.AuthProvider;
+import org.xhy.community.infrastructure.converter.AuthProviderConverter;
 
 import jakarta.annotation.PostConstruct;
 
@@ -103,6 +105,7 @@ public class MyBatisTypeHandlerConfig {
         typeHandlerRegistry.register(UpdateLogStatus.class, new UpdateLogStatusConverter());
         typeHandlerRegistry.register(ChangeType.class, new ChangeTypeConverter());
         typeHandlerRegistry.register(TestimonialStatus.class, new TestimonialStatusConverter());
+        typeHandlerRegistry.register(AuthProvider.class, new AuthProviderConverter());
 
         // 注册集合类型处理器
         typeHandlerRegistry.register(java.util.Map.class, new MapJsonTypeHandler());

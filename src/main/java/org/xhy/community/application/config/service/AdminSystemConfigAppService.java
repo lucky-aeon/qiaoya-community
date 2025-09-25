@@ -56,6 +56,7 @@ public class AdminSystemConfigAppService {
             case DEFAULT_SUBSCRIPTION_PLAN -> validateAndUpdateDefaultSubscriptionConfig(configData);
             case EMAIL_TEMPLATE, SYSTEM_MAINTENANCE -> validateGeneralConfig(configData);
             case USER_SESSION_LIMIT -> validateAndUpdateUserSessionConfig(configData);
+            case OAUTH_GITHUB -> validateAndUpdateGithubOAuthConfig(configData);
         }
 
         // 更新配置
@@ -177,6 +178,38 @@ public class AdminSystemConfigAppService {
             }
             throw new BusinessException(SystemConfigErrorCode.INVALID_CONFIG_DATA,
                 "用户会话配置数据格式错误");
+        }
+    }
+
+    /**
+     * 验证并更新 GitHub OAuth 配置
+     */
+    private void validateAndUpdateGithubOAuthConfig(Object configData) {
+        try {
+            org.xhy.community.domain.config.valueobject.GithubOAuthConfig config;
+            if (configData instanceof org.xhy.community.domain.config.valueobject.GithubOAuthConfig g) {
+                config = g;
+            } else {
+                config = objectMapper.convertValue(configData, org.xhy.community.domain.config.valueobject.GithubOAuthConfig.class);
+            }
+
+            if (config == null || !config.isValid()) {
+                throw new BusinessException(SystemConfigErrorCode.INVALID_CONFIG_DATA,
+                    "GitHub OAuth 配置数据无效");
+            }
+
+            // 额外验证：redirectUri 简单校验（可按需增强白名单校验）
+            if (!config.getRedirectUri().startsWith("http://") && !config.getRedirectUri().startsWith("https://")) {
+                throw new BusinessException(SystemConfigErrorCode.INVALID_CONFIG_DATA,
+                    "redirectUri 必须为有效的 URL");
+            }
+
+        } catch (Exception e) {
+            if (e instanceof BusinessException) {
+                throw e;
+            }
+            throw new BusinessException(SystemConfigErrorCode.INVALID_CONFIG_DATA,
+                "GitHub OAuth 配置数据格式错误");
         }
     }
 

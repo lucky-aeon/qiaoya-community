@@ -7,6 +7,7 @@ import org.xhy.community.application.config.dto.SystemConfigDTO;
 import org.xhy.community.domain.config.entity.SystemConfigEntity;
 import org.xhy.community.domain.config.valueobject.DefaultSubscriptionConfig;
 import org.xhy.community.domain.config.valueobject.SystemConfigType;
+import org.xhy.community.domain.config.valueobject.GithubOAuthConfig;
 import org.xhy.community.domain.config.valueobject.UserSessionConfig;
 import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.infrastructure.exception.SystemConfigErrorCode;
@@ -53,6 +54,7 @@ public class SystemConfigAssembler {
             case DEFAULT_SUBSCRIPTION_PLAN -> objectMapper.readValue(jsonData, DefaultSubscriptionConfig.class);
             case USER_SESSION_LIMIT -> objectMapper.readValue(jsonData, UserSessionConfig.class);
             case EMAIL_TEMPLATE, SYSTEM_MAINTENANCE -> objectMapper.readValue(jsonData, Object.class);
+            case OAUTH_GITHUB -> objectMapper.readValue(jsonData, GithubOAuthConfig.class);
         };
     }
 
