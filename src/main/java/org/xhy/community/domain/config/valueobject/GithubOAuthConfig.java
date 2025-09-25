@@ -1,11 +1,13 @@
 package org.xhy.community.domain.config.valueobject;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * GitHub OAuth 配置，存储于 system_configs 表的 data 字段（JSON）
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class GithubOAuthConfig {
 
     private String clientId;
@@ -61,4 +63,3 @@ public class GithubOAuthConfig {
     public boolean isUpdateUserProfileIfEmpty() { return updateUserProfileIfEmpty; }
     public void setUpdateUserProfileIfEmpty(boolean updateUserProfileIfEmpty) { this.updateUserProfileIfEmpty = updateUserProfileIfEmpty; }
 }
-
