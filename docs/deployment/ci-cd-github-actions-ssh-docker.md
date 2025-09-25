@@ -130,8 +130,7 @@ ENTRYPOINT ["sh", "-c", "java $JAVA_TOOL_OPTIONS -jar /app/app.jar"]
 - SSH_PRIVATE_KEY：私钥内容（与服务器上 `~/.ssh/authorized_keys` 匹配）
 - GHCR_USERNAME（私有镜像必需）：GitHub 用户名（或机器人账号）
 - GHCR_TOKEN（私有镜像必需）：PAT，至少 `read:packages`，并完成组织 SSO 授权（如适用）
-- DEV_ENV_FILE_PATH（可选）：dev 环境的 env-file 路径，未设置则使用默认 `/etc/qiaoya.backend.env`
-- PROD_ENV_FILE_PATH（可选）：prod 环境的 env-file 路径
+- DEPLOY_SCRIPT_PATH（可选）：自定义脚本路径；默认 `/www/project/qiaoya/deploy-qiaoya.sh`
 - SSH_PORT（可选）：默认 22
 
 使用 GHCR 时，Workflow 需要 `packages: write` 权限；使用默认 `GITHUB_TOKEN` 即可推送到 GHCR（包默认私有，见第 7 节）。
@@ -210,7 +209,6 @@ jobs:
         env:
           GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
           GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
-          ENV_FILE: ${{ secrets.DEV_ENV_FILE_PATH }}
           IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:dev-latest
           PROFILE: dev
           PORT: 8520
@@ -220,12 +218,12 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script_stop: true
-          envs: GHCR_USERNAME,GHCR_TOKEN,ENV_FILE,IMAGE,PROFILE,PORT,CONTAINER_NAME
+          envs: GHCR_USERNAME,GHCR_TOKEN,IMAGE,PROFILE,PORT,CONTAINER_NAME
           script: |
             set -e
-            ENV_FILE="${ENV_FILE:-/etc/qiaoya.backend.env}"
-            chmod +x /usr/local/bin/deploy-qiaoya.sh || true
-            /usr/local/bin/deploy-qiaoya.sh
+            SCRIPT_PATH="/www/project/qiaoya/deploy-qiaoya.sh"
+            chmod +x "$SCRIPT_PATH" || true
+            "$SCRIPT_PATH"
 ```
 
 ### 6.2 生产/发布（.github/workflows/release-deploy.yml）
@@ -297,7 +295,6 @@ jobs:
         env:
           GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
           GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
-          ENV_FILE: ${{ secrets.PROD_ENV_FILE_PATH }}
           IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
           PROFILE: prod
           PORT: 8520
@@ -307,12 +304,12 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script_stop: true
-          envs: GHCR_USERNAME,GHCR_TOKEN,ENV_FILE,IMAGE,PROFILE,PORT,CONTAINER_NAME
+          envs: GHCR_USERNAME,GHCR_TOKEN,IMAGE,PROFILE,PORT,CONTAINER_NAME
           script: |
             set -e
-            ENV_FILE="${ENV_FILE:-/etc/qiaoya.backend.env}"
-            chmod +x /usr/local/bin/deploy-qiaoya.sh || true
-            /usr/local/bin/deploy-qiaoya.sh
+            SCRIPT_PATH="/www/project/qiaoya/deploy-qiaoya.sh"
+            chmod +x "$SCRIPT_PATH" || true
+            "$SCRIPT_PATH"
 ```
 
 > 注：如果不希望使用 `prod-latest`，可以只保留 `:v*` 的版本化标签，回滚更直观。
@@ -369,7 +366,7 @@ gunzip -c app-image.tar.gz | docker load
 docker tag qiaoya/backend:${GITHUB_SHA} ghcr.io/<owner>/<repo>:dev-latest
 docker stop qiaoya-community-backend || true
 docker rm qiaoya-community-backend || true
-IMAGE=ghcr.io/<owner>/<repo>:dev-latest PROFILE=dev ENV_FILE=/etc/qiaoya.backend.env /usr/local/bin/deploy-qiaoya.sh
+IMAGE=ghcr.io/<owner>/<repo>:dev-latest PROFILE=dev /www/project/qiaoya/deploy-qiaoya.sh
 ```
 
 此方案省去镜像仓库，但网络传输量较大，且多台服务器时维护成本更高，故仅作备选。
@@ -380,7 +377,7 @@ IMAGE=ghcr.io/<owner>/<repo>:dev-latest PROFILE=dev ENV_FILE=/etc/qiaoya.backend
 
 - 使用 GHCR 方案：选择目标历史 Tag（如 `v1.2.3`），然后在服务器执行：
 ```bash
-IMAGE=ghcr.io/<owner>/<repo>:v1.2.3 PROFILE=prod ENV_FILE=/etc/qiaoya.backend.env /usr/local/bin/deploy-qiaoya.sh
+IMAGE=ghcr.io/<owner>/<repo>:v1.2.3 PROFILE=prod /www/project/qiaoya/deploy-qiaoya.sh
 ```
 - 亦可通过 GitHub 界面对该 Tag 重新运行 release 工作流（Re-run job）。
 - 无仓库方案：保留本地历史镜像或手动重新加载 tar 包，指定旧镜像执行部署脚本。

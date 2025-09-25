@@ -6,7 +6,7 @@ IMAGE=${IMAGE:-}
 
 # Optional with defaults
 PROFILE=${PROFILE:-dev}
-ENV_FILE=${ENV_FILE:-/etc/qiaoya.backend.env}
+ENV_FILE=${ENV_FILE:-/www/project/qiaoya/qiaoya.backend.env}
 CONTAINER_NAME=${CONTAINER_NAME:-qiaoya-community-backend}
 PORT=${PORT:-8520}
 JAVA_TOOL_OPTIONS=${JAVA_TOOL_OPTIONS:-}
@@ -55,4 +55,3 @@ docker run -d --name "$CONTAINER_NAME" --restart unless-stopped \
 docker image prune -f >/dev/null 2>&1 || true
 
 echo "[deploy] Done. Container '$CONTAINER_NAME' is running on port $PORT"
-

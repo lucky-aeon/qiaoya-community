@@ -65,7 +65,6 @@ jobs:
         env:
           GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
           GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
-          ENV_FILE: ${{ secrets.PROD_ENV_FILE_PATH }}
           SCRIPT_PATH: ${{ secrets.DEPLOY_SCRIPT_PATH }}
           IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
           PROFILE: prod
@@ -76,10 +75,9 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script_stop: true
-          envs: GHCR_USERNAME,GHCR_TOKEN,ENV_FILE,SCRIPT_PATH,IMAGE,PROFILE,PORT,CONTAINER_NAME
+          envs: GHCR_USERNAME,GHCR_TOKEN,SCRIPT_PATH,IMAGE,PROFILE,PORT,CONTAINER_NAME
           script: |
             set -e
-            ENV_FILE="${ENV_FILE:-/www/project/qiaoya/qiaoya.backend.env}"
             SCRIPT_PATH="${SCRIPT_PATH:-/www/project/qiaoya/deploy-qiaoya.sh}"
             chmod +x "$SCRIPT_PATH" || true
             "$SCRIPT_PATH"
