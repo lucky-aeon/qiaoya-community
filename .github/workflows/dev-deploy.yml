@@ -16,6 +16,7 @@ jobs:
       packages: write
     env:
       REGISTRY: ghcr.io
+      MIRROR_REGISTRY: ghcr.nju.edu.cn
       IMAGE_NAME: ${{ github.repository }}
       TAG_SHA: dev-${{ github.sha }}
     steps:
@@ -65,7 +66,7 @@ jobs:
           GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
           GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
           SCRIPT_PATH: ${{ secrets.DEPLOY_SCRIPT_PATH }}
-          IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:dev-latest
+          IMAGE: ${{ env.MIRROR_REGISTRY }}/${{ env.IMAGE_NAME }}:dev-latest
           PROFILE: dev
           PORT: 8520
           CONTAINER_NAME: qiaoya-community-backend
