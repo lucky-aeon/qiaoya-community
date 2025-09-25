@@ -51,7 +51,18 @@ public class UserEntity extends BaseEntity {
         this.status = UserStatus.ACTIVE;
         this.role = UserRole.USER;
         this.emailNotificationEnabled = false;
-        this.maxConcurrentDevices = 5;
+        this.maxConcurrentDevices = 1;
+    }
+
+    public UserEntity(String name, String email, String password, String avatar) {
+        this.name = name;
+        this.email = email;
+        this.password = password;
+        this.avatar = avatar;
+        this.status = UserStatus.ACTIVE;
+        this.role = UserRole.USER;
+        this.emailNotificationEnabled = false;
+        this.maxConcurrentDevices = 1;
     }
     
     public void updateProfile(String name, String description, String avatar) {

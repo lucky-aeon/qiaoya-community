@@ -54,10 +54,18 @@ public class UserDomainService {
         return user;
     }
 
+    public UserEntity createUser(String name, String email, String password, String avatar) {
+        String encryptedPassword = encryptPassword(password);
+        UserEntity user = new UserEntity(name, email.trim().toLowerCase(), encryptedPassword, avatar);
+        userRepository.insert(user);
+        return user;
+    }
+
 
     public UserEntity registerUser(String email, String password) {
         String defaultNickname = generateDefaultNickname();
-        UserEntity user = createUser(defaultNickname, email, password);
+        String defaultAvatar = generateRandomAvatar();
+        UserEntity user = createUser(defaultNickname, email, password, defaultAvatar);
 
         // 发布用户注册事件
         eventPublisher.publishEvent(new UserRegisteredEvent(this, user.getId(), user.getEmail()));
@@ -69,6 +77,12 @@ public class UserDomainService {
         Random random = new Random();
         int randomNumber = 100000 + random.nextInt(900000);
         return "敲鸭-" + randomNumber;
+    }
+
+    private String generateRandomAvatar() {
+        Random random = new Random();
+        int avatarNumber = random.nextInt(19) + 1;
+        return "/avatars/avatar_" + avatarNumber + ".png";
     }
 
     public UserEntity updateUserProfile(String userId, String name, String description, String avatar) {
