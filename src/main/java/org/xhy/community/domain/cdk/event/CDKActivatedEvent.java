@@ -3,7 +3,6 @@ package org.xhy.community.domain.cdk.event;
 import org.xhy.community.domain.cdk.valueobject.CDKType;
 import org.xhy.community.domain.cdk.valueobject.CDKAcquisitionType;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
@@ -16,7 +15,6 @@ public class CDKActivatedEvent {
     private final CDKType cdkType;        // CDK类型
     private final String targetId;        // 目标ID（课程ID等）
     private final CDKAcquisitionType acquisitionType; // CDK获得方式
-    private final BigDecimal price;       // CDK价格
     private final LocalDateTime activatedTime; // 激活时间
 
     // 包含完整的业务信息，避免通知领域跨领域查询
@@ -24,14 +22,13 @@ public class CDKActivatedEvent {
     private final String userEmail;       // 用户邮箱
     
     public CDKActivatedEvent(String userId, String cdkCode, CDKType cdkType, String targetId,
-                           CDKAcquisitionType acquisitionType, BigDecimal price,
+                           CDKAcquisitionType acquisitionType,
                            String userName, String userEmail) {
         this.userId = userId;
         this.cdkCode = cdkCode;
         this.cdkType = cdkType;
         this.targetId = targetId;
         this.acquisitionType = acquisitionType;
-        this.price = price;
         this.userName = userName;
         this.userEmail = userEmail;
         this.activatedTime = LocalDateTime.now();
@@ -47,7 +44,6 @@ public class CDKActivatedEvent {
         this.cdkType = cdkType;
         this.targetId = targetId;
         this.acquisitionType = CDKAcquisitionType.PURCHASE; // 默认为购买
-        this.price = BigDecimal.ZERO;
         this.userName = "待获取";  // 占位符，通知监听器需要补充
         this.userEmail = null;
         this.activatedTime = LocalDateTime.now();
@@ -59,7 +55,6 @@ public class CDKActivatedEvent {
     public CDKType getCdkType() { return cdkType; }
     public String getTargetId() { return targetId; }
     public CDKAcquisitionType getAcquisitionType() { return acquisitionType; }
-    public BigDecimal getPrice() { return price; }
     public LocalDateTime getActivatedTime() { return activatedTime; }
 
     // 完整业务信息Getters

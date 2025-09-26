@@ -39,7 +39,6 @@ public class AdminCDKAppService {
             request.getTargetId(),
             request.getQuantity(),
             request.getAcquisitionType(),
-            request.getPrice(),
             request.getRemark()
         );
 

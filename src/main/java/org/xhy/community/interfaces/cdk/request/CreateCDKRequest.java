@@ -4,12 +4,10 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Size;
 import org.xhy.community.domain.cdk.valueobject.CDKType;
 import org.xhy.community.domain.cdk.valueobject.CDKAcquisitionType;
 
-import java.math.BigDecimal;
 
 /**
  * 创建CDK请求
@@ -29,9 +27,6 @@ public class CreateCDKRequest {
     @NotNull(message = "获得方式不能为空")
     private CDKAcquisitionType acquisitionType;
 
-    @DecimalMin(value = "0.00", message = "价格不能为负数")
-    private BigDecimal price;
-
     @Size(max = 500, message = "备注长度不能超过500字符")
     private String remark;
     
@@ -49,9 +44,6 @@ public class CreateCDKRequest {
 
     public CDKAcquisitionType getAcquisitionType() { return acquisitionType; }
     public void setAcquisitionType(CDKAcquisitionType acquisitionType) { this.acquisitionType = acquisitionType; }
-
-    public BigDecimal getPrice() { return price; }
-    public void setPrice(BigDecimal price) { this.price = price; }
 
     public String getRemark() { return remark; }
     public void setRemark(String remark) { this.remark = remark; }

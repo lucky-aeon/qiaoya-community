@@ -18,7 +18,6 @@ import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.infrastructure.exception.CDKErrorCode;
 import org.xhy.community.domain.cdk.query.CDKQuery;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -36,34 +35,27 @@ public class CDKDomainService {
     }
     
     /**
-     * 批量创建CDK - 扩展版本，支持获得方式和价格
+     * 批量创建CDK - 扩展版本，支持获得方式
      */
     public List<CDKEntity> createCDKBatch(CDKType cdkType, String targetId, int quantity,
-                                         CDKAcquisitionType acquisitionType, BigDecimal price, String remark) {
+                                         CDKAcquisitionType acquisitionType, String remark) {
         String batchId = UUID.randomUUID().toString();
         List<CDKEntity> cdkList = new ArrayList<>();
 
         for (int i = 0; i < quantity; i++) {
             String code = generateCDKCode();
-            CDKEntity cdk = new CDKEntity(code, cdkType, targetId, batchId, acquisitionType, price);
+            CDKEntity cdk = new CDKEntity(code, cdkType, targetId, batchId, acquisitionType);
             cdk.setRemark(remark);
             cdkRepository.insert(cdk);
             cdkList.add(cdk);
         }
 
-        log.info("[CDK批量创建] 成功创建{}个CDK，类型：{}，获得方式：{}，价格：{}",
-                quantity, cdkType, acquisitionType, price);
+        log.info("[CDK批量创建] 成功创建{}个CDK，类型：{}，获得方式：{}",
+                quantity, cdkType, acquisitionType);
 
         return cdkList;
     }
 
-    /**
-     * 兼容原有方法 - 默认为购买获得，价格为0
-     */
-    public List<CDKEntity> createCDKBatch(CDKType cdkType, String targetId, int quantity) {
-        return createCDKBatch(cdkType, targetId, quantity, CDKAcquisitionType.PURCHASE, BigDecimal.ZERO, null);
-    }
-    
     /**
      * CDK激活 - 扩展事件信息
      */
@@ -73,8 +65,8 @@ public class CDKDomainService {
 
         // 1. 验证CDK有效性
         CDKEntity cdk = getCDKByCode(cdkCode);
-        log.debug("[CDK激活] CDK可用性检查通过: type={}, targetId={}, acquisitionType={}, price={}",
-                cdk.getCdkType(), cdk.getTargetId(), cdk.getAcquisitionType(), cdk.getPrice());
+        log.debug("[CDK激活] CDK可用性检查通过: type={}, targetId={}, acquisitionType={}",
+                cdk.getCdkType(), cdk.getTargetId(), cdk.getAcquisitionType());
 
         if (!cdk.isUsable()) {
             log.warn("[CDK激活] CDK不可用，拒绝处理: userId={}, cdk={}", userId, masked);
@@ -92,13 +84,12 @@ public class CDKDomainService {
             cdk.getCdkType(),
             cdk.getTargetId(),
             cdk.getAcquisitionType(),
-            cdk.getPrice(),
             "待获取", // TODO: 后续优化为从Application层传入完整用户信息
             null
         );
         applicationEventPublisher.publishEvent(event);
-        log.info("[CDK激活] 已发布事件: userId={}, type={}, targetId={}, acquisitionType={}, price={}",
-                userId, cdk.getCdkType(), cdk.getTargetId(), cdk.getAcquisitionType(), cdk.getPrice());
+        log.info("[CDK激活] 已发布事件: userId={}, type={}, targetId={}, acquisitionType={}",
+                userId, cdk.getCdkType(), cdk.getTargetId(), cdk.getAcquisitionType());
     }
     
     public CDKEntity getCDKById(String id) {

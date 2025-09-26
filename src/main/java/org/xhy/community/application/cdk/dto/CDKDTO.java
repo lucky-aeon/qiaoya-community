@@ -4,7 +4,6 @@ import org.xhy.community.domain.cdk.valueobject.CDKType;
 import org.xhy.community.domain.cdk.valueobject.CDKStatus;
 import org.xhy.community.domain.cdk.valueobject.CDKAcquisitionType;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 public class CDKDTO {
@@ -19,7 +18,6 @@ public class CDKDTO {
     private String usedByUserId;
     private LocalDateTime usedTime;
     private CDKAcquisitionType acquisitionType; // 新增
-    private BigDecimal price;                   // 新增
     private String remark;                      // 新增
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
@@ -62,9 +60,6 @@ public class CDKDTO {
 
     public CDKAcquisitionType getAcquisitionType() { return acquisitionType; }
     public void setAcquisitionType(CDKAcquisitionType acquisitionType) { this.acquisitionType = acquisitionType; }
-
-    public BigDecimal getPrice() { return price; }
-    public void setPrice(BigDecimal price) { this.price = price; }
 
     public String getRemark() { return remark; }
     public void setRemark(String remark) { this.remark = remark; }

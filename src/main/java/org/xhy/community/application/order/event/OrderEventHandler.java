@@ -46,8 +46,9 @@ public class OrderEventHandler {
                 return;
             }
 
-            // 获取商品名称
+            // 获取商品名称与价格
             String productName = getProductName(event.getCdkType(), event.getTargetId());
+            java.math.BigDecimal amount = getProductPrice(event.getCdkType(), event.getTargetId());
 
             // 转换订单类型
             OrderType orderType = event.getAcquisitionType() == CDKAcquisitionType.PURCHASE ?
@@ -62,7 +63,7 @@ public class OrderEventHandler {
                 event.getTargetId(),
                 productName,
                 orderType,
-                event.getPrice(),
+                amount,
                 event.getActivatedTime()
             );
 
@@ -98,6 +99,27 @@ public class OrderEventHandler {
                 } catch (Exception e) {
                     log.warn("[订单创建] 获取订阅计划名称失败: planId={}", targetId, e);
                     yield "未知订阅计划";
+                }
+            }
+        };
+    }
+
+    private java.math.BigDecimal getProductPrice(org.xhy.community.domain.cdk.valueobject.CDKType cdkType, String targetId) {
+        return switch (cdkType) {
+            case COURSE -> {
+                try {
+                    yield courseDomainService.getCourseById(targetId).getPrice();
+                } catch (Exception e) {
+                    log.warn("[订单创建] 获取课程价格失败: courseId={}", targetId, e);
+                    yield java.math.BigDecimal.ZERO;
+                }
+            }
+            case SUBSCRIPTION_PLAN -> {
+                try {
+                    yield subscriptionPlanDomainService.getSubscriptionPlanById(targetId).getPrice();
+                } catch (Exception e) {
+                    log.warn("[订单创建] 获取订阅计划价格失败: planId={}", targetId, e);
+                    yield java.math.BigDecimal.ZERO;
                 }
             }
         };
