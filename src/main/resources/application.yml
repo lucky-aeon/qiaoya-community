@@ -97,3 +97,14 @@ management:
   endpoint:
     health:
       show-details: when_authorized
+
+# 邮件品牌配置
+community:
+  email:
+    brand:
+      # 支持 URL 或 data URI；若留空，将尝试从 logoFile/classpath 默认位置读取
+      # logoSrc: ""
+      # 使用 classpath 中的 logo 文件自动生成 data URI
+      logoFile: classpath:branding/logo-email.jpg
+      # 页脚“管理通知设置”链接
+      manageNotificationsUrl: https://qiaoya.com/settings/notifications

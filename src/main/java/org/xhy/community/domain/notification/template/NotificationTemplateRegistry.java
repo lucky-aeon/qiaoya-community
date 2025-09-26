@@ -5,6 +5,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.xhy.community.domain.notification.context.NotificationData;
 import org.xhy.community.domain.notification.valueobject.ChannelType;
+import org.xhy.community.domain.notification.context.*;
+import org.xhy.community.infrastructure.config.EmailBrandingConfig;
+import org.xhy.community.infrastructure.template.ClasspathTemplateLoader;
+import org.xhy.community.infrastructure.template.SimpleTemplateRenderer;
 
 import jakarta.annotation.PostConstruct;
 import java.util.HashMap;
@@ -24,6 +28,18 @@ public class NotificationTemplateRegistry {
     // 站外消息模板
     private final Map<Class<? extends NotificationData>, NotificationTemplate> outAppTemplates = new HashMap<>();
     
+    private final ClasspathTemplateLoader templateLoader;
+    private final SimpleTemplateRenderer templateRenderer;
+    private final EmailBrandingConfig brandingConfig;
+
+    public NotificationTemplateRegistry(ClasspathTemplateLoader templateLoader,
+                                        SimpleTemplateRenderer templateRenderer,
+                                        EmailBrandingConfig brandingConfig) {
+        this.templateLoader = templateLoader;
+        this.templateRenderer = templateRenderer;
+        this.brandingConfig = brandingConfig;
+    }
+
     @PostConstruct
     public void initTemplates() {
         // 注册站内消息模板
@@ -32,16 +48,104 @@ public class NotificationTemplateRegistry {
         registerInAppTemplate(new InAppNotificationTemplates.CDKActivatedTemplate());
         registerInAppTemplate(new InAppNotificationTemplates.SubscriptionExpiredTemplate());
         registerInAppTemplate(new InAppNotificationTemplates.CommentTemplate());
-        
+
         // 注册站外消息模板
-        registerOutAppTemplate(new OutAppNotificationTemplates.NewFollowerTemplate());
-        registerOutAppTemplate(new OutAppNotificationTemplates.ContentUpdateTemplate());
-        registerOutAppTemplate(new OutAppNotificationTemplates.CDKActivatedTemplate());
-        registerOutAppTemplate(new OutAppNotificationTemplates.SubscriptionExpiredTemplate());
-        registerOutAppTemplate(new OutAppNotificationTemplates.CommentTemplate());
+        registerFileBasedOutAppTemplates();
         
         log.info("通知模板注册完成: 站内模板{}个, 站外模板{}个", 
                 inAppTemplates.size(), outAppTemplates.size());
+    }
+
+    private void registerFileBasedOutAppTemplates() {
+        // 新关注者
+        registerOutAppTemplate(new FileBasedNotificationTemplate<>(
+            NewFollowerNotificationData.class,
+            "敲鸭社区 - 新的关注者",
+            "new-follower.html",
+            templateLoader,
+            templateRenderer,
+            brandingConfig,
+            data -> {
+                java.util.Map<String, String> m = new java.util.HashMap<>();
+                m.put("RECIPIENT_NAME", data.getRecipientName());
+                m.put("FOLLOWER_NAME", data.getFollowerName());
+                m.put("FOLLOWER_PROFILE_URL", data.getFollowerProfileUrl());
+                return m;
+            }
+        ));
+
+        // 关注内容更新
+        registerOutAppTemplate(new FileBasedNotificationTemplate<>(
+            ContentUpdateNotificationData.class,
+            "敲鸭社区 - 关注内容更新",
+            "content-update.html",
+            templateLoader,
+            templateRenderer,
+            brandingConfig,
+            data -> {
+                java.util.Map<String, String> m = new java.util.HashMap<>();
+                m.put("RECIPIENT_NAME", data.getRecipientName());
+                m.put("AUTHOR_NAME", data.getAuthorName());
+                m.put("CONTENT_TYPE", data.getContentType());
+                m.put("CONTENT_TITLE", data.getContentTitle());
+                m.put("CONTENT_URL", data.getContentUrl());
+                return m;
+            }
+        ));
+
+        // CDK 激活
+        registerOutAppTemplate(new FileBasedNotificationTemplate<>(
+            CDKActivatedNotificationData.class,
+            "敲鸭社区 - CDK激活成功",
+            "cdk-activated.html",
+            templateLoader,
+            templateRenderer,
+            brandingConfig,
+            data -> {
+                java.util.Map<String, String> m = new java.util.HashMap<>();
+                m.put("RECIPIENT_NAME", data.getRecipientName());
+                m.put("CDK_CODE", data.getCdkCode());
+                m.put("ACTIVATION_TIME", data.getActivationTime());
+                return m;
+            }
+        ));
+
+        // 订阅即将过期
+        registerOutAppTemplate(new FileBasedNotificationTemplate<>(
+            SubscriptionExpiredNotificationData.class,
+            "敲鸭社区 - 订阅即将过期",
+            "subscription-expiring.html",
+            templateLoader,
+            templateRenderer,
+            brandingConfig,
+            data -> {
+                java.util.Map<String, String> m = new java.util.HashMap<>();
+                m.put("RECIPIENT_NAME", data.getRecipientName());
+                m.put("DAYS_REMAINING", String.valueOf(data.getDaysRemaining()));
+                m.put("RENEWAL_URL", data.getRenewalUrl());
+                return m;
+            }
+        ));
+
+        // 评论
+        registerOutAppTemplate(new FileBasedNotificationTemplate<>(
+            CommentNotificationData.class,
+            "敲鸭社区 - 新的评论",
+            "comment.html",
+            templateLoader,
+            templateRenderer,
+            brandingConfig,
+            data -> {
+                java.util.Map<String, String> m = new java.util.HashMap<>();
+                m.put("RECIPIENT_NAME", data.getRecipientName());
+                m.put("COMMENTER_NAME", data.getCommenterName());
+                m.put("TARGET_TYPE", data.getTargetType());
+                m.put("TARGET_TITLE", data.getTargetTitle());
+                m.put("TRUNCATED_COMMENT", data.getTruncatedCommentContent());
+                m.put("TARGET_URL", data.getTargetUrl());
+                return m;
+            }
+        ));
     }
     
     /**

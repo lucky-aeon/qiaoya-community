@@ -3,7 +3,9 @@ package org.xhy.community.domain.notification.template;
 import org.xhy.community.domain.notification.context.*;
 
 /**
- * 站外消息模板（邮件）
+ * 站外消息模板（保留：目前已切换为文件模板注册）
+ * 说明：NotificationTemplateRegistry 已改为注册基于文件的模板。
+ * 本类暂保留以避免破坏已有引用，但不会被新的注册器使用。
  */
 public class OutAppNotificationTemplates {
     

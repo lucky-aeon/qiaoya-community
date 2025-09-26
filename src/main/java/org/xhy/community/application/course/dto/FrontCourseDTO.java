@@ -30,6 +30,7 @@ public class FrontCourseDTO {
     private String demoUrl;
     private List<CourseResource> resources;
     private LocalDateTime createTime;
+    private Boolean unlocked;
     
     public FrontCourseDTO() {}
     
@@ -84,4 +85,7 @@ public class FrontCourseDTO {
 
     public LocalDateTime getCreateTime() { return createTime; }
     public void setCreateTime(LocalDateTime createTime) { this.createTime = createTime; }
+
+    public Boolean getUnlocked() { return unlocked; }
+    public void setUnlocked(Boolean unlocked) { this.unlocked = unlocked; }
 }
