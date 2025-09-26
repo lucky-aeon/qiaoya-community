@@ -22,6 +22,7 @@ public class UserDTO {
 
     private String currentSubscriptionPlanId;
     private String currentSubscriptionPlanName;
+    private Integer currentSubscriptionLevel;
     private LocalDateTime currentSubscriptionStartTime;
     private LocalDateTime currentSubscriptionEndTime;
     
@@ -100,5 +101,13 @@ public class UserDTO {
 
     public void setCurrentSubscriptionEndTime(LocalDateTime currentSubscriptionEndTime) {
         this.currentSubscriptionEndTime = currentSubscriptionEndTime;
+    }
+
+    public Integer getCurrentSubscriptionLevel() {
+        return currentSubscriptionLevel;
+    }
+
+    public void setCurrentSubscriptionLevel(Integer currentSubscriptionLevel) {
+        this.currentSubscriptionLevel = currentSubscriptionLevel;
     }
 }

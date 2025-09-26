@@ -7,6 +7,7 @@ import org.xhy.community.application.user.dto.LoginResponseDTO;
 import org.xhy.community.application.user.dto.UserDTO;
 import org.xhy.community.application.user.dto.UserPublicProfileDTO;
 import org.xhy.community.application.user.dto.UserStatsDTO;
+import org.xhy.community.domain.subscription.entity.SubscriptionPlanEntity;
 import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.domain.user.entity.UserEntity;
 import org.xhy.community.infrastructure.exception.UserErrorCode;
@@ -163,13 +164,13 @@ public class UserAppService {
         if (actives != null && !actives.isEmpty()) {
             // 取最新创建的订阅作为当前套餐
             UserSubscriptionEntity current = actives.get(0);
-            String planName = subscriptionPlanDomainService
-                    .getSubscriptionPlanById(current.getSubscriptionPlanId())
-                    .getName();
+            SubscriptionPlanEntity subscriptionPlan = subscriptionPlanDomainService
+                    .getSubscriptionPlanById(current.getSubscriptionPlanId());
             dto.setCurrentSubscriptionPlanId(current.getSubscriptionPlanId());
-            dto.setCurrentSubscriptionPlanName(planName);
+            dto.setCurrentSubscriptionPlanName(subscriptionPlan.getName());
             dto.setCurrentSubscriptionStartTime(current.getStartTime());
             dto.setCurrentSubscriptionEndTime(current.getEndTime());
+            dto.setCurrentSubscriptionLevel(subscriptionPlan.getLevel());
         }
 
         return dto;

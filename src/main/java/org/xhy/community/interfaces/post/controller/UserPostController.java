@@ -71,7 +71,7 @@ public class UserPostController {
     public ApiResponse<PostDTO> updatePost(@PathVariable String id, @Valid @RequestBody UpdatePostRequest request) {
         String currentUserId = UserContext.getCurrentUserId();
         PostDTO post = postAppService.updatePost(id, request, currentUserId);
-        return ApiResponse.success(post.getStatus() == PostStatus.PUBLISHED ? "发布成功" : "保存草稿",post);
+        return ApiResponse.success("保存成功",post);
     }
     
     /**

@@ -37,6 +37,7 @@ public class UserAssembler {
 
         UserEntity entity = new UserEntity();
         entity.setId(userId);
+        entity.setName(request.getName());
         entity.setDescription(request.getDescription());
         entity.setAvatar(request.getAvatar());
         return entity;
