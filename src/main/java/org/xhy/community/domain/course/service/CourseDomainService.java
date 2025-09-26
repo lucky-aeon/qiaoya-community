@@ -3,10 +3,13 @@ package org.xhy.community.domain.course.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.xhy.community.domain.course.entity.CourseEntity;
 import org.xhy.community.domain.course.repository.CourseRepository;
+import org.xhy.community.domain.common.event.ContentPublishedEvent;
+import org.xhy.community.domain.common.valueobject.ContentType;
 import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.infrastructure.exception.CourseErrorCode;
 import org.xhy.community.domain.course.query.CourseQuery;
@@ -21,13 +24,20 @@ import java.util.stream.Collectors;
 public class CourseDomainService {
     
     private final CourseRepository courseRepository;
-    
-    public CourseDomainService(CourseRepository courseRepository) {
+    private final ApplicationEventPublisher eventPublisher;
+
+    public CourseDomainService(CourseRepository courseRepository,
+                               ApplicationEventPublisher eventPublisher) {
         this.courseRepository = courseRepository;
+        this.eventPublisher = eventPublisher;
     }
     
     public CourseEntity createCourse(CourseEntity course) {
         courseRepository.insert(course);
+
+        // 发布简化的课程创建事件
+        publishContentEvent(course);
+
         return course;
     }
     
@@ -105,5 +115,22 @@ public class CourseDomainService {
                     CourseEntity::getId,
                     CourseEntity::getTitle
                 ));
+    }
+
+    /**
+     * 发布简化的课程内容事件
+     * 只包含必要的标识信息，由Application层统一处理通知逻辑
+     */
+    private void publishContentEvent(CourseEntity course) {
+        try {
+            ContentPublishedEvent event = new ContentPublishedEvent(
+                ContentType.COURSE,
+                course.getId(),
+                course.getAuthorId()
+            );
+            eventPublisher.publishEvent(event);
+        } catch (Exception e) {
+            // 事件发布失败不应影响主业务流程
+        }
     }
 }

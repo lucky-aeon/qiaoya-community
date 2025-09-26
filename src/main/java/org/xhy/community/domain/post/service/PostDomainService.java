@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.xhy.community.domain.post.query.PostQuery;
@@ -22,6 +23,8 @@ import org.xhy.community.domain.comment.repository.CommentRepository;
 import org.xhy.community.domain.comment.entity.CommentEntity;
 import org.xhy.community.domain.comment.valueobject.BusinessType;
 import org.xhy.community.domain.common.valueobject.AccessLevel;
+import org.xhy.community.domain.common.event.ContentPublishedEvent;
+import org.xhy.community.domain.common.valueobject.ContentType;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
@@ -36,15 +39,18 @@ public class PostDomainService {
     private final CategoryRepository categoryRepository;
     private final PostAcceptedCommentRepository postAcceptedCommentRepository;
     private final CommentRepository commentRepository;
-    
+    private final ApplicationEventPublisher eventPublisher;
+
     public PostDomainService(PostRepository postRepository,
                              CategoryRepository categoryRepository,
                              PostAcceptedCommentRepository postAcceptedCommentRepository,
-                             CommentRepository commentRepository) {
+                             CommentRepository commentRepository,
+                             ApplicationEventPublisher eventPublisher) {
         this.postRepository = postRepository;
         this.categoryRepository = categoryRepository;
         this.postAcceptedCommentRepository = postAcceptedCommentRepository;
         this.commentRepository = commentRepository;
+        this.eventPublisher = eventPublisher;
     }
     
     public PostEntity createPost(PostEntity post) {
@@ -68,6 +74,12 @@ public class PostDomainService {
         }
 
         postRepository.insert(post);
+
+        // 如果文章创建时就是发布状态，发布简化的内容发布事件
+        if (post.getStatus() == PostStatus.PUBLISHED) {
+            publishContentEvent(post);
+        }
+
         return post;
     }
 
@@ -355,6 +367,10 @@ public class PostDomainService {
         // 更新内存中的实体状态并返回
         post.setStatus(PostStatus.PUBLISHED);
         post.setPublishTime(LocalDateTime.now());
+
+        // 发布简化的内容发布事件
+        publishContentEvent(post);
+
         return post;
     }
     
@@ -532,5 +548,22 @@ public class PostDomainService {
         }
         
         return post;
+    }
+
+    /**
+     * 发布简化的文章内容事件
+     * 只包含必要的标识信息，由Application层统一处理通知逻辑
+     */
+    private void publishContentEvent(PostEntity post) {
+        try {
+            ContentPublishedEvent event = new ContentPublishedEvent(
+                ContentType.POST,
+                post.getId(),
+                post.getAuthorId()
+            );
+            eventPublisher.publishEvent(event);
+        } catch (Exception e) {
+            // 事件发布失败不应影响主业务流程
+        }
     }
 }

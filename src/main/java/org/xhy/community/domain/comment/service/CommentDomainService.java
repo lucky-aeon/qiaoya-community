@@ -3,10 +3,13 @@ package org.xhy.community.domain.comment.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.xhy.community.domain.comment.entity.CommentEntity;
 import org.xhy.community.domain.comment.repository.CommentRepository;
 import org.xhy.community.domain.comment.valueobject.BusinessType;
+import org.xhy.community.domain.common.event.ContentPublishedEvent;
+import org.xhy.community.domain.common.valueobject.ContentType;
 import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.infrastructure.exception.CommentErrorCode;
 import org.xhy.community.domain.comment.query.CommentQuery;
@@ -17,9 +20,12 @@ import java.util.List;
 public class CommentDomainService {
     
     private final CommentRepository commentRepository;
-    
-    public CommentDomainService(CommentRepository commentRepository) {
+    private final ApplicationEventPublisher eventPublisher;
+
+    public CommentDomainService(CommentRepository commentRepository,
+                                ApplicationEventPublisher eventPublisher) {
         this.commentRepository = commentRepository;
+        this.eventPublisher = eventPublisher;
     }
     
     public CommentEntity createComment(CommentEntity comment) {
@@ -34,6 +40,10 @@ public class CommentDomainService {
         }
         
         commentRepository.insert(comment);
+
+        // 发布简化的评论创建事件
+        publishContentEvent(comment);
+
         return comment;
     }
     
@@ -150,5 +160,22 @@ public class CommentDomainService {
                 .orderByDesc(CommentEntity::getCreateTime)
                 .last("LIMIT 5")
         );
+    }
+
+    /**
+     * 发布简化的评论内容事件
+     * 只包含必要的标识信息，由Application层统一处理通知逻辑
+     */
+    private void publishContentEvent(CommentEntity comment) {
+        try {
+            ContentPublishedEvent event = new ContentPublishedEvent(
+                ContentType.COMMENT,
+                comment.getId(),
+                comment.getCommentUserId()
+            );
+            eventPublisher.publishEvent(event);
+        } catch (Exception e) {
+            // 事件发布失败不应影响主业务流程
+        }
     }
 }

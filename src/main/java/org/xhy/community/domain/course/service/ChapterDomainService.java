@@ -3,12 +3,15 @@ package org.xhy.community.domain.course.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.xhy.community.domain.course.entity.ChapterEntity;
 import org.xhy.community.domain.course.entity.CourseEntity;
 import org.xhy.community.domain.course.repository.ChapterRepository;
 import org.xhy.community.domain.course.repository.CourseRepository;
+import org.xhy.community.domain.common.event.ContentPublishedEvent;
+import org.xhy.community.domain.common.valueobject.ContentType;
 import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.infrastructure.exception.CourseErrorCode;
 import org.xhy.community.domain.course.query.ChapterQuery;
@@ -23,10 +26,14 @@ public class ChapterDomainService {
     
     private final ChapterRepository chapterRepository;
     private final CourseRepository courseRepository;
-    
-    public ChapterDomainService(ChapterRepository chapterRepository, CourseRepository courseRepository) {
+    private final ApplicationEventPublisher eventPublisher;
+
+    public ChapterDomainService(ChapterRepository chapterRepository,
+                                CourseRepository courseRepository,
+                                ApplicationEventPublisher eventPublisher) {
         this.chapterRepository = chapterRepository;
         this.courseRepository = courseRepository;
+        this.eventPublisher = eventPublisher;
     }
     
     public ChapterEntity createChapter(ChapterEntity chapter) {
@@ -36,6 +43,10 @@ public class ChapterDomainService {
         }
         
         chapterRepository.insert(chapter);
+
+        // 发布简化的章节创建事件
+        publishContentEvent(chapter, course.getAuthorId());
+
         return chapter;
     }
     
@@ -113,5 +124,22 @@ public class ChapterDomainService {
                     ChapterEntity::getId,
                     ChapterEntity::getTitle
                 ));
+    }
+
+    /**
+     * 发布简化的章节内容事件
+     * 只包含必要的标识信息，由Application层统一处理通知逻辑
+     */
+    private void publishContentEvent(ChapterEntity chapter, String authorId) {
+        try {
+            ContentPublishedEvent event = new ContentPublishedEvent(
+                ContentType.CHAPTER,
+                chapter.getId(),
+                authorId
+            );
+            eventPublisher.publishEvent(event);
+        } catch (Exception e) {
+            // 事件发布失败不应影响主业务流程
+        }
     }
 }

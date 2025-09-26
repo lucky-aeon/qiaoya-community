@@ -1,0 +1,112 @@
+package org.xhy.community.application.notification.handler;
+
+import org.springframework.stereotype.Component;
+import org.xhy.community.application.notification.service.ContentNotificationService;
+import org.xhy.community.domain.comment.entity.CommentEntity;
+import org.xhy.community.domain.comment.service.CommentDomainService;
+import org.xhy.community.domain.comment.valueobject.BusinessType;
+import org.xhy.community.domain.common.valueobject.ContentType;
+import org.xhy.community.domain.course.entity.CourseEntity;
+import org.xhy.community.domain.course.service.CourseDomainService;
+import org.xhy.community.domain.notification.context.CommentNotificationData;
+import org.xhy.community.domain.notification.service.NotificationDomainService;
+import org.xhy.community.domain.post.entity.PostEntity;
+import org.xhy.community.domain.post.service.PostDomainService;
+import org.xhy.community.domain.user.entity.UserEntity;
+import org.xhy.community.domain.user.service.UserDomainService;
+
+import java.util.List;
+
+/**
+ * 评论创建通知处理器
+ * 处理评论创建时的通知逻辑和消息模板
+ * 评论创建时通知被评论内容的作者
+ */
+@Component
+public class CommentNotificationHandler implements NotificationHandler {
+
+    private final CommentDomainService commentDomainService;
+    private final PostDomainService postDomainService;
+    private final CourseDomainService courseDomainService;
+    private final UserDomainService userDomainService;
+    private final NotificationDomainService notificationDomainService;
+
+    public CommentNotificationHandler(CommentDomainService commentDomainService,
+                                    PostDomainService postDomainService,
+                                    CourseDomainService courseDomainService,
+                                    UserDomainService userDomainService,
+                                    NotificationDomainService notificationDomainService) {
+        this.commentDomainService = commentDomainService;
+        this.postDomainService = postDomainService;
+        this.courseDomainService = courseDomainService;
+        this.userDomainService = userDomainService;
+        this.notificationDomainService = notificationDomainService;
+    }
+
+    @Override
+    public ContentType getSupportedContentType() {
+        return ContentType.COMMENT;
+    }
+
+    @Override
+    public void handleNotification(String contentId, String authorId,
+                                 List<ContentNotificationService.NotificationRecipient> recipients) {
+        // 评论通知不使用标准的关注者列表，而是通知被评论内容的作者
+        // 这里的recipients参数在评论场景下不适用，我们需要直接处理
+
+        try {
+            // 获取评论信息
+            CommentEntity comment = commentDomainService.getCommentById(contentId);
+            UserEntity commenter = userDomainService.getUserById(authorId);
+
+            String targetTitle = "";
+            String targetAuthorId = "";
+            String targetAuthorName = "";
+            String targetAuthorEmail = "";
+            String targetType = "";
+
+            // 根据业务类型获取被评论内容信息
+            if (comment.getBusinessType() == BusinessType.POST) {
+                PostEntity post = postDomainService.getPostById(comment.getBusinessId());
+                UserEntity postAuthor = userDomainService.getUserById(post.getAuthorId());
+
+                targetTitle = post.getTitle();
+                targetAuthorId = post.getAuthorId();
+                targetAuthorName = postAuthor.getName();
+                targetAuthorEmail = postAuthor.getEmail();
+                targetType = "post";
+            } else if (comment.getBusinessType() == BusinessType.COURSE) {
+                CourseEntity course = courseDomainService.getCourseById(comment.getBusinessId());
+                UserEntity courseAuthor = userDomainService.getUserById(course.getAuthorId());
+
+                targetTitle = course.getTitle();
+                targetAuthorId = course.getAuthorId();
+                targetAuthorName = courseAuthor.getName();
+                targetAuthorEmail = courseAuthor.getEmail();
+                targetType = "course";
+            }
+
+            // 只有当评论者不是内容作者时才发送通知（避免自己评论自己的内容收到通知）
+            if (!authorId.equals(targetAuthorId)) {
+                // 查询目标作者的邮件通知设置
+                UserEntity targetAuthor = userDomainService.getUserById(targetAuthorId);
+
+                CommentNotificationData notificationData = new CommentNotificationData(
+                        targetAuthorId,
+                        targetAuthorName,
+                        targetAuthorEmail,
+                        targetAuthor.getEmailNotificationEnabled(),
+                        commenter.getName(),
+                        targetTitle,
+                        targetType,
+                        comment.getContent(),
+                        comment.getBusinessId()
+                );
+
+                notificationDomainService.sendNotification(notificationData);
+            }
+        } catch (Exception e) {
+            // 记录错误日志，但不影响主流程
+        }
+    }
+}
