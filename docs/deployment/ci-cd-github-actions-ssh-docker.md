@@ -131,6 +131,13 @@ ENTRYPOINT ["sh", "-c", "java $JAVA_TOOL_OPTIONS -jar /app/app.jar"]
 - GHCR_USERNAME（私有镜像必需）：GitHub 用户名（或机器人账号）
 - GHCR_TOKEN（私有镜像必需）：PAT，至少 `read:packages`，并完成组织 SSO 授权（如适用）
 - DEPLOY_SCRIPT_PATH（可选）：自定义脚本路径；默认 `/www/project/qiaoya/deploy-qiaoya.sh`
+
+- CN_REGISTRY（可选/推荐国内）：国内镜像仓库登录地址
+  - 例：阿里云 `registry.cn-hangzhou.aliyuncs.com`；腾讯云 `ccr.ccs.tencentyun.com` 或企业实例域名；华为云 `swr.cn-east-3.myhuaweicloud.com`
+- CN_IMAGE（可选/推荐国内）：完整的国内仓库镜像名（含命名空间）
+  - 例：`registry.cn-hangzhou.aliyuncs.com/your_ns/qiaoya-community`
+- CN_USERNAME（可选/推荐国内）：国内仓库登录用户名/凭证用户名
+- CN_PASSWORD（可选/推荐国内）：国内仓库登录密码/Token
 - SSH_PORT（可选）：默认 22
 
 使用 GHCR 时，Workflow 需要 `packages: write` 权限；使用默认 `GITHUB_TOKEN` 即可推送到 GHCR（包默认私有，见第 7 节）。
@@ -452,3 +459,54 @@ docker ps -a
 
 - 应用端口
   - 容器内端口为 `8520`（见 `server.port`）；如需覆盖，可在 `.env` 中设置 `SERVER_PORT=xxxx`（Spring Boot 支持环境变量覆盖），并在 `compose.yml` 调整 `ports` 映射。
+
+---
+
+## 14. 国内镜像仓库（双推与部署）
+
+为解决国内服务器拉取海外仓库不稳定的问题，工作流已支持“双推”：
+- 始终推送到 GHCR 作为主仓库（回退/历史版本可用）
+- 按需再推送一份到国内仓库，并在部署时从国内仓库拉取
+
+### 所需 Secrets
+- `CN_REGISTRY`：国内镜像仓库登录域名
+- `CN_IMAGE`：完整镜像名（含命名空间）
+- `CN_USERNAME`：仓库用户名/凭证用户名
+- `CN_PASSWORD`：仓库密码/Token
+
+工作流行为：若配置了 `CN_IMAGE`，则构建后会额外推送至国内仓库；部署时优先从 `CN_IMAGE` 拉取。未配置时自动回退到 GHCR。
+
+### 常见厂商配置示例
+
+- 阿里云 ACR
+  - `CN_REGISTRY`：`registry.cn-<region>.aliyuncs.com`（个人版）或企业实例域名 `<instance-id>.registry.<region>.aliyuncs.com`
+  - `CN_IMAGE`：`registry.cn-hangzhou.aliyuncs.com/<namespace>/qiaoya-community`
+  - `CN_USERNAME`/`CN_PASSWORD`：进入“容器镜像服务 ACR → 访问凭证/登录凭证”设置并获取（注意与控制台密码区分）。
+  - 控制台路径：阿里云控制台 → 容器镜像服务 ACR → 实例/命名空间/镜像仓库。
+
+- 腾讯云 TCR
+  - `CN_REGISTRY`：基础版为 `ccr.ccs.tencentyun.com`；企业版实例域名通常为 `<instance-name>.tencentcloudcr.com`
+  - `CN_IMAGE`：`ccr.ccs.tencentyun.com/<namespace>/qiaoya-community` 或 `<instance-name>.tencentcloudcr.com/<ns>/qiaoya-community`
+  - `CN_USERNAME`/`CN_PASSWORD`：TCR 控制台“访问凭证/令牌管理”创建并获取。
+  - 控制台路径：腾讯云控制台 → 容器镜像服务 TCR → 实例/命名空间/镜像仓库。
+
+- 华为云 SWR
+  - `CN_REGISTRY`：`swr.cn-<region>.myhuaweicloud.com`
+  - `CN_IMAGE`：`swr.cn-east-3.myhuaweicloud.com/<namespace>/qiaoya-community`
+  - `CN_USERNAME`/`CN_PASSWORD`：在 SWR 控制台“访问凭证/登录密码”处设置并使用（IAM 用户需先开通并授权）。
+  - 控制台路径：华为云控制台 → SWR → 命名空间/镜像仓库。
+
+### 获取配置的通用步骤
+1) 在云厂商控制台创建命名空间与镜像仓库（名称建议 `qiaoya-community`）
+2) 记录仓库域名（`CN_REGISTRY`）与镜像全名（`CN_IMAGE`）
+3) 在“访问凭证/登录凭证”创建用户名与密码（`CN_USERNAME`/`CN_PASSWORD`）
+4) 将上述 4 个值填入 GitHub 仓库的 Secrets（Actions）
+5) 触发一次 dev 或 tag 流程，验证构建后能在国内仓库看到新标签，且服务器部署能成功拉取
+
+### 本地/服务器验证
+```bash
+docker login $CN_REGISTRY -u $CN_USERNAME -p $CN_PASSWORD
+docker pull $CN_IMAGE:dev-latest
+```
+
+如需仅 dev 使用国内仓库、prod 使用 GHCR，可分别在两个工作流中按需配置 `CN_*`（或让 prod 留空以回退 GHCR）。

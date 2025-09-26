@@ -17,7 +17,10 @@ jobs:
       packages: write
     env:
       REGISTRY: ghcr.io
-      MIRROR_REGISTRY: ghcr.nju.edu.cn
+      # 国内仓库配置（例如：registry.cn-hangzhou.aliyuncs.com）
+      CN_REGISTRY: ${{ secrets.CN_REGISTRY }}
+      # 完整仓库路径（例如：registry.cn-hangzhou.aliyuncs.com/namespace/qiaoya-community）
+      CN_IMAGE: ${{ secrets.CN_IMAGE }}
       IMAGE_NAME: ${{ github.repository }}
       TAG: ${{ github.ref_name }} # 例如 v1.2.3
     steps:
@@ -50,7 +53,15 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push image
+      - name: Login to CN Registry
+        if: ${{ env.CN_REGISTRY != '' }}
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.CN_REGISTRY }}
+          username: ${{ secrets.CN_USERNAME }}
+          password: ${{ secrets.CN_PASSWORD }}
+
+      - name: Build and push image (GHCR)
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -61,24 +72,43 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Build and push image (CN Registry)
+        if: ${{ env.CN_IMAGE != '' }}
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.CN_IMAGE }}:${{ env.TAG }}
+            ${{ env.CN_IMAGE }}:prod-latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
       - name: Deploy via SSH (prod)
         uses: appleboy/ssh-action@v1.0.3
         env:
           GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
           GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
           SCRIPT_PATH: ${{ secrets.DEPLOY_SCRIPT_PATH }}
-          IMAGE: ${{ env.MIRROR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
+          IMAGE: ${{ env.CN_IMAGE != '' && format('{0}:{1}', env.CN_IMAGE, env.TAG) || format('{0}/{1}:{2}', env.REGISTRY, env.IMAGE_NAME, env.TAG) }}
           PROFILE: prod
           PORT: 8520
           CONTAINER_NAME: qiaoya-community-backend
+          CN_REGISTRY: ${{ env.CN_REGISTRY }}
+          CN_USERNAME: ${{ secrets.CN_USERNAME }}
+          CN_PASSWORD: ${{ secrets.CN_PASSWORD }}
         with:
           host: ${{ secrets.PROD_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script_stop: true
-          envs: GHCR_USERNAME,GHCR_TOKEN,SCRIPT_PATH,IMAGE,PROFILE,PORT,CONTAINER_NAME
+          envs: GHCR_USERNAME,GHCR_TOKEN,SCRIPT_PATH,IMAGE,PROFILE,PORT,CONTAINER_NAME,CN_REGISTRY,CN_USERNAME,CN_PASSWORD
           script: |
             set -e
             SCRIPT_PATH="${SCRIPT_PATH:-/www/project/qiaoya/deploy-qiaoya.sh}"
+            # 如 CN 仓库是私有，需要在服务器侧登录
+            if [ -n "${CN_REGISTRY}" ] && [ -n "${CN_USERNAME}" ] && [ -n "${CN_PASSWORD}" ]; then
+              echo "${CN_PASSWORD}" | docker login "${CN_REGISTRY}" -u "${CN_USERNAME}" --password-stdin
+            fi
             chmod +x "$SCRIPT_PATH" || true
             "$SCRIPT_PATH"
