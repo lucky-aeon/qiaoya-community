@@ -11,6 +11,13 @@ spring:
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:password}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      # Ensure each DB connection uses Asia/Shanghai so DEFAULT CURRENT_TIMESTAMP is correct
+      connection-init-sql: "SET TIME ZONE 'Asia/Shanghai'"
+
+  jackson:
+    # Ensure JSON serialization/deserialization uses Asia/Shanghai
+    time-zone: Asia/Shanghai
 
   # Redis配置
   data:

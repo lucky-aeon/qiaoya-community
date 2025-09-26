@@ -10,7 +10,6 @@ RUN mvn -B -DskipTests package
 FROM eclipse-temurin:17-jre
 WORKDIR /app
 COPY --from=builder /build/target/*.jar /app/app.jar
-ENV JAVA_TOOL_OPTIONS=""
+ENV JAVA_TOOL_OPTIONS "-Duser.timezone=Asia/Shanghai"
 EXPOSE 8520
 ENTRYPOINT ["sh", "-c", "java $JAVA_TOOL_OPTIONS -jar /app/app.jar"]
-
