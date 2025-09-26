@@ -10,6 +10,7 @@ import org.xhy.community.infrastructure.config.ApiResponse;
 import org.xhy.community.interfaces.course.request.AppCourseQueryRequest;
 import org.xhy.community.infrastructure.annotation.ActivityLog;
 import org.xhy.community.domain.common.valueobject.ActivityType;
+import org.xhy.community.infrastructure.annotation.RequiresPlanPermissions;
 
 /**
  * 前台课程控制器
@@ -39,6 +40,7 @@ public class AppCourseController {
      * @return 分页课程列表，包含课程概要信息、作者信息、章节数量等
      */
     @PostMapping("/queries")
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "COURSE_APP_LIST", name = "前台课程列表")})
     public ApiResponse<IPage<FrontCourseDTO>> queryCourses(@Valid @RequestBody AppCourseQueryRequest request) {
         IPage<FrontCourseDTO> courses = courseAppService.queryAppCourses(request);
         return ApiResponse.success(courses);
@@ -56,6 +58,7 @@ public class AppCourseController {
      *         - 课程统计信息（总阅读时长等）
      */
     @GetMapping("/{id}")
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "COURSE_APP_DETAIL", name = "前台课程详情")})
     @ActivityLog(ActivityType.VIEW_COURSE)
     public ApiResponse<FrontCourseDetailDTO> getCourseDetail(@PathVariable String id) {
         FrontCourseDetailDTO courseDetail = courseAppService.getAppCourseDetail(id);

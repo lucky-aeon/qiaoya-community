@@ -14,6 +14,7 @@ import org.xhy.community.interfaces.post.request.CreatePostRequest;
 import org.xhy.community.interfaces.post.request.PostQueryRequest;
 import org.xhy.community.interfaces.post.request.PostStatusRequest;
 import org.xhy.community.interfaces.post.request.UpdatePostRequest;
+import org.xhy.community.infrastructure.annotation.RequiresPlanPermissions;
 
 /**
  * 用户文章管理控制器
@@ -44,6 +45,7 @@ public class UserPostController {
      * @return 创建成功的文章信息
      */
     @PostMapping
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "POST_CREATE", name = "发布文章")})
     public ApiResponse<PostDTO> createPost(@Valid @RequestBody CreatePostRequest request) {
         String currentUserId = UserContext.getCurrentUserId();
         PostDTO post = postAppService.createPost(request, currentUserId);
@@ -65,6 +67,7 @@ public class UserPostController {
      * @return 更新后的文章信息
      */
     @PutMapping("/{id}")
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "POST_EDIT_SELF", name = "编辑本人文章")})
     public ApiResponse<PostDTO> updatePost(@PathVariable String id, @Valid @RequestBody UpdatePostRequest request) {
         String currentUserId = UserContext.getCurrentUserId();
         PostDTO post = postAppService.updatePost(id, request, currentUserId);
@@ -80,6 +83,7 @@ public class UserPostController {
      * @return 文章详细信息，包括内容、点赞数、浏览数等
      */
     @GetMapping("/{id}")
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "POST_DETAIL_SELF", name = "查看我的文章详情")})
     public ApiResponse<PostDTO> getPost(@PathVariable String id) {
         String currentUserId = UserContext.getCurrentUserId();
         PostDTO post = postAppService.getPostById(id, currentUserId);
@@ -100,6 +104,7 @@ public class UserPostController {
      * @return 分页文章列表，包含文章概要信息、总数、页码等
      */
     @GetMapping
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "POST_LIST_SELF", name = "我的文章列表")})
     public ApiResponse<IPage<PostDTO>> getUserPosts(@Valid PostQueryRequest request) {
         String currentUserId = UserContext.getCurrentUserId();
         IPage<PostDTO> posts = postAppService.getUserPosts(currentUserId, request);
@@ -115,6 +120,7 @@ public class UserPostController {
      * @return 空响应，删除成功返回200状态码
      */
     @DeleteMapping("/{id}")
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "POST_DELETE_SELF", name = "删除本人文章")})
     public ApiResponse<Void> deletePost(@PathVariable String id) {
         String currentUserId = UserContext.getCurrentUserId();
         postAppService.deletePost(id, currentUserId);
@@ -134,6 +140,7 @@ public class UserPostController {
      * @return 更新后的文章信息
      */
     @PatchMapping("/{id}/status")
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "POST_STATUS_CHANGE", name = "修改文章状态")})
     public ApiResponse<PostDTO> changePostStatus(@PathVariable String id, @Valid @RequestBody PostStatusRequest request) {
         String currentUserId = UserContext.getCurrentUserId();
         
@@ -154,6 +161,7 @@ public class UserPostController {
      * 采纳评论（作者）
      */
     @PostMapping("/{postId}/accept/{commentId}")
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "POST_ACCEPT_COMMENT", name = "采纳评论")})
     public ApiResponse<PostDTO> acceptComment(@PathVariable String postId, @PathVariable String commentId) {
         String currentUserId = UserContext.getCurrentUserId();
         PostDTO post = postAppService.acceptComment(postId, commentId, currentUserId);
@@ -164,6 +172,7 @@ public class UserPostController {
      * 撤销采纳（作者）
      */
     @DeleteMapping("/{postId}/accept/{commentId}")
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "POST_REVOKE_ACCEPT", name = "撤销采纳")})
     public ApiResponse<PostDTO> revokeAcceptance(@PathVariable String postId, @PathVariable String commentId) {
         String currentUserId = UserContext.getCurrentUserId();
         PostDTO post = postAppService.revokeAcceptance(postId, commentId, currentUserId);

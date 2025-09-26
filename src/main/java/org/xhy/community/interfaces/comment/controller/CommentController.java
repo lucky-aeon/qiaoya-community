@@ -7,6 +7,7 @@ import org.xhy.community.application.comment.dto.CommentDTO;
 import org.xhy.community.application.comment.service.UserCommentAppService;
 import org.xhy.community.infrastructure.config.ApiResponse;
 import org.xhy.community.interfaces.comment.request.BusinessCommentQueryRequest;
+import org.xhy.community.infrastructure.annotation.RequiresPlanPermissions;
 
 /**
  * 评论查询控制器
@@ -31,6 +32,7 @@ public class CommentController {
      * @return 分页评论列表
      */
     @GetMapping
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "COMMENT_APP_LIST", name = "查看业务评论列表")})
     public ApiResponse<IPage<CommentDTO>> getBusinessComments(@Valid BusinessCommentQueryRequest request) {
         IPage<CommentDTO> comments = userCommentAppService.getBusinessComments(request);
         return ApiResponse.success(comments);

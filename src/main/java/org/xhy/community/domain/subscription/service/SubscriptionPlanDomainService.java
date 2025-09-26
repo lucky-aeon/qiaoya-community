@@ -8,6 +8,8 @@ import org.springframework.util.StringUtils;
 import org.xhy.community.domain.subscription.entity.SubscriptionPlanEntity;
 import org.xhy.community.domain.subscription.entity.SubscriptionPlanCourseEntity;
 import org.xhy.community.domain.subscription.repository.SubscriptionPlanRepository;
+import org.xhy.community.domain.subscription.repository.SubscriptionPlanMenuRepository;
+import org.xhy.community.domain.subscription.repository.SubscriptionPlanPermissionRepository;
 import org.xhy.community.domain.subscription.repository.SubscriptionPlanCourseRepository;
 import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.infrastructure.exception.SubscriptionPlanErrorCode;
@@ -24,11 +26,17 @@ public class SubscriptionPlanDomainService {
     
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final SubscriptionPlanCourseRepository subscriptionPlanCourseRepository;
+    private final SubscriptionPlanMenuRepository subscriptionPlanMenuRepository;
+    private final SubscriptionPlanPermissionRepository subscriptionPlanPermissionRepository;
 
     public SubscriptionPlanDomainService(SubscriptionPlanRepository subscriptionPlanRepository,
-                                       SubscriptionPlanCourseRepository subscriptionPlanCourseRepository) {
+                                         SubscriptionPlanCourseRepository subscriptionPlanCourseRepository,
+                                         SubscriptionPlanMenuRepository subscriptionPlanMenuRepository,
+                                         SubscriptionPlanPermissionRepository subscriptionPlanPermissionRepository) {
         this.subscriptionPlanRepository = subscriptionPlanRepository;
         this.subscriptionPlanCourseRepository = subscriptionPlanCourseRepository;
+        this.subscriptionPlanMenuRepository = subscriptionPlanMenuRepository;
+        this.subscriptionPlanPermissionRepository = subscriptionPlanPermissionRepository;
     }
     
     public SubscriptionPlanEntity createSubscriptionPlan(SubscriptionPlanEntity plan) {
@@ -117,6 +125,56 @@ public class SubscriptionPlanDomainService {
         return planCourses.stream()
                          .map(SubscriptionPlanCourseEntity::getCourseId)
                          .collect(Collectors.toList());
+    }
+
+    // ==================== 菜单绑定 ====================
+    public void syncSubscriptionPlanMenus(String subscriptionPlanId, List<String> menuCodes) {
+        // 删除现有关联
+        LambdaQueryWrapper<org.xhy.community.domain.subscription.entity.SubscriptionPlanMenuEntity> deleteWrapper =
+            new LambdaQueryWrapper<org.xhy.community.domain.subscription.entity.SubscriptionPlanMenuEntity>()
+                .eq(org.xhy.community.domain.subscription.entity.SubscriptionPlanMenuEntity::getSubscriptionPlanId, subscriptionPlanId);
+        subscriptionPlanMenuRepository.delete(deleteWrapper);
+
+        // 批量插入
+        if (menuCodes != null && !menuCodes.isEmpty()) {
+            for (String code : menuCodes) {
+                var entity = new org.xhy.community.domain.subscription.entity.SubscriptionPlanMenuEntity(subscriptionPlanId, code);
+                subscriptionPlanMenuRepository.insert(entity);
+            }
+        }
+    }
+
+    public List<String> getSubscriptionPlanMenuCodes(String subscriptionPlanId) {
+        LambdaQueryWrapper<org.xhy.community.domain.subscription.entity.SubscriptionPlanMenuEntity> queryWrapper =
+            new LambdaQueryWrapper<org.xhy.community.domain.subscription.entity.SubscriptionPlanMenuEntity>()
+                .eq(org.xhy.community.domain.subscription.entity.SubscriptionPlanMenuEntity::getSubscriptionPlanId, subscriptionPlanId);
+        return subscriptionPlanMenuRepository.selectList(queryWrapper).stream()
+                .map(org.xhy.community.domain.subscription.entity.SubscriptionPlanMenuEntity::getMenuId)
+                .collect(Collectors.toList());
+    }
+
+    // ==================== 权限绑定 ====================
+    public void syncSubscriptionPlanPermissions(String subscriptionPlanId, List<String> permissionCodes) {
+        LambdaQueryWrapper<org.xhy.community.domain.subscription.entity.SubscriptionPlanPermissionEntity> deleteWrapper =
+            new LambdaQueryWrapper<org.xhy.community.domain.subscription.entity.SubscriptionPlanPermissionEntity>()
+                .eq(org.xhy.community.domain.subscription.entity.SubscriptionPlanPermissionEntity::getSubscriptionPlanId, subscriptionPlanId);
+        subscriptionPlanPermissionRepository.delete(deleteWrapper);
+
+        if (permissionCodes != null && !permissionCodes.isEmpty()) {
+            for (String code : permissionCodes) {
+                var entity = new org.xhy.community.domain.subscription.entity.SubscriptionPlanPermissionEntity(subscriptionPlanId, code);
+                subscriptionPlanPermissionRepository.insert(entity);
+            }
+        }
+    }
+
+    public List<String> getSubscriptionPlanPermissionCodes(String subscriptionPlanId) {
+        LambdaQueryWrapper<org.xhy.community.domain.subscription.entity.SubscriptionPlanPermissionEntity> queryWrapper =
+            new LambdaQueryWrapper<org.xhy.community.domain.subscription.entity.SubscriptionPlanPermissionEntity>()
+                .eq(org.xhy.community.domain.subscription.entity.SubscriptionPlanPermissionEntity::getSubscriptionPlanId, subscriptionPlanId);
+        return subscriptionPlanPermissionRepository.selectList(queryWrapper).stream()
+                .map(org.xhy.community.domain.subscription.entity.SubscriptionPlanPermissionEntity::getPermissionCode)
+                .collect(Collectors.toList());
     }
 
     public List<SubscriptionPlanEntity> getActiveSubscriptionPlans() {

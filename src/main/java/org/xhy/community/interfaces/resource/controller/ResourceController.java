@@ -12,6 +12,8 @@ import org.xhy.community.application.resource.dto.PagedResourceDTO;
 import org.xhy.community.application.resource.dto.UploadCredentialsDTO;
 import org.xhy.community.application.resource.service.ResourceAppService;
 import org.xhy.community.infrastructure.config.ApiResponse;
+import org.xhy.community.infrastructure.annotation.RequiresPlanPermissions;
+import org.xhy.community.infrastructure.annotation.RequiresPlanPermissions;
 import org.xhy.community.interfaces.resource.request.GetUploadCredentialsRequest;
 import org.xhy.community.interfaces.resource.request.ResourceQueryRequest;
 
@@ -42,6 +44,7 @@ public class ResourceController {
      * @return 上传凭证信息，包含STS临时凭证、OSS配置、上传策略和回调参数
      */
     @PostMapping("/upload-credentials")
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "RESOURCE_UPLOAD_CREDENTIALS", name = "获取上传凭证")})
     public ApiResponse<UploadCredentialsDTO> getUploadCredentials(
             @Valid @RequestBody GetUploadCredentialsRequest request,
             @RequestHeader(value = "Authorization", required = false) String authorization
@@ -64,6 +67,7 @@ public class ResourceController {
      *       Path 受限在 /api/public/resource，用于元素请求(<img>/<a>)的鉴权。
      */
     @PostMapping("/access-session")
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "RESOURCE_DOWNLOAD", name = "下载资源")})
     public ResponseEntity<Void> createAccessSession(
             @RequestHeader(value = "Authorization", required = false) String authorization,
             HttpServletRequest request,
@@ -103,6 +107,7 @@ public class ResourceController {
      * @return 分页资源列表，包含资源详情、总数、页码等分页信息
      */
     @GetMapping("/")
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "RESOURCE_LIST", name = "查看我的资源")})
     public ApiResponse<PagedResourceDTO> getUserResources(@Valid ResourceQueryRequest request) {
         PagedResourceDTO resources = resourceAppService.getUserResources(request);
         return ApiResponse.success(resources);

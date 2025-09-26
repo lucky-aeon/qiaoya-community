@@ -12,6 +12,7 @@ import org.xhy.community.infrastructure.config.UserContext;
 import org.xhy.community.interfaces.comment.request.CreateReplyCommentRequest;
 import org.xhy.community.interfaces.comment.request.CommentQueryRequest;
 import org.xhy.community.interfaces.comment.request.CreateCommentRequest;
+import org.xhy.community.infrastructure.annotation.RequiresPlanPermissions;
 
 import java.util.List;
 
@@ -39,6 +40,7 @@ public class UserCommentController {
      * @return 创建成功的评论详情信息
      */
     @PostMapping
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "COMMENT_CREATE", name = "发表评论/回复")})
     public ApiResponse<CommentDTO> createComment(@Valid @RequestBody CreateCommentRequest request) {
         String currentUserId = UserContext.getCurrentUserId();
         
@@ -56,6 +58,7 @@ public class UserCommentController {
      * @return 创建成功的回复评论信息
      */
     @PostMapping("/{commentId}/reply")
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "COMMENT_CREATE", name = "发表评论/回复")})
     public ApiResponse<CommentDTO> replyComment(@PathVariable String commentId,
                                                @Valid @RequestBody CreateReplyCommentRequest request) {
         String currentUserId = UserContext.getCurrentUserId();

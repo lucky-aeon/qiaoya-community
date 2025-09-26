@@ -16,6 +16,7 @@ import org.xhy.community.application.session.service.TokenBlacklistAppService;
 import org.xhy.community.infrastructure.config.ApiResponse;
 import org.xhy.community.infrastructure.config.JwtUtil;
 import org.xhy.community.interfaces.resource.request.OssCallbackRequest;
+import org.xhy.community.application.permission.service.UserPermissionAppService;
 
 import java.net.URI;
 import java.util.Map;
@@ -33,13 +34,16 @@ public class PublicResourceController {
     private final ResourceAppService resourceAppService;
     private final JwtUtil jwtUtil;
     private final TokenBlacklistAppService tokenBlacklistAppService;
+    private final UserPermissionAppService userPermissionAppService;
     
     public PublicResourceController(ResourceAppService resourceAppService,
                                    JwtUtil jwtUtil,
-                                   TokenBlacklistAppService tokenBlacklistAppService) {
+                                   TokenBlacklistAppService tokenBlacklistAppService,
+                                   UserPermissionAppService userPermissionAppService) {
         this.resourceAppService = resourceAppService;
         this.jwtUtil = jwtUtil;
         this.tokenBlacklistAppService = tokenBlacklistAppService;
+        this.userPermissionAppService = userPermissionAppService;
     }
     
     /**
@@ -113,8 +117,18 @@ public class PublicResourceController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        // 解析用户ID（用于日志记录）
+        // 解析用户ID
         String userId = jwtUtil.getUserIdFromToken(token);
+
+        // 功能权限校验：资源下载
+        try {
+            boolean allowed = userPermissionAppService.hasPlanPermission(userId, "RESOURCE_DOWNLOAD");
+            if (!allowed) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
         try {
             String ip = request.getRemoteAddr();
             String ua = request.getHeader("User-Agent");

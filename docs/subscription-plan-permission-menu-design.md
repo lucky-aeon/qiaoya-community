@@ -1,0 +1,306 @@
+# 套餐绑定「接口权限 + 菜单」技术方案（前台）
+
+作者：社区后端
+状态：草案（可落地）
+适用范围：前台接口（/api/app/**、/api/user/**）；管理端仍按“用户角色”控制
+
+## 1. 背景与目标
+
+- 现状：
+  - 已有套餐（subscription_plans）与套餐-课程绑定；存在预留表 `subscription_plan_menus`，未落地使用。
+  - 前台接口已有“有效订阅兜底校验”，管理端接口走管理员角色校验。
+- 目标：
+  - 针对前台实现“套餐可配置的两类权限”：
+    - 接口权限（功能能力，依权限码控制接口访问）
+    - 菜单权限（菜单/入口可见性，依菜单码控制前端渲染）
+  - 与套餐 `level` 解耦：套餐拥有哪些权限、菜单完全由配置决定。
+  - 前后端通过“约定式码”对齐（类型安全、可读、可扩展）。
+
+## 2. 设计原则
+
+- 解耦显示与能力：
+  - 菜单码 MenuCode 仅用于“可见性/入口”；
+  - 接口权限码 PlanPermission 用于“功能访问校验”（后端强校验）。
+- 绑定独立：套餐分别绑定“菜单码集合”和“权限码集合”，互不自动推导。
+- 用户多套餐并存：菜单与权限按“并集”策略合并。
+- 管理端不受本方案影响：仍按管理员角色控制。
+
+## 3. 名词与对象
+
+- MenuCode（菜单码）：前后端约定的菜单标识（字符串枚举）。例：`MENU_HOME`、`MENU_PREMIUM_COURSES`、`MENU_DOWNLOAD_CENTER`。
+- PlanPermission（接口/功能权限码）：后端注解校验的能力点（字符串码）。例：`RESOURCE_DOWNLOAD`、`COURSE_VIEW_PREMIUM`、`COMMENT_CREATE`。
+  - 注解支持“代码+中文名”，用于扫描生成管理端的选项清单（详见 5.3、6.1）：
+    - 仅代码（兼容）`@RequiresPlanPermissions({"RESOURCE_DOWNLOAD"})`
+    - 代码+中文名（推荐）`@RequiresPlanPermissions(items={ @RequiresPlanPermissions.Item(code="RESOURCE_DOWNLOAD", name="下载资源") })`
+- 推荐映射：本期不使用（不在界面与接口中体现）。
+
+## 4. 数据模型与存储
+
+- 新增表：`subscription_plan_permissions`（中间表，物理删除）
+  - 字段：`id`(UUID)、`subscription_plan_id`、`permission_code`(VARCHAR)、`create_time`、`update_time`
+  - 约束：唯一 `(subscription_plan_id, permission_code)`
+- 既有表：`subscription_plan_menus`（中间表，物理删除）
+  - 列：`id`、`subscription_plan_id`、`menu_id`、`create_time`、`update_time`
+  - 唯一约束：`(subscription_plan_id, menu_id)`
+
+说明：不引入“菜单主数据表”。仅在关联表中存“套餐ID + 菜单码/权限码”。码通过“约定式注解+扫描”维护，并通过“选项接口”提供给管理端。
+
+### 4.1 Flyway 迁移（示意）
+
+```sql
+-- Vxx__Create_subscription_plan_permissions_table.sql
+CREATE TABLE subscription_plan_permissions (
+  id              VARCHAR(36) PRIMARY KEY,
+  subscription_plan_id VARCHAR(36) NOT NULL,
+  permission_code VARCHAR(100) NOT NULL,
+  create_time     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  update_time     TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE UNIQUE INDEX uk_plan_permission ON subscription_plan_permissions (subscription_plan_id, permission_code);
+
+-- 可选：Vxx__Add_unique_to_subscription_plan_menus.sql
+CREATE UNIQUE INDEX uk_plan_menu ON subscription_plan_menus (subscription_plan_id, menu_id);
+-- 若更名列名：Vxx__Rename_menu_id_to_menu_code.sql（PostgreSQL）
+-- ALTER TABLE subscription_plan_menus RENAME COLUMN menu_id TO menu_code;
+```
+
+## 5. DDD 分层设计
+
+### 5.1 Domain（领域层）
+
+- 值对象：
+  - `MenuCode`、`PlanPermission`：本期均以字符串码管理（非枚举）。
+- 实体与仓储：
+  - `SubscriptionPlanMenuEntity` / `SubscriptionPlanMenuRepository extends BaseMapper`
+  - `SubscriptionPlanPermissionEntity` / `SubscriptionPlanPermissionRepository extends BaseMapper`
+- 领域服务能力（在 `SubscriptionPlanDomainService` 或独立权限聚合服务中）：
+  - `syncSubscriptionPlanMenus(planId, List<String> menuCodes)`
+  - `getPlanMenuCodes(planId): List<String>`
+  - `syncSubscriptionPlanPermissions(planId, List<String> permissionCodes)`
+  - `getPlanPermissions(planId): List<String>`
+  - 用户聚合：
+    - `getUserActivePlanIds(userId): List<String>`（已有订阅服务提供）
+    - `getUserMenuCodes(userId): Set<MenuCode>`（合并用户所有有效套餐的菜单码）
+    - `getUserPermissions(userId): Set<PlanPermission>`（合并权限码）
+
+领域规则要点：
+- 绑定采用“物理删除 + 插入/重建”的全量替换（中间表不保留历史）；
+- 不做“勾选菜单即自动拥有权限”的隐式规则；推荐逻辑由应用层协助实现（提示/自动填充）。
+
+### 5.2 Application（应用层）
+
+- 管理端（仅用于配置）：
+  - `AdminSubscriptionPlanMenuAppService`
+    - 获取选项：返回全部 `MenuCode` 选项（含分组、中文名）
+    - 获取/更新套餐绑定：`get(planId) / update(planId, menus)`
+  - `AdminSubscriptionPlanPermissionAppService`
+    - 获取选项：返回全部 `PlanPermission` 选项（含分组、中文名、推荐的菜单码）
+    - 获取/更新套餐绑定：`get(planId) / update(planId, permissions)`
+- 用户侧：
+  - `UserPermissionAppService`
+    - `getUserMenuCodes(userId): List<String>`
+    - `getUserPermissions(userId): List<String>`
+    - `hasPlanPermission(userId, String): boolean`
+
+### 5.3 Infrastructure（基础设施层）
+
+- MyBatis 类型处理器：
+  - 本期不使用枚举 + TypeHandler，统一以字符串码存储与返回。
+- 接口权限注解 + 拦截（方法级强制）：
+  - 注解：`@RequiresPlanPermissions` 支持 `value[]`（仅代码）与 `items[]`（代码+中文名，推荐）。
+  - 拦截器：`PlanPermissionInterceptor`
+    - 仅作用于前台 `/api/**`（排除 `/api/public/**` 与 `/api/admin/**`）。
+    - 流程：先经过“有效订阅”拦截，再检查注解声明的权限码，缺失返回 403。
+  - 规范：所有用户前台接口（/api/app/**、/api/user/**）必须“方法级”标注注解（不使用类级注解）。
+- 权限码扫描：
+  - 启动扫描所有控制器方法上的 `@RequiresPlanPermissions`，收集 code→name，用于管理端选项展示。
+- 缓存：
+  - `userId -> {menuCodes, permissions}` 本地缓存（Caffeine）TTL 30~60s；
+  - 订阅状态变化、套餐绑定变更时清理对应用户缓存（事件驱动）。
+
+## 6. API 契约（管理端 / 用户侧）
+
+### 6.1 管理端（角色控制，非套餐权限）
+
+- 菜单选项
+  - `GET /api/admin/subscription-plan-menus/options`
+  - 响应示例：
+    ```json
+    {
+      "data": [
+        { "code": "MENU_HOME", "label": "首页", "group": "通用" },
+        { "code": "MENU_PREMIUM_COURSES", "label": "精品课程", "group": "课程" },
+        { "code": "MENU_DOWNLOAD_CENTER", "label": "下载中心", "group": "资源" }
+      ]
+    }
+    ```
+- 获取/更新套餐-菜单绑定
+  - `GET /api/admin/subscription-plan-menus/{planId}` → `{"data":["MENU_HOME","MENU_PREMIUM_COURSES"]}`
+  - `PUT /api/admin/subscription-plan-menus/{planId}`
+    - 请求体：`{"menus":["MENU_HOME","MENU_PREMIUM_COURSES","MENU_DOWNLOAD_CENTER"]}`（全量替换）
+
+- 权限选项（动态扫描自注解）
+  - `GET /api/admin/subscription-plan-permissions/options`
+  - 返回由注解 items 的 code/name 生成的选项（未提供 name 时以 code 兜底）；group 可留空或后续再扩展。
+- 权限码快照（便于核对）
+  - `GET /api/admin/subscription-plan-permissions/discovered` → `{"data":["POST_CREATE", "RESOURCE_DOWNLOAD", ...]}`
+- 获取/更新套餐-权限绑定
+  - `GET /api/admin/subscription-plan-permissions/{planId}` → `{"data":["COURSE_VIEW_PREMIUM","RESOURCE_DOWNLOAD"]}`
+  - `PUT /api/admin/subscription-plan-permissions/{planId}`
+    - 请求体：`{"permissions":["COURSE_VIEW_PREMIUM","RESOURCE_DOWNLOAD"]}`（全量替换）
+
+约定：PUT 为“幂等全量替换”，先删后插，避免重复绑定与脏数据。
+
+### 6.2 用户侧（前台站点消费）
+
+- 获取当前用户菜单码（并集）
+  - `GET /api/user/menu-codes` → `{"data":["MENU_HOME","MENU_PREMIUM_COURSES"]}`（本项目统一也加了功能权限注解：`USER_MENU_CODES`）
+- 获取当前用户权限码（并集）
+  - `GET /api/user/permissions` → `{"data":["COURSE_VIEW_PREMIUM","RESOURCE_DOWNLOAD"]}`（本项目统一也加了功能权限注解：`USER_PERMISSIONS_LIST`）
+
+## 7. 前端对接规范
+
+- 路由/菜单配置需为每个菜单项添加 `meta.menuCode`，与后端约定一致。
+- 登录后：调用 `/api/user/menu-codes`，用返回的 `menuCodes` 过滤渲染菜单；未包含的菜单隐藏。
+- 按钮/能力展示：调用 `/api/user/permissions`，根据权限码控制按钮可见/禁用；即便前端遗漏控制，后端注解会在接口层返回 403 兜底。
+- 游客/未订阅：可选提供 `/api/public/...` 的公开菜单；否则未登录使用前端本地默认公开菜单配置。
+
+示例（伪代码）：
+```ts
+// 过滤菜单
+const allowed = new Set(menuCodesFromServer);
+visibleMenus = allMenus.filter(m => !m.meta?.menuCode || allowed.has(m.meta.menuCode));
+
+// 控制按钮
+const perms = new Set(permissionCodesFromServer);
+const canDownload = perms.has('RESOURCE_DOWNLOAD');
+```
+
+## 8. 运行时校验流程（前台接口）
+
+1) `UserContextInterceptor` 兜底：无效订阅直接拒绝（排除 `/api/public/**` 与 `/api/admin/**`）。
+2) `PlanPermissionGuard`：若接口标注 `@RequiresPlanPermissions`，从 `UserPermissionAppService` 读取用户权限码集合校验；缺失返回 403。
+3) 本项目规范：所有用户前台接口均已“方法级”标注注解；如新增接口，必须同时标注对应权限码。
+
+特别说明（例外实现）：
+- `/api/public/resource/{id}/access` 虽位于 public 路由，为了直链访问场景，控制器内部仍做了 `RESOURCE_DOWNLOAD` 权限校验（显式代码判断）。
+
+示例（仅示意）：
+```java
+@RequiresPlanPermissions({ PlanPermission.RESOURCE_DOWNLOAD })
+public ApiResponse<Void> download(...) { ... }
+```
+
+## 9. 缓存与一致性
+
+- 缓存：`userId -> {menuCodes, permissions}`，Caffeine 本地缓存，TTL 30~60s。
+- 失效触发：
+  - 用户订阅创建/到期/取消；
+  - 管理端变更某套餐的菜单或权限绑定。
+- 失效实现：事件驱动（领域事件 / 应用事件）清理对应用户缓存。
+
+## 10. 错误码与返回（建议）
+
+- 新增错误码（示例）：`PERMISSION_DENIED_BY_PLAN`（403）— “当前套餐不包含该功能”。
+- 管理端更新绑定时的提示：
+  - 仅绑定菜单未绑定任何权限：提示但允许保存；
+  - 可选“自动补齐推荐权限”开关（由前端或应用层实现）。
+
+## 11. 上线与实施步骤
+
+1) Flyway：新增 `subscription_plan_permissions` 表；为 `subscription_plan_menus` 补充唯一索引（如需改名再另起迁移）。
+2) Domain：实体/仓储/服务的方法（同步绑定、查询用户聚合）。
+3) Application：
+   - 管理端：菜单/权限的选项接口与绑定接口（权限选项来自注解扫描）。
+   - 用户侧：`/api/user/menu-codes`、`/api/user/permissions`（本项目也标注了功能权限码）。
+4) Infrastructure：权限注解与拦截器落地（仅作用前台）；本期不引入枚举 TypeHandler。
+5) 前端：
+   - 路由为菜单项补充 `meta.menuCode`；
+   - 登录后调用用户菜单/权限接口做渲染与按钮控制；
+   - 管理端页面使用多选/穿梭框完成绑定管理（非树形亦可）。
+6) 标注所有用户前台接口的“方法级”注解，新增接口必须同步标注。
+7) 验证与回滚：
+   - 开关方案：在注解/拦截器上预留开关（灰度）；
+   - 回滚不影响数据表，关闭拦截即可恢复“仅订阅”的旧行为。
+
+## 12. 风险与说明
+
+- 菜单码/权限码改名需要前后端同步，建议通过“新增新码、兼容旧码”的方式平滑迁移。
+- 管理端采用“全量替换”策略，空列表表示清空绑定（需二次确认）。
+- 不建议将“菜单是否可见”与“功能是否可用”隐式耦合，避免误判；以注解校验为最终安全边界。
+
+## 13. 附录：首版码清单（示例，可按产品迭代）
+
+- MenuCode（采用你提供的清单；括号内为「名称 / 分组 / 路径」）：
+  - `MENU_DASHBOARD_HOME`（首页 / 导航 / `/dashboard/home`）
+  - `MENU_DASHBOARD_DISCUSSIONS`（讨论 / 导航 / `/dashboard/discussions`）
+  - `MENU_DASHBOARD_COURSES`（课程 / 导航 / `/dashboard/courses`）
+  - `MENU_DASHBOARD_CHANGELOG`（更新日志 / 导航 / `/dashboard/changelog`）
+  - `MENU_USER_BACKEND`（用户中心 / 入口 / `/dashboard/user-backend`）
+  - `MENU_USER_ARTICLES`（我的文章 / 用户中心 / `/dashboard/user-backend/articles`）
+  - `MENU_USER_COMMENTS`（我的评论 / 用户中心 / `/dashboard/user-backend/comments`）
+  - `MENU_USER_TESTIMONIAL`（我的评价 / 用户中心 / `/dashboard/user-backend/testimonial`）
+  - `MENU_USER_RESOURCES`（资源管理 / 用户中心 / `/dashboard/user-backend/resources`）
+  - `MENU_USER_MESSAGES`（消息中心 / 用户中心 / `/dashboard/user-backend/messages`）
+  - `MENU_USER_FOLLOWS`（关注管理 / 用户中心 / `/dashboard/user-backend/follows`）
+  - `MENU_USER_PROFILE`（个人信息 / 用户中心 / `/dashboard/user-backend/profile`）
+  - `MENU_USER_DEVICES`（设备管理 / 用户中心 / `/dashboard/user-backend/devices`）
+  - `MENU_MEMBERSHIP`（会员与套餐 / 公开入口 / `/dashboard/membership`）
+  - `MENU_REDEEM_CDK`（CDK 激活 / 公开入口 / `/dashboard/redeem`）
+
+- PlanPermission：
+  - 课程：`COURSE_VIEW_PREMIUM`、`VIDEO_PLAY_PREMIUM`
+  - 资源：`RESOURCE_DOWNLOAD`、`RESOURCE_DOWNLOAD_HD`
+  - 社区：`POST_CREATE`、`COMMENT_CREATE`、`LIKE_CREATE`、`FOLLOW_CREATE`
+  - 账户：`PROFILE_EDIT`、`AVATAR_UPLOAD`
+  - 消息：`MESSAGE_SEND`
+
+（以上清单用于对齐前后端约定与管理端绑定选项，后续可按实际功能扩展。）
+
+## 14. 实施清单（按优先顺序）
+
+决议（已确认）
+- 保留 `subscription_plan_menus.menu_id` 列名不变，用作“菜单码”字符串列（语义视作 code）；无需重命名为 `menu_code`。
+- 不提供“推荐权限”映射与一键补齐功能（后续如需再评估）。
+
+实施步骤
+1) 确认首版“菜单码 / 权限码”清单
+   - 产出：约定清单（代码枚举 + 管理端选项接口使用的字典）。
+2) 数据层迁移（Flyway）
+   - 新建 `subscription_plan_permissions`（含唯一索引 `(subscription_plan_id, permission_code)`）。
+   - 为 `subscription_plan_menus` 增加唯一索引 `(subscription_plan_id, menu_id|menu_code)`；如需更名再单独迁移。
+3) 领域层实体/仓储
+   - `SubscriptionPlanPermissionEntity/Repository`
+   - `SubscriptionPlanMenuEntity/Repository`
+4) 领域服务能力
+   - 绑定同步：`syncSubscriptionPlanPermissions`、`syncSubscriptionPlanMenus`（全量替换，先删后插）。
+   - 查询：`getPlanPermissions`、`getPlanMenuCodes`、`getUserPermissions`、`getUserMenuCodes`（基于有效订阅并集）。
+5) 基础设施：类型转换（本期跳过）
+   - 本期直接使用字符串码，不新增 TypeHandler。
+6) 管理端 API（菜单）
+   - GET `/api/admin/subscription-plan-menus/options`
+   - GET `/api/admin/subscription-plan-menus/{planId}`
+   - PUT `/api/admin/subscription-plan-menus/{planId}`（全量替换）。
+7) 管理端 API（权限）
+   - GET `/api/admin/subscription-plan-permissions/options`
+   - GET `/api/admin/subscription-plan-permissions/{planId}`
+   - PUT `/api/admin/subscription-plan-permissions/{planId}`（全量替换）。
+8) 用户侧 API
+   - GET `/api/user/menu-codes`（返回并集菜单码）。
+   - GET `/api/user/permissions`（返回并集权限码）。
+9) 前台接口强校验能力
+   - 注解 `@RequiresPlanPermissions` + 拦截器/切面 `PlanPermissionGuard`（仅作用 `/api/**`，排除 `/api/public/**`、`/api/admin/**`）。
+10) 给需要受控的前台接口添加注解
+    - 首批目标接口清单（待列出），逐步覆盖。
+11) 缓存与失效
+    - Caffeine：`userId -> {menuCodes, permissions}`，TTL 30–60s。
+    - 订阅变更 & 管理端绑定变更触发事件，清理对应缓存。
+12) 前端（管理端）绑定界面
+    - 非树形，两组多选：菜单码、权限码；支持搜索与分组显示。
+13) 前端（站点）消费
+    - 菜单渲染：按 `menuCodes` 过滤；
+    - 按钮/能力：按 `permissions` 控制显示/禁用；接口由后端注解兜底。
+14) 验证与回归
+    - 迁移执行校验；样例套餐绑定用例；未授权访问返回 403；菜单差异化渲染验证。
+15) 发布与回滚
+    - 增加开关（可停用注解拦截作为快速回退）；观察日志/告警；分阶段放量。

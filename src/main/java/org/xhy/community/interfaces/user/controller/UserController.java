@@ -14,6 +14,7 @@ import org.xhy.community.infrastructure.config.ApiResponse;
 import org.xhy.community.infrastructure.config.UserContext;
 import org.xhy.community.interfaces.user.request.ChangePasswordRequest;
 import org.xhy.community.interfaces.user.request.UpdateProfileRequest;
+import org.xhy.community.infrastructure.annotation.RequiresPlanPermissions;
 
 /**
  * 用户个人信息管理控制器
@@ -40,6 +41,7 @@ public class UserController {
      * @return 更新后的用户信息
      */
     @PutMapping("/profile")
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "USER_PROFILE_UPDATE", name = "修改个人资料")})
     public ApiResponse<UserDTO> updateProfile(@Valid @RequestBody UpdateProfileRequest request) {
         String userId = UserContext.getCurrentUserId();
         UserDTO user = userAppService.updateProfile(userId, request);
@@ -57,6 +59,7 @@ public class UserController {
      * @return 更新后的用户信息
      */
     @PutMapping("/password")
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "USER_PASSWORD_CHANGE", name = "修改密码")})
     public ApiResponse<UserDTO> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
         String userId = UserContext.getCurrentUserId();
         UserDTO user = userAppService.changePassword(userId, request.getOldPassword(), request.getNewPassword());
@@ -71,6 +74,7 @@ public class UserController {
      * @return 更新后的用户信息，包含新的邮箱通知设置状态
      */
     @PutMapping("/email-notification")
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "USER_EMAIL_NOTIFICATION_TOGGLE", name = "切换邮箱通知")})
     public ApiResponse<UserDTO> toggleEmailNotification() {
         String userId = UserContext.getCurrentUserId();
         UserDTO user = userAppService.toggleEmailNotification(userId);
@@ -86,6 +90,7 @@ public class UserController {
      * @return 当前用户的完整信息，包含所有可编辑的字段
      */
     @GetMapping("")
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "USER_INFO_CURRENT", name = "当前用户信息")})
     public ApiResponse<UserDTO> getCurrentUserInfo() {
         String userId = UserContext.getCurrentUserId();
         UserDTO user = userAppService.getCurrentUserInfo(userId);
@@ -102,6 +107,7 @@ public class UserController {
      * @return 指定用户的公开资料信息
      */
     @GetMapping("/{userId}")
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "USER_PUBLIC_PROFILE_VIEW", name = "查看用户公开资料")})
     public ApiResponse<UserPublicProfileDTO> getUserPublicProfile(@PathVariable String userId) {
         UserPublicProfileDTO user = userAppService.getUserPublicProfile(userId);
         return ApiResponse.success(user);
@@ -116,6 +122,7 @@ public class UserController {
      * @return 会话有效时返回成功状态
      */
     @GetMapping("/heartbeat")
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "USER_HEARTBEAT", name = "会话心跳")})
     public ApiResponse<Void> heartbeat(
             @RequestHeader(value = "Authorization", required = false) String authorization,
             HttpServletRequest request,

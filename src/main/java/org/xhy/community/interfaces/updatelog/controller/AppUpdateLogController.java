@@ -4,6 +4,7 @@ import org.springframework.web.bind.annotation.*;
 import org.xhy.community.application.updatelog.dto.UpdateLogDTO;
 import org.xhy.community.application.updatelog.service.UpdateLogAppService;
 import org.xhy.community.infrastructure.config.ApiResponse;
+import org.xhy.community.infrastructure.annotation.RequiresPlanPermissions;
 
 import java.util.List;
 
@@ -30,6 +31,7 @@ public class AppUpdateLogController {
      * @return 已发布的更新日志完整列表
      */
     @GetMapping
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "UPDATE_LOG_BROWSE", name = "查看更新日志")})
     public ApiResponse<List<UpdateLogDTO>> getPublishedUpdateLogs() {
         List<UpdateLogDTO> updateLogs = updateLogAppService.getPublishedUpdateLogs();
         return ApiResponse.success(updateLogs);

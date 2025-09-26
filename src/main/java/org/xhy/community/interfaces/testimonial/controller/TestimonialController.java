@@ -8,6 +8,7 @@ import org.xhy.community.infrastructure.config.ApiResponse;
 import org.xhy.community.infrastructure.config.UserContext;
 import org.xhy.community.interfaces.testimonial.request.CreateTestimonialRequest;
 import org.xhy.community.interfaces.testimonial.request.UpdateTestimonialRequest;
+import org.xhy.community.infrastructure.annotation.RequiresPlanPermissions;
 
 /**
  * 用户学员评价管理控制器
@@ -33,6 +34,7 @@ public class TestimonialController {
      * @return 创建成功的评价详情信息
      */
     @PostMapping
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "TESTIMONIAL_CREATE", name = "提交评价")})
     public ApiResponse<TestimonialDTO> createTestimonial(@Valid @RequestBody CreateTestimonialRequest request) {
         String currentUserId = UserContext.getCurrentUserId();
 
@@ -48,6 +50,7 @@ public class TestimonialController {
      * @return 用户的评价详情，如果未提交则返回null
      */
     @GetMapping("/my")
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "TESTIMONIAL_VIEW", name = "查看我的评价")})
     public ApiResponse<TestimonialDTO> getMyTestimonial() {
         String currentUserId = UserContext.getCurrentUserId();
 
@@ -65,6 +68,7 @@ public class TestimonialController {
      * @return 更新后的评价详情信息
      */
     @PutMapping("/{testimonialId}")
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "TESTIMONIAL_UPDATE", name = "更新我的评价")})
     public ApiResponse<TestimonialDTO> updateMyTestimonial(@PathVariable String testimonialId,
                                                           @Valid @RequestBody UpdateTestimonialRequest request) {
         String currentUserId = UserContext.getCurrentUserId();

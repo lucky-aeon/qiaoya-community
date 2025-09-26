@@ -9,11 +9,14 @@ public class WebConfig implements WebMvcConfigurer {
 
     private final UserContextInterceptor userContextInterceptor;
     private final AdminAuthInterceptor adminAuthInterceptor;
+    private final PlanPermissionInterceptor planPermissionInterceptor;
 
     public WebConfig(UserContextInterceptor userContextInterceptor,
-                     AdminAuthInterceptor adminAuthInterceptor) {
+                     AdminAuthInterceptor adminAuthInterceptor,
+                     PlanPermissionInterceptor planPermissionInterceptor) {
         this.userContextInterceptor = userContextInterceptor;
         this.adminAuthInterceptor = adminAuthInterceptor;
+        this.planPermissionInterceptor = planPermissionInterceptor;
     }
 
     
@@ -27,5 +30,10 @@ public class WebConfig implements WebMvcConfigurer {
         // 管理员权限验证拦截器 - 仅拦截管理员接口
         registry.addInterceptor(adminAuthInterceptor)
                 .addPathPatterns("/api/admin/**");
+
+        // 前台功能权限拦截器 - 仅前台接口，排除 public 与 admin
+        registry.addInterceptor(planPermissionInterceptor)
+                .addPathPatterns("/api/**")
+                .excludePathPatterns("/api/public/**", "/api/admin/**");
     }
 }

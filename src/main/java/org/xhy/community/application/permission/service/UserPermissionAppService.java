@@ -1,7 +1,6 @@
 package org.xhy.community.application.permission.service;
 
 import org.springframework.stereotype.Service;
-import org.xhy.community.domain.subscription.entity.SubscriptionPlanCourseEntity;
 import org.xhy.community.domain.subscription.entity.UserSubscriptionEntity;
 import org.xhy.community.domain.user.service.UserDomainService;
 import org.xhy.community.domain.subscription.service.SubscriptionDomainService;
@@ -109,5 +108,29 @@ public class UserPermissionAppService {
      */
     public List<String> getDirectCoursesIds(String userId) {
         return userDomainService.getUserCourses(userId);
+    }
+
+    // ==================== 套餐功能权限（计划码） ====================
+    /**
+     * 获取用户的功能权限码集合（并集）
+     */
+    public List<String> getUserPlanPermissionCodes(String userId) {
+        List<UserSubscriptionEntity> actives = subscriptionDomainService.getUserActiveSubscriptions(userId);
+        if (actives == null || actives.isEmpty()) return List.of();
+        java.util.LinkedHashSet<String> set = new java.util.LinkedHashSet<>();
+        for (UserSubscriptionEntity sub : actives) {
+            List<String> codes = subscriptionPlanDomainService.getSubscriptionPlanPermissionCodes(sub.getSubscriptionPlanId());
+            if (codes != null) set.addAll(codes);
+        }
+        return new java.util.ArrayList<>(set);
+    }
+
+    /**
+     * 是否具备指定功能权限
+     */
+    public boolean hasPlanPermission(String userId, String permissionCode) {
+        if (permissionCode == null || permissionCode.isBlank()) return false;
+        List<String> codes = getUserPlanPermissionCodes(userId);
+        return codes.contains(permissionCode);
     }
 }

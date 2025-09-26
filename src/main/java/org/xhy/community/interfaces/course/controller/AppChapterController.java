@@ -5,6 +5,7 @@ import org.xhy.community.application.course.dto.FrontChapterDetailDTO;
 import org.xhy.community.application.course.dto.LatestChapterDTO;
 import org.xhy.community.application.course.service.ChapterAppService;
 import org.xhy.community.infrastructure.config.ApiResponse;
+import org.xhy.community.infrastructure.annotation.RequiresPlanPermissions;
 
 import java.util.List;
 
@@ -34,6 +35,7 @@ public class AppChapterController {
      *         - 创建和更新时间
      */
     @GetMapping("/{id}")
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "CHAPTER_APP_DETAIL", name = "前台章节详情")})
     public ApiResponse<FrontChapterDetailDTO> getChapterDetail(@PathVariable String id) {
         FrontChapterDetailDTO chapterDetail = chapterAppService.getChapterById(id);
         return ApiResponse.success(chapterDetail);
@@ -46,6 +48,7 @@ public class AppChapterController {
      * @return 最新章节列表
      */
     @GetMapping("/latest")
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "CHAPTER_APP_LATEST", name = "最新章节列表")})
     public ApiResponse<List<LatestChapterDTO>> getLatestChapters() {
         List<LatestChapterDTO> chapters = chapterAppService.getLatestChapters();
         return ApiResponse.success(chapters);

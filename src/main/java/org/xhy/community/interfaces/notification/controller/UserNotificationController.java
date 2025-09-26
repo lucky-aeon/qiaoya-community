@@ -10,6 +10,7 @@ import org.xhy.community.application.notification.service.NotificationAppService
 import org.xhy.community.infrastructure.config.ApiResponse;
 import org.xhy.community.infrastructure.config.UserContext;
 import org.xhy.community.interfaces.notification.request.NotificationQueryRequest;
+import org.xhy.community.infrastructure.annotation.RequiresPlanPermissions;
 
 /**
  * 用户消息中心控制器
@@ -38,6 +39,7 @@ public class UserNotificationController {
      * @return 分页消息列表，包含消息详情和分页信息
      */
     @GetMapping
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "NOTIFICATION_LIST", name = "消息列表")})
     public ApiResponse<IPage<NotificationDTO>> getNotifications(NotificationQueryRequest request) {
         String userId = UserContext.getCurrentUserId();
         IPage<NotificationDTO> notifications =
@@ -54,6 +56,7 @@ public class UserNotificationController {
      * @return 未读消息数量
      */
     @GetMapping("/unread-count")
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "NOTIFICATION_UNREAD_COUNT", name = "未读消息数")})
     public ApiResponse<Long> getUnreadCount() {
         String userId = UserContext.getCurrentUserId();
         Long count = notificationAppService.getUnreadNotificationCount(userId);
@@ -70,6 +73,7 @@ public class UserNotificationController {
      * @return 操作成功状态
      */
     @PutMapping("/{notificationId}/read")
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "NOTIFICATION_MARK_READ", name = "标记已读")})
     public ApiResponse<Void> markAsRead(
             @PathVariable String notificationId) {
         String userId = UserContext.getCurrentUserId();
@@ -87,6 +91,7 @@ public class UserNotificationController {
      * @return 操作成功状态
      */
     @PutMapping("/read-all")
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "NOTIFICATION_MARK_ALL_READ", name = "全部标记已读")})
     public ApiResponse<Void> markAllAsRead() {
         String userId = UserContext.getCurrentUserId();
         notificationAppService.markAllNotificationsAsRead(userId);

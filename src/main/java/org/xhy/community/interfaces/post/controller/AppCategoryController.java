@@ -5,6 +5,7 @@ import org.xhy.community.application.post.dto.CategoryTreeDTO;
 import org.xhy.community.application.post.service.AppCategoryAppService;
 import org.xhy.community.domain.post.valueobject.CategoryType;
 import org.xhy.community.infrastructure.config.ApiResponse;
+import org.xhy.community.infrastructure.annotation.RequiresPlanPermissions;
 
 import java.util.List;
 
@@ -33,6 +34,7 @@ public class AppCategoryController {
      * @return 树形结构的分类列表，包含父子关系
      */
     @GetMapping("/tree")
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "CATEGORY_APP_TREE", name = "前台分类树")})
     public ApiResponse<List<CategoryTreeDTO>> getCategoryTree(@RequestParam(required = false) CategoryType type) {
         List<CategoryTreeDTO> categoryTree = appCategoryAppService.getCategoryTree(type);
         return ApiResponse.success(categoryTree);

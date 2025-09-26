@@ -11,6 +11,7 @@ import org.xhy.community.interfaces.subscription.request.ActivateCDKRequest;
 import org.xhy.community.interfaces.subscription.request.SubscriptionQueryRequest;
 import org.xhy.community.infrastructure.annotation.ActivityLog;
 import org.xhy.community.domain.common.valueobject.ActivityType;
+import org.xhy.community.infrastructure.annotation.RequiresPlanPermissions;
 
 /**
  * 用户订阅控制器
@@ -35,6 +36,7 @@ public class UserSubscriptionController {
      */
     @PostMapping("/activate-cdk")
     @ActivityLog(value = ActivityType.ACTIVATE_CDK, recordRequest = false)
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "SUBSCRIPTION_ACTIVATE_CDK", name = "激活CDK")})
     public ApiResponse<Void> activateCDK(@Valid @RequestBody ActivateCDKRequest request) {
         String userId = UserContext.getCurrentUserId();
         userSubscriptionAppService.activateCDK(userId, request);
@@ -48,6 +50,7 @@ public class UserSubscriptionController {
      * @return 分页订阅列表
      */
     @GetMapping("/subscriptions")
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "SUBSCRIPTION_LIST", name = "订阅列表")})
     public ApiResponse<IPage<UserSubscriptionDTO>> getSubscriptions(SubscriptionQueryRequest request) {
         String userId = UserContext.getCurrentUserId();
         IPage<UserSubscriptionDTO> subscriptions = userSubscriptionAppService.getSubscriptions(userId, request);
@@ -61,6 +64,7 @@ public class UserSubscriptionController {
      * @return 订阅详情
      */
     @GetMapping("/{subscriptionId}")
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "SUBSCRIPTION_DETAIL", name = "订阅详情")})
     public ApiResponse<UserSubscriptionDTO> getSubscriptionDetail(@PathVariable String subscriptionId) {
         String userId = UserContext.getCurrentUserId();
         UserSubscriptionDTO subscription = userSubscriptionAppService.getSubscriptionDetail(userId, subscriptionId);

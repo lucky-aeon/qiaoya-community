@@ -11,6 +11,7 @@ import org.xhy.community.infrastructure.config.ApiResponse;
 import org.xhy.community.interfaces.post.request.AppPostQueryRequest;
 import org.xhy.community.infrastructure.annotation.ActivityLog;
 import org.xhy.community.domain.common.valueobject.ActivityType;
+import org.xhy.community.infrastructure.annotation.RequiresPlanPermissions;
 
 /**
  * 用户前台文章控制器
@@ -40,6 +41,7 @@ public class AppPostController {
      * @return 分页文章列表，包含文章概要信息、作者信息、统计数据等
      */
     @PostMapping("/queries")
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "POST_APP_LIST", name = "前台文章列表")})
     public ApiResponse<IPage<FrontPostDTO>> queryPosts(@Valid @RequestBody AppPostQueryRequest request) {
         IPage<FrontPostDTO> posts = postAppService.queryAppPosts(request);
         return ApiResponse.success(posts);
@@ -58,6 +60,7 @@ public class AppPostController {
      *         - 发布时间等
      */
     @GetMapping("/{id}")
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "POST_APP_DETAIL", name = "前台文章详情")})
     @ActivityLog(ActivityType.VIEW_POST)
     public ApiResponse<FrontPostDetailDTO> getPostDetail(@PathVariable String id) {
         FrontPostDetailDTO postDetail = postAppService.getAppPostDetail(id);

@@ -6,6 +6,7 @@ import org.xhy.community.application.follow.service.FollowAppService;
 import org.xhy.community.domain.follow.valueobject.FollowTargetType;
 import org.xhy.community.infrastructure.config.ApiResponse;
 import org.xhy.community.interfaces.follow.request.ToggleFollowRequest;
+import org.xhy.community.infrastructure.annotation.RequiresPlanPermissions;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -36,6 +37,7 @@ public class AppFollowController {
      * @return 切换后的关注状态信息
      */
     @PostMapping("/toggle")
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "FOLLOW_TOGGLE", name = "关注/取消关注")})
     public ApiResponse<Map<String, Object>> toggleFollow(@Valid @RequestBody ToggleFollowRequest request) {
         // 检查当前关注状态
         boolean isFollowing = followAppService.checkFollowStatus(request.getTargetId(), request.getTargetType());
@@ -65,6 +67,7 @@ public class AppFollowController {
      * @return 是否已关注的状态
      */
     @GetMapping("/check/{targetType}/{targetId}")
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "FOLLOW_CHECK", name = "检查关注状态")})
     public ApiResponse<Map<String, Object>> checkFollowStatus(@PathVariable FollowTargetType targetType,
                                                  @PathVariable String targetId) {
         boolean isFollowing = followAppService.checkFollowStatus(targetId, targetType);

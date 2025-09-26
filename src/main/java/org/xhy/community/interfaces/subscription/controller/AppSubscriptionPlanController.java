@@ -4,6 +4,7 @@ import org.springframework.web.bind.annotation.*;
 import org.xhy.community.application.subscription.dto.AppSubscriptionPlanDTO;
 import org.xhy.community.application.subscription.service.SubscriptionPlanAppService;
 import org.xhy.community.infrastructure.config.ApiResponse;
+import org.xhy.community.infrastructure.annotation.RequiresPlanPermissions;
 
 import java.util.List;
 
@@ -35,6 +36,7 @@ public class AppSubscriptionPlanController {
      *         - benefits: 套餐权益列表
      */
     @GetMapping
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "SUBSCRIPTION_PLAN_APP_LIST", name = "前台套餐列表")})
     public ApiResponse<List<AppSubscriptionPlanDTO>> getActiveSubscriptionPlans() {
         List<AppSubscriptionPlanDTO> plans = subscriptionPlanAppService.getActivePaidSubscriptionPlans();
         return ApiResponse.success(plans);
