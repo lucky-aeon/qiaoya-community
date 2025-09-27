@@ -56,6 +56,7 @@ public class AppPostController {
      * @return 分页文章列表
      */
     @PostMapping("/user/{userId}/queries")
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "POST_APP_USER_LIST", name = "前台用户文章列表")})
     public ApiResponse<IPage<FrontPostDTO>> queryUserPublishedPosts(@PathVariable String userId,
                                                                     @Valid @RequestBody AppPostQueryRequest request) {
         IPage<FrontPostDTO> posts = postAppService.queryAppUserPosts(userId, request);

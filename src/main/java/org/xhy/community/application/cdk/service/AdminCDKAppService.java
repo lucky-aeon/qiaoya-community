@@ -1,6 +1,7 @@
 package org.xhy.community.application.cdk.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.stereotype.Service;
 import org.xhy.community.application.cdk.assembler.CDKAssembler;
 import org.xhy.community.application.cdk.dto.CDKDTO;
@@ -9,11 +10,16 @@ import org.xhy.community.domain.cdk.service.CDKDomainService;
 import org.xhy.community.domain.cdk.valueobject.CDKType;
 import org.xhy.community.domain.subscription.service.SubscriptionPlanDomainService;
 import org.xhy.community.domain.course.service.CourseDomainService;
+import org.xhy.community.domain.user.entity.UserEntity;
+import org.xhy.community.domain.user.service.UserDomainService;
 import org.xhy.community.interfaces.cdk.request.CreateCDKRequest;
 import org.xhy.community.interfaces.cdk.request.CDKQueryRequest;
 import org.xhy.community.domain.cdk.query.CDKQuery;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -22,13 +28,16 @@ public class AdminCDKAppService {
     private final CDKDomainService cdkDomainService;
     private final SubscriptionPlanDomainService subscriptionPlanDomainService;
     private final CourseDomainService courseDomainService;
+    private final UserDomainService userDomainService;
     
     public AdminCDKAppService(CDKDomainService cdkDomainService,
                             SubscriptionPlanDomainService subscriptionPlanDomainService,
-                            CourseDomainService courseDomainService) {
+                            CourseDomainService courseDomainService,
+                            UserDomainService userDomainService) {
         this.cdkDomainService = cdkDomainService;
         this.subscriptionPlanDomainService = subscriptionPlanDomainService;
         this.courseDomainService = courseDomainService;
+        this.userDomainService = userDomainService;
     }
     
     public List<CDKDTO> createCDK(CreateCDKRequest request) {
@@ -63,10 +72,27 @@ public class AdminCDKAppService {
 
         IPage<CDKEntity> entityPage = cdkDomainService.getPagedCDKs(query);
 
-        return entityPage.convert(entity -> {
+        // 批量查询使用者昵称映射
+        Set<String> userIds = entityPage.getRecords().stream()
+                .map(CDKEntity::getUsedByUserId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<String, UserEntity> userEntityMap = userDomainService.getUserEntityMapByIds(userIds);
+        Map<String, String> userNameMap = userEntityMap.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().getName()));
+
+        List<CDKDTO> dtos = entityPage.getRecords().stream().map(entity -> {
             String targetName = getTargetName(entity.getCdkType(), entity.getTargetId());
-            return CDKAssembler.toDTOWithTargetName(entity, targetName);
-        });
+            CDKDTO dto = CDKAssembler.toDTOWithTargetName(entity, targetName);
+            if (dto != null) {
+                dto.setUsedByUserName(userNameMap.get(entity.getUsedByUserId()));
+            }
+            return dto;
+        }).collect(Collectors.toList());
+
+        Page<CDKDTO> dtoPage = new Page<>(entityPage.getCurrent(), entityPage.getSize(), entityPage.getTotal());
+        dtoPage.setRecords(dtos);
+        return dtoPage;
     }
     
     private void validateTarget(CDKType cdkType, String targetId) {

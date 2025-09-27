@@ -83,9 +83,7 @@ public class CDKDomainService {
             cdkCode,
             cdk.getCdkType(),
             cdk.getTargetId(),
-            cdk.getAcquisitionType(),
-            "待获取", // TODO: 后续优化为从Application层传入完整用户信息
-            null
+            cdk.getAcquisitionType()
         );
         applicationEventPublisher.publishEvent(event);
         log.info("[CDK激活] 已发布事件: userId={}, type={}, targetId={}, acquisitionType={}",

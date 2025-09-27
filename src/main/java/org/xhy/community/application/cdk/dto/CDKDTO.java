@@ -16,6 +16,7 @@ public class CDKDTO {
     private String batchId;
     private CDKStatus status;
     private String usedByUserId;
+    private String usedByUserName;
     private LocalDateTime usedTime;
     private CDKAcquisitionType acquisitionType; // 新增
     private String remark;                      // 新增
@@ -49,6 +50,9 @@ public class CDKDTO {
     public String getUsedByUserId() { return usedByUserId; }
     public void setUsedByUserId(String usedByUserId) { this.usedByUserId = usedByUserId; }
     
+    public String getUsedByUserName() { return usedByUserName; }
+    public void setUsedByUserName(String usedByUserName) { this.usedByUserName = usedByUserName; }
+
     public LocalDateTime getUsedTime() { return usedTime; }
     public void setUsedTime(LocalDateTime usedTime) { this.usedTime = usedTime; }
     

@@ -68,6 +68,8 @@
 ### 运维（Ops）
 - CI/CD（GitHub Actions + SSH + Docker）
   - 文件：docs/deployment/后端CI-CD技术方案-GitHub-Actions-SSH-Docker.md
+- 发布可靠性与回滚策略（蓝绿/金丝雀/候选容器预检）
+  - 文件：docs/deployment/发布可靠性与回滚策略-蓝绿-金丝雀-候选容器预检.md
 
 ### 可观测性（Observability）
 - Prometheus 指标接入与打点方案

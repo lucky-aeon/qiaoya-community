@@ -44,6 +44,8 @@ public class SubscriptionDomainService {
             throw new BusinessException(SubscriptionErrorCode.SUBSCRIPTION_ALREADY_EXISTS);
         }
 
+        // 删除旧套餐
+        userSubscriptionRepository.delete(new LambdaQueryWrapper<UserSubscriptionEntity>().eq(UserSubscriptionEntity::getUserId,userId));
         // 创建订阅记录
         UserSubscriptionEntity subscription = createSubscription(userId, plan, cdkCode);
         userSubscriptionRepository.insert(subscription);

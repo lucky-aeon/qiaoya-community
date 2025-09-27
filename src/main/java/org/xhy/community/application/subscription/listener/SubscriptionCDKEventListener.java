@@ -23,14 +23,14 @@ public class SubscriptionCDKEventListener {
     @EventListener
     public void handleCDKActivated(CDKActivatedEvent event) {
         if (event.getCdkType() == CDKType.SUBSCRIPTION_PLAN) {
-            String masked = mask(event.getCdkCode());
+            String cdkCode = event.getCdkCode();
             log.info("[CDK激活-监听] 处理套餐CDK: userId={}, planId={}, cdk={}",
-                    event.getUserId(), event.getTargetId(), masked);
+                    event.getUserId(), event.getTargetId(), cdkCode);
 
             UserSubscriptionEntity created = subscriptionDomainService.createSubscriptionFromCDK(
                 event.getUserId(),
                 event.getTargetId(),
-                event.getCdkCode()
+                    cdkCode
             );
 
             if (created != null) {

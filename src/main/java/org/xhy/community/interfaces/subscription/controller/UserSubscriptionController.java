@@ -35,7 +35,7 @@ public class UserSubscriptionController {
      * @return CDK激活结果
      */
     @PostMapping("/activate-cdk")
-    @ActivityLog(value = ActivityType.ACTIVATE_CDK, recordRequest = false)
+    @ActivityLog(value = ActivityType.ACTIVATE_CDK)
     @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "SUBSCRIPTION_ACTIVATE_CDK", name = "激活CDK")})
     public ApiResponse<Void> activateCDK(@Valid @RequestBody ActivateCDKRequest request) {
         String userId = UserContext.getCurrentUserId();
