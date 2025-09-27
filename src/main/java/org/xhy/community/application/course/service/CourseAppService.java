@@ -175,7 +175,7 @@ public class CourseAppService {
     
     /**
      * 批量获取课程的章节数量
-     * 
+     *
      * @param courseIds 课程ID集合
      * @return 课程ID -> 章节数量的映射
      */
@@ -185,5 +185,94 @@ public class CourseAppService {
                         courseId -> courseId,
                         courseId -> chapterDomainService.getChaptersByCourseId(courseId).size()
                 ));
+    }
+
+    /**
+     * 批量设置课程解锁状态
+     * 检查用户是否通过直接购买或有效套餐解锁了课程
+     *
+     * @param courses 课程DTO列表
+     * @param userId 用户ID
+     */
+    private void setCoursesUnlockStatus(List<FrontCourseDTO> courses, String userId) {
+        if (courses == null || courses.isEmpty() || userId == null) {
+            // 未登录或空列表，默认未解锁
+            courses.forEach(dto -> dto.setUnlocked(false));
+            return;
+        }
+
+        try {
+            // 1) 获取用户直接拥有的课程（购买/授予）
+            Set<String> ownedCourseIds = userDomainService.getUserCourses(userId)
+                    .stream().collect(Collectors.toSet());
+
+            // 2) 获取用户当前有效订阅所包含的课程
+            List<UserSubscriptionEntity> activeSubscriptions = subscriptionDomainService.getUserActiveSubscriptions(userId);
+            Set<String> planCourseIds = activeSubscriptions == null || activeSubscriptions.isEmpty()
+                    ? Set.of()
+                    : subscriptionPlanDomainService.getCourseIdsByPlanIds(
+                            activeSubscriptions.stream()
+                                    .map(UserSubscriptionEntity::getSubscriptionPlanId)
+                                    .collect(Collectors.toSet()));
+
+            // 3) 合并所有已解锁的课程ID
+            Set<String> unlockedCourseIds = new java.util.HashSet<>();
+            unlockedCourseIds.addAll(ownedCourseIds);
+            unlockedCourseIds.addAll(planCourseIds);
+
+            // 4) 设置每个课程的解锁状态
+            courses.forEach(dto -> dto.setUnlocked(unlockedCourseIds.contains(dto.getId())));
+
+        } catch (Exception e) {
+            // 容错：出现异常不影响主体查询，默认未解锁
+            courses.forEach(dto -> dto.setUnlocked(false));
+        }
+    }
+
+    /**
+     * 设置单个课程的解锁状态和解锁套餐信息
+     *
+     * @param dto 课程详情DTO
+     * @param courseId 课程ID
+     * @param userId 用户ID
+     */
+    private void setCourseUnlockStatus(FrontCourseDetailDTO dto, String courseId, String userId) {
+        if (userId == null) {
+            dto.setUnlocked(false);
+            return;
+        }
+
+        try {
+            // 检查用户是否直接拥有该课程
+            boolean owned = userDomainService.hasUserCourse(userId, courseId);
+
+            // 检查用户是否通过有效套餐解锁该课程
+            boolean unlockedByPlan = false;
+            if (!owned) {
+                List<UserSubscriptionEntity> activeSubscriptions = subscriptionDomainService.getUserActiveSubscriptions(userId);
+                if (activeSubscriptions != null && !activeSubscriptions.isEmpty()) {
+                    Set<String> planIds = activeSubscriptions.stream()
+                            .map(UserSubscriptionEntity::getSubscriptionPlanId)
+                            .collect(Collectors.toSet());
+                    Set<String> planCourseIds = subscriptionPlanDomainService.getCourseIdsByPlanIds(planIds);
+                    unlockedByPlan = planCourseIds.contains(courseId);
+                }
+            }
+
+            boolean unlocked = owned || unlockedByPlan;
+            dto.setUnlocked(unlocked);
+
+            // 如果课程未解锁，提供可解锁的套餐列表
+            if (!unlocked) {
+                List<AppSubscriptionPlanDTO> unlockPlans = SubscriptionPlanAssembler.toAppDTOList(
+                        subscriptionPlanDomainService.getPlansByCourseId(courseId)
+                );
+                dto.setUnlockPlans(unlockPlans);
+            }
+
+        } catch (Exception e) {
+            // 容错：出现异常时默认未解锁
+            dto.setUnlocked(false);
+        }
     }
 }

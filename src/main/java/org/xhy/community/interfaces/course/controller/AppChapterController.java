@@ -5,6 +5,7 @@ import org.xhy.community.application.course.dto.FrontChapterDetailDTO;
 import org.xhy.community.application.course.dto.LatestChapterDTO;
 import org.xhy.community.application.course.service.ChapterAppService;
 import org.xhy.community.infrastructure.config.ApiResponse;
+import org.xhy.community.infrastructure.config.UserContext;
 import org.xhy.community.infrastructure.annotation.RequiresPlanPermissions;
 
 import java.util.List;
@@ -27,6 +28,7 @@ public class AppChapterController {
     /**
      * 根据章节ID获取章节详情
      * 获取指定章节的详细信息，包含章节内容和课程名称
+     * 需要验证用户是否有权限访问该章节（通过课程购买或套餐解锁）
      *
      * @param id 章节ID，UUID格式
      * @return 章节详细信息，包含：
@@ -37,7 +39,8 @@ public class AppChapterController {
     @GetMapping("/{id}")
     @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "CHAPTER_APP_DETAIL", name = "前台章节详情")})
     public ApiResponse<FrontChapterDetailDTO> getChapterDetail(@PathVariable String id) {
-        FrontChapterDetailDTO chapterDetail = chapterAppService.getChapterById(id);
+        String userId = UserContext.getCurrentUserId();
+        FrontChapterDetailDTO chapterDetail = chapterAppService.getChapterById(id, userId);
         return ApiResponse.success(chapterDetail);
     }
 
