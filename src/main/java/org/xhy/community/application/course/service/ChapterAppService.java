@@ -8,10 +8,7 @@ import org.xhy.community.domain.course.entity.ChapterEntity;
 import org.xhy.community.domain.course.entity.CourseEntity;
 import org.xhy.community.domain.course.service.ChapterDomainService;
 import org.xhy.community.domain.course.service.CourseDomainService;
-import org.xhy.community.domain.subscription.entity.UserSubscriptionEntity;
-import org.xhy.community.domain.subscription.service.SubscriptionDomainService;
-import org.xhy.community.domain.subscription.service.SubscriptionPlanDomainService;
-import org.xhy.community.domain.user.service.UserDomainService;
+import org.xhy.community.application.permission.service.UserPermissionAppService;
 import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.infrastructure.exception.CourseErrorCode;
 
@@ -29,20 +26,14 @@ public class ChapterAppService {
 
     private final ChapterDomainService chapterDomainService;
     private final CourseDomainService courseDomainService;
-    private final UserDomainService userDomainService;
-    private final SubscriptionDomainService subscriptionDomainService;
-    private final SubscriptionPlanDomainService subscriptionPlanDomainService;
+    private final UserPermissionAppService userPermissionAppService;
 
     public ChapterAppService(ChapterDomainService chapterDomainService,
                             CourseDomainService courseDomainService,
-                            UserDomainService userDomainService,
-                            SubscriptionDomainService subscriptionDomainService,
-                            SubscriptionPlanDomainService subscriptionPlanDomainService) {
+                            UserPermissionAppService userPermissionAppService) {
         this.chapterDomainService = chapterDomainService;
         this.courseDomainService = courseDomainService;
-        this.userDomainService = userDomainService;
-        this.subscriptionDomainService = subscriptionDomainService;
-        this.subscriptionPlanDomainService = subscriptionPlanDomainService;
+        this.userPermissionAppService = userPermissionAppService;
     }
 
     /**
@@ -113,34 +104,7 @@ public class ChapterAppService {
             throw new BusinessException(CourseErrorCode.CHAPTER_ACCESS_DENIED);
         }
 
-        try {
-            // 检查用户是否直接拥有该课程
-            boolean owned = userDomainService.hasUserCourse(userId, courseId);
-            if (owned) {
-                return;
-            }
-
-            // 检查用户是否通过有效套餐解锁该课程
-            List<UserSubscriptionEntity> activeSubscriptions = subscriptionDomainService.getUserActiveSubscriptions(userId);
-            if (activeSubscriptions != null && !activeSubscriptions.isEmpty()) {
-                Set<String> planIds = activeSubscriptions.stream()
-                        .map(UserSubscriptionEntity::getSubscriptionPlanId)
-                        .collect(Collectors.toSet());
-                Set<String> planCourseIds = subscriptionPlanDomainService.getCourseIdsByPlanIds(planIds);
-
-                if (planCourseIds.contains(courseId)) {
-                    return;
-                }
-            }
-
-            // 用户既没有直接购买，也没有通过套餐解锁，拒绝访问
-            throw new BusinessException(CourseErrorCode.CHAPTER_ACCESS_DENIED);
-
-        } catch (BusinessException e) {
-            // 重新抛出业务异常
-            throw e;
-        } catch (Exception e) {
-            // 其他异常也视为无权限访问
+        if (!userPermissionAppService.hasAccessToCourse(userId, courseId)) {
             throw new BusinessException(CourseErrorCode.CHAPTER_ACCESS_DENIED);
         }
     }

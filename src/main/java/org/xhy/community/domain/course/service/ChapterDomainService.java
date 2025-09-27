@@ -127,6 +127,21 @@ public class ChapterDomainService {
     }
 
     /**
+     * 批量查询章节所属课程ID映射
+     */
+    public Map<String, String> getChapterCourseIdMapByIds(Collection<String> chapterIds) {
+        if (chapterIds == null || chapterIds.isEmpty()) {
+            return Map.of();
+        }
+        List<ChapterEntity> chapters = chapterRepository.selectBatchIds(chapterIds);
+        return chapters.stream()
+                .collect(Collectors.toMap(
+                        ChapterEntity::getId,
+                        ChapterEntity::getCourseId
+                ));
+    }
+
+    /**
      * 发布简化的章节内容事件
      * 只包含必要的标识信息，由Application层统一处理通知逻辑
      */

@@ -44,6 +44,28 @@ public class UserPermissionAppService {
         // 2. 检查动态权限：通过订阅获得的课程权限（有时效性）
         return hasSubscriptionCourseAccess(userId, courseId);
     }
+
+    /**
+     * 检查用户是否对提供的任一课程拥有访问权限（直购或订阅包含）
+     */
+    public boolean hasAccessToAnyCourse(String userId, java.util.Set<String> courseIds) {
+        if (courseIds == null || courseIds.isEmpty()) return false;
+
+        // 直购集合
+        java.util.Set<String> owned = new java.util.HashSet<>(userDomainService.getUserCourses(userId));
+        if (!java.util.Collections.disjoint(courseIds, owned)) {
+            return true;
+        }
+
+        // 订阅集合
+        List<UserSubscriptionEntity> actives = subscriptionDomainService.getUserActiveSubscriptions(userId);
+        if (actives == null || actives.isEmpty()) return false;
+        java.util.Set<String> planIds = actives.stream()
+                .map(UserSubscriptionEntity::getSubscriptionPlanId)
+                .collect(java.util.stream.Collectors.toSet());
+        java.util.Set<String> planCourses = subscriptionPlanDomainService.getCourseIdsByPlanIds(planIds);
+        return !java.util.Collections.disjoint(courseIds, planCourses);
+    }
     
     /**
      * 检查用户是否直接拥有课程权限

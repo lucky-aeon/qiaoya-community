@@ -128,6 +128,6 @@ public class AdminChapterController {
     @PutMapping("/order")
     public ApiResponse<Void> batchUpdateChapterOrder(@Valid @RequestBody BatchUpdateChapterOrderRequest request) {
         adminChapterAppService.batchUpdateChapterOrder(request);
-        return ApiResponse.success();
+        return ApiResponse.success("更新章节顺序成功");
     }
 }

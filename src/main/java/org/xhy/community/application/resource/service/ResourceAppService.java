@@ -16,6 +16,15 @@ import org.xhy.community.infrastructure.config.UserContext;
 import org.xhy.community.interfaces.resource.request.OssCallbackRequest;
 import org.xhy.community.interfaces.resource.request.ResourceQueryRequest;
 import org.xhy.community.domain.resource.query.ResourceQuery;
+import org.xhy.community.domain.resourcebinding.service.ResourceBindingDomainService;
+import org.xhy.community.domain.resourcebinding.entity.ResourceBindingEntity;
+import org.xhy.community.domain.resourcebinding.valueobject.ResourceTargetType;
+import org.xhy.community.domain.course.service.ChapterDomainService;
+import org.xhy.community.domain.subscription.service.SubscriptionDomainService;
+import org.xhy.community.domain.subscription.service.SubscriptionPlanDomainService;
+import org.xhy.community.domain.subscription.entity.UserSubscriptionEntity;
+import org.xhy.community.domain.user.service.UserDomainService;
+import org.xhy.community.application.permission.service.UserPermissionAppService;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -24,15 +33,36 @@ import java.util.UUID;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static org.xhy.community.infrastructure.exception.ResourceErrorCode.ACCESS_DENIED;
+
 @Service
 public class ResourceAppService {
     
     private final ResourceDomainService resourceDomainService;
     private final AliyunOssProperties ossProperties;
+    private final ResourceBindingDomainService resourceBindingDomainService;
+    private final ChapterDomainService chapterDomainService;
+    private final SubscriptionDomainService subscriptionDomainService;
+    private final SubscriptionPlanDomainService subscriptionPlanDomainService;
+    private final UserDomainService userDomainService;
+    private final UserPermissionAppService userPermissionAppService;
     
-    public ResourceAppService(ResourceDomainService resourceDomainService, AliyunOssProperties ossProperties) {
+    public ResourceAppService(ResourceDomainService resourceDomainService,
+                              AliyunOssProperties ossProperties,
+                              ResourceBindingDomainService resourceBindingDomainService,
+                              ChapterDomainService chapterDomainService,
+                              SubscriptionDomainService subscriptionDomainService,
+                              SubscriptionPlanDomainService subscriptionPlanDomainService,
+                              UserDomainService userDomainService,
+                              UserPermissionAppService userPermissionAppService) {
         this.resourceDomainService = resourceDomainService;
         this.ossProperties = ossProperties;
+        this.resourceBindingDomainService = resourceBindingDomainService;
+        this.chapterDomainService = chapterDomainService;
+        this.subscriptionDomainService = subscriptionDomainService;
+        this.subscriptionPlanDomainService = subscriptionPlanDomainService;
+        this.userDomainService = userDomainService;
+        this.userPermissionAppService = userPermissionAppService;
     }
     
     public UploadCredentialsDTO getUploadCredentials(String originalName, String contentType, String token) {
@@ -63,6 +93,47 @@ public class ResourceAppService {
 
     public String getResourceAccessUrl(String resourceId) {
         return resourceDomainService.getDownloadUrl(resourceId);
+    }
+
+    /**
+     * 生成资源访问URL（受课程权限控制）
+     * App 层不依赖 UserContext，由 API 层传入 userId
+     */
+    public String getResourceAccessUrl(String resourceId, String userId) {
+        // 读取绑定关系
+        java.util.List<ResourceBindingEntity> bindings = resourceBindingDomainService.getBindingsByResourceId(resourceId);
+        if (bindings == null || bindings.isEmpty()) {
+            // 未绑定，直接放行
+            return resourceDomainService.getDownloadUrl(resourceId);
+        }
+
+        java.util.Set<String> courseIds = new java.util.HashSet<>();
+        java.util.Set<String> chapterIds = bindings.stream()
+                .filter(b -> b.getTargetType() == ResourceTargetType.CHAPTER)
+                .map(ResourceBindingEntity::getTargetId)
+                .collect(java.util.stream.Collectors.toSet());
+        if (!chapterIds.isEmpty()) {
+            java.util.Map<String, String> chapterCourseMap = chapterDomainService.getChapterCourseIdMapByIds(chapterIds);
+            courseIds.addAll(chapterCourseMap.values());
+        }
+        bindings.stream()
+                .filter(b -> b.getTargetType() == ResourceTargetType.COURSE)
+                .map(ResourceBindingEntity::getTargetId)
+                .forEach(courseIds::add);
+
+        if (courseIds.isEmpty()) {
+            // 绑定到了未知对象，默认放行
+            return resourceDomainService.getDownloadUrl(resourceId);
+        }
+
+        // 判定用户是否解锁任一课程（复用统一权限应用服务）
+        if (userPermissionAppService.hasAccessToAnyCourse(userId, courseIds)) {
+            return resourceDomainService.getDownloadUrl(resourceId);
+        }
+
+        // 未解锁：拒绝访问
+        throw new org.xhy.community.infrastructure.exception.BusinessException(
+               ACCESS_DENIED);
     }
     
 

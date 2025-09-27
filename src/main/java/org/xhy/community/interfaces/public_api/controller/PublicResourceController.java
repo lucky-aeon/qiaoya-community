@@ -137,7 +137,7 @@ public class PublicResourceController {
         } catch (Exception ignore) {}
 
         // 生成带签名的直链并重定向
-        String accessUrl = resourceAppService.getResourceAccessUrl(resourceId);
+        String accessUrl = resourceAppService.getResourceAccessUrl(resourceId, userId);
         return ResponseEntity.status(HttpStatus.FOUND)
                 .location(URI.create(accessUrl))
                 .build();

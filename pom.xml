@@ -23,7 +23,7 @@
         <aliyun-oss.version>3.17.4</aliyun-oss.version>
     </properties>
     
-    <dependencies>
+  <dependencies>
         <!-- Redis for distributed locking and ZSET operations -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -137,13 +137,18 @@
             <scope>test</scope>
         </dependency>
         
-        <!-- H2 Database for testing -->
-        <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
+      <!-- Markdown AST parsing for resource extraction -->
+      <dependency>
+          <groupId>com.vladsch.flexmark</groupId>
+          <artifactId>flexmark</artifactId>
+          <version>0.64.8</version>
+      </dependency>
+      <dependency>
+          <groupId>com.vladsch.flexmark</groupId>
+          <artifactId>flexmark-ext-attributes</artifactId>
+          <version>0.64.8</version>
+      </dependency>
+  </dependencies>
     
     <build>
         <plugins>
@@ -154,3 +159,4 @@
         </plugins>
     </build>
 </project>
+

@@ -74,21 +74,24 @@ public class UserCommentAppService {
     public IPage<CommentDTO> getUserRelatedComments(CommentQueryRequest request, String userId) {
         CommentQuery query = new CommentQuery(request.getPageNum(), request.getPageSize());
         query.setUserId(userId);
-        
+
         IPage<CommentEntity> commentPage = commentDomainService.getUserRelatedComments(query);
-        
+
         // 统一构建用户与业务标题映射，避免重复与 N+1
         Map<String, UserEntity> userMap = buildUserMapFromComments(commentPage.getRecords());
         TitleMaps titleMaps = buildTitleMapsFromComments(commentPage.getRecords());
-        
-        IPage<CommentDTO> dtoPage = commentPage.convert(entity -> toCommentDTOEnriched(entity, userMap, titleMaps));
 
-        // 标记被采纳（仅对文章评论）
+        // 在转换为 DTO 之前，基于实体记录提取文章业务ID集合
         Set<String> postIds = commentPage.getRecords().stream()
                 .filter(c -> c.getBusinessType() == BusinessType.POST)
                 .map(CommentEntity::getBusinessId)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
+
+        // 实体转换为 DTO，并补充用户昵称与业务名称
+        IPage<CommentDTO> dtoPage = commentPage.convert(entity -> toCommentDTOEnriched(entity, userMap, titleMaps));
+
+        // 标记被采纳（仅对文章评论）
         if (!postIds.isEmpty()) {
             Map<String, Set<String>> acceptedMap = postDomainService.getAcceptedCommentIdsMap(postIds);
             for (CommentDTO dto : dtoPage.getRecords()) {
