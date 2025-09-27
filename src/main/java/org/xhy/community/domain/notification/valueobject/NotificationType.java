@@ -10,7 +10,9 @@ public enum NotificationType {
     CDK_ACTIVATED("CDK激活成功"),
     SUBSCRIPTION_EXPIRED("订阅即将过期"),
     POST_COMMENT("文章被评论"),
-    COURSE_COMMENT("课程被评论");
+    COURSE_COMMENT("课程被评论"),
+    CHAPTER_UPDATED("章节被更新"),
+    CHAPTER_COMMENT("章节被评论");
     
     private final String description;
     

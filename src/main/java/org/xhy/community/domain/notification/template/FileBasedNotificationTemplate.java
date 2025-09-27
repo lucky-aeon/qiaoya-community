@@ -4,6 +4,7 @@ import org.xhy.community.domain.notification.context.NotificationData;
 import org.xhy.community.infrastructure.config.EmailBrandingConfig;
 import org.xhy.community.infrastructure.template.ClasspathTemplateLoader;
 import org.xhy.community.infrastructure.template.SimpleTemplateRenderer;
+import org.xhy.community.infrastructure.config.WebUrlConfig;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -22,6 +23,7 @@ public class FileBasedNotificationTemplate<T extends NotificationData> implement
     private final SimpleTemplateRenderer renderer;
     private final EmailBrandingConfig brandingConfig;
     private final Function<T, Map<String, String>> contextProvider;
+    private final WebUrlConfig webUrlConfig;
 
     public FileBasedNotificationTemplate(Class<T> dataType,
                                          String title,
@@ -29,7 +31,8 @@ public class FileBasedNotificationTemplate<T extends NotificationData> implement
                                          ClasspathTemplateLoader loader,
                                          SimpleTemplateRenderer renderer,
                                          EmailBrandingConfig brandingConfig,
-                                         Function<T, Map<String, String>> contextProvider) {
+                                         Function<T, Map<String, String>> contextProvider,
+                                         WebUrlConfig webUrlConfig) {
         this.dataType = dataType;
         this.title = title;
         this.templateFileName = templateFileName;
@@ -37,6 +40,7 @@ public class FileBasedNotificationTemplate<T extends NotificationData> implement
         this.renderer = renderer;
         this.brandingConfig = brandingConfig;
         this.contextProvider = contextProvider;
+        this.webUrlConfig = webUrlConfig;
     }
 
     @Override
@@ -53,8 +57,9 @@ public class FileBasedNotificationTemplate<T extends NotificationData> implement
             if (extra != null) ctx.putAll(extra);
         }
         // 通用占位符
-        ctx.putIfAbsent("LOGO_SRC", brandingConfig.getLogoSrc() == null ? "" : brandingConfig.getLogoSrc());
-        ctx.putIfAbsent("MANAGE_NOTIFICATIONS_URL", brandingConfig.getManageNotificationsUrl());
+        ctx.put("LOGO_SRC", brandingConfig.getLogoSrc() == null ? "" : brandingConfig.getLogoSrc());
+        String manage = brandingConfig.getManageNotificationsUrl();
+        ctx.put("MANAGE_NOTIFICATIONS_URL", webUrlConfig != null ? webUrlConfig.resolve(manage) : manage);
         return renderer.render(template, ctx);
     }
 
@@ -63,4 +68,3 @@ public class FileBasedNotificationTemplate<T extends NotificationData> implement
         return dataType;
     }
 }
-

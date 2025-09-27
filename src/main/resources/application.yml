@@ -104,4 +104,7 @@ community:
       # 使用 classpath 中的 logo 文件自动生成 data URI
       logoFile: classpath:branding/logo-email.jpg
       # 页脚“管理通知设置”链接
-      manageNotificationsUrl: https://qiaoya.com/settings/notifications
+      manageNotificationsUrl: /dashboard/user-backend/profile
+  # 站点基础域名（用于将相对路径解析为绝对 URL）
+  web:
+    base-url: https://qiaoya.xhyovo.cn/

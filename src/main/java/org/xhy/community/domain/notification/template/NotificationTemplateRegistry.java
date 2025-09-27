@@ -9,6 +9,7 @@ import org.xhy.community.domain.notification.context.*;
 import org.xhy.community.infrastructure.config.EmailBrandingConfig;
 import org.xhy.community.infrastructure.template.ClasspathTemplateLoader;
 import org.xhy.community.infrastructure.template.SimpleTemplateRenderer;
+import org.xhy.community.infrastructure.config.WebUrlConfig;
 
 import jakarta.annotation.PostConstruct;
 import java.util.HashMap;
@@ -31,13 +32,16 @@ public class NotificationTemplateRegistry {
     private final ClasspathTemplateLoader templateLoader;
     private final SimpleTemplateRenderer templateRenderer;
     private final EmailBrandingConfig brandingConfig;
+    private final WebUrlConfig webUrlConfig;
 
     public NotificationTemplateRegistry(ClasspathTemplateLoader templateLoader,
                                         SimpleTemplateRenderer templateRenderer,
-                                        EmailBrandingConfig brandingConfig) {
+                                        EmailBrandingConfig brandingConfig,
+                                        WebUrlConfig webUrlConfig) {
         this.templateLoader = templateLoader;
         this.templateRenderer = templateRenderer;
         this.brandingConfig = brandingConfig;
+        this.webUrlConfig = webUrlConfig;
     }
 
     @PostConstruct
@@ -69,9 +73,10 @@ public class NotificationTemplateRegistry {
                 java.util.Map<String, String> m = new java.util.HashMap<>();
                 m.put("RECIPIENT_NAME", data.getRecipientName());
                 m.put("FOLLOWER_NAME", data.getFollowerName());
-                m.put("FOLLOWER_PROFILE_URL", data.getFollowerProfileUrl());
+                m.put("FOLLOWER_PROFILE_URL", resolveUrl(data.getFollowerProfileUrl()));
                 return m;
-            }
+            },
+            webUrlConfig
         ));
 
         // 关注内容更新
@@ -88,9 +93,10 @@ public class NotificationTemplateRegistry {
                 m.put("AUTHOR_NAME", data.getAuthorName());
                 m.put("CONTENT_TYPE", data.getContentType());
                 m.put("CONTENT_TITLE", data.getContentTitle());
-                m.put("CONTENT_URL", data.getContentUrl());
+                m.put("CONTENT_URL", resolveUrl(buildContentPath(data.getContentType(), data.getContentId())));
                 return m;
-            }
+            },
+            webUrlConfig
         ));
 
         // CDK 激活
@@ -107,7 +113,8 @@ public class NotificationTemplateRegistry {
                 m.put("CDK_CODE", data.getCdkCode());
                 m.put("ACTIVATION_TIME", data.getActivationTime());
                 return m;
-            }
+            },
+            webUrlConfig
         ));
 
         // 订阅即将过期
@@ -122,9 +129,10 @@ public class NotificationTemplateRegistry {
                 java.util.Map<String, String> m = new java.util.HashMap<>();
                 m.put("RECIPIENT_NAME", data.getRecipientName());
                 m.put("DAYS_REMAINING", String.valueOf(data.getDaysRemaining()));
-                m.put("RENEWAL_URL", data.getRenewalUrl());
+                m.put("RENEWAL_URL", resolveUrl(data.getRenewalUrl()));
                 return m;
-            }
+            },
+            webUrlConfig
         ));
 
         // 评论
@@ -142,10 +150,92 @@ public class NotificationTemplateRegistry {
                 m.put("TARGET_TYPE", data.getTargetType());
                 m.put("TARGET_TITLE", data.getTargetTitle());
                 m.put("TRUNCATED_COMMENT", data.getTruncatedCommentContent());
-                m.put("TARGET_URL", data.getTargetUrl());
+                m.put("TARGET_URL", resolveUrl(buildTargetPath(data.getTargetType(), data.getTargetId())));
                 return m;
-            }
+            },
+            webUrlConfig
         ));
+
+        // 章节更新
+        registerOutAppTemplate(new FileBasedNotificationTemplate<>(
+            ChapterUpdatedNotificationData.class,
+            "敲鸭社区 - 章节更新",
+            "chapter-updated.html",
+            templateLoader,
+            templateRenderer,
+            brandingConfig,
+            data -> {
+                java.util.Map<String, String> m = new java.util.HashMap<>();
+                m.put("RECIPIENT_NAME", data.getRecipientName());
+                m.put("COURSE_TITLE", data.getCourseTitle());
+                m.put("CHAPTER_TITLE", data.getChapterTitle());
+                m.put("CHAPTER_URL", resolveUrl(data.getChapterPath()));
+                return m;
+            },
+            webUrlConfig
+        ));
+
+        // 章节评论
+        registerOutAppTemplate(new FileBasedNotificationTemplate<>(
+            ChapterCommentNotificationData.class,
+            "敲鸭社区 - 章节新评论",
+            "chapter-comment.html",
+            templateLoader,
+            templateRenderer,
+            brandingConfig,
+            data -> {
+                java.util.Map<String, String> m = new java.util.HashMap<>();
+                m.put("RECIPIENT_NAME", data.getRecipientName());
+                m.put("COMMENTER_NAME", data.getCommenterName());
+                m.put("COURSE_TITLE", data.getCourseTitle());
+                m.put("CHAPTER_TITLE", data.getChapterTitle());
+                m.put("TRUNCATED_COMMENT", data.getTruncatedCommentContent());
+                m.put("CHAPTER_URL", resolveUrl(data.getChapterPath()));
+                return m;
+            },
+            webUrlConfig
+        ));
+    }
+
+    private String resolveUrl(String url) {
+        if (url == null || url.isBlank()) return null;
+        // 若为绝对地址，则取路径部分拼接新域名，确保域名一致
+        String lower = url.toLowerCase();
+        if (lower.startsWith("http://") || lower.startsWith("https://")) {
+            int idx = url.indexOf("//");
+            if (idx > 0) {
+                int firstSlash = url.indexOf('/', idx + 2);
+                String path = firstSlash > 0 ? url.substring(firstSlash) : "/";
+                return webUrlConfig.resolve(path);
+            }
+        }
+        // 相对路径
+        return webUrlConfig.resolve(url);
+    }
+
+    private String buildContentPath(String contentType, String id) {
+        if (contentType == null || id == null) return null;
+        String t = contentType.toLowerCase();
+        if ("post".equals(t) || "discussion".equals(t)) {
+            return "/dashboard/discussions/" + id;
+        }
+        if ("course".equals(t)) {
+            return "/dashboard/courses/" + id;
+        }
+        // fallback: 原始路径格式
+        return "/" + t + "/" + id;
+    }
+
+    private String buildTargetPath(String targetType, String id) {
+        if (targetType == null || id == null) return null;
+        String t = targetType.toLowerCase();
+        if ("post".equals(t) || "discussion".equals(t)) {
+            return "/dashboard/discussions/" + id;
+        }
+        if ("course".equals(t)) {
+            return "/dashboard/courses/" + id;
+        }
+        return "/" + t + "/" + id;
     }
     
     /**
