@@ -352,6 +352,7 @@ id VARCHAR(36) PRIMARY KEY,
 - 抛出异常类的时候需要使用对应模块的异常类以及异常码进行处理:/Users/xhy/IdeaProjects/qiaoya-community/qiaoya-community-backend/src/main/java/org/xhy/community/infrastructure/exception
 - api层如果接收的是 request 对象，那么传入 app 层也是 request 对象，app 层传入 domain 一般是实体，而不是多个入参。通过 assembler 转换。可参考：org/xhy/community/application/course/service/AdminCourseAppService.java
 - 修改数据的时候，接收 api 层的 update 对象，转换成 entity 进行修改，例如：
+- UserContext 只允许在 controller 层使用，禁止在其他层使用
 
 ```java
   public CourseDTO updateCourse(String courseId, UpdateCourseRequest request) {

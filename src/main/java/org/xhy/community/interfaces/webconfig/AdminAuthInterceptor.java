@@ -9,6 +9,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.xhy.community.application.user.service.UserAppService;
 import org.xhy.community.infrastructure.config.JwtUtil;
+import org.xhy.community.infrastructure.config.UserContext;
 import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.infrastructure.exception.UserErrorCode;
 
@@ -34,6 +35,7 @@ public class AdminAuthInterceptor implements HandlerInterceptor {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return false;
         }
+        UserContext.setCurrentUserId(userId);
 
         try {
             if (!userAppService.isAdmin(userId)) {

@@ -20,6 +20,10 @@ import java.util.stream.Collectors;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Collection;
+import java.util.Set;
+import java.util.Map;
+import org.xhy.community.domain.subscription.valueobject.SubscriptionPlanStatus;
 
 @Service
 public class SubscriptionPlanDomainService {
@@ -125,6 +129,42 @@ public class SubscriptionPlanDomainService {
         return planCourses.stream()
                          .map(SubscriptionPlanCourseEntity::getCourseId)
                          .collect(Collectors.toList());
+    }
+
+    /**
+     * 批量查询：根据多个套餐ID获取去重后的课程ID集合
+     */
+    public Set<String> getCourseIdsByPlanIds(Collection<String> subscriptionPlanIds) {
+        if (subscriptionPlanIds == null || subscriptionPlanIds.isEmpty()) {
+            return java.util.Collections.emptySet();
+        }
+        LambdaQueryWrapper<SubscriptionPlanCourseEntity> queryWrapper =
+            new LambdaQueryWrapper<SubscriptionPlanCourseEntity>()
+                .in(SubscriptionPlanCourseEntity::getSubscriptionPlanId, subscriptionPlanIds);
+        List<SubscriptionPlanCourseEntity> list = subscriptionPlanCourseRepository.selectList(queryWrapper);
+        return list.stream().map(SubscriptionPlanCourseEntity::getCourseId).collect(java.util.stream.Collectors.toSet());
+    }
+
+    /**
+     * 根据课程ID获取绑定该课程的所有订阅计划
+     */
+    public List<SubscriptionPlanEntity> getPlansByCourseId(String courseId) {
+        LambdaQueryWrapper<SubscriptionPlanCourseEntity> queryWrapper =
+            new LambdaQueryWrapper<SubscriptionPlanCourseEntity>()
+                .eq(SubscriptionPlanCourseEntity::getCourseId, courseId);
+        List<SubscriptionPlanCourseEntity> bindings = subscriptionPlanCourseRepository.selectList(queryWrapper);
+        if (bindings == null || bindings.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+        List<String> planIds = bindings.stream()
+                .map(SubscriptionPlanCourseEntity::getSubscriptionPlanId)
+                .collect(java.util.stream.Collectors.toList());
+        // 仅返回有效的套餐
+        return subscriptionPlanRepository.selectList(
+            new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<SubscriptionPlanEntity>()
+                .in(SubscriptionPlanEntity::getId, planIds)
+                .eq(SubscriptionPlanEntity::getStatus, SubscriptionPlanStatus.ACTIVE)
+        );
     }
 
     // ==================== 菜单绑定 ====================

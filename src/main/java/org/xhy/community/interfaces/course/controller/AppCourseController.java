@@ -11,6 +11,7 @@ import org.xhy.community.interfaces.course.request.AppCourseQueryRequest;
 import org.xhy.community.infrastructure.annotation.ActivityLog;
 import org.xhy.community.domain.common.valueobject.ActivityType;
 import org.xhy.community.infrastructure.annotation.RequiresPlanPermissions;
+import org.xhy.community.infrastructure.config.UserContext;
 
 /**
  * 前台课程控制器
@@ -42,7 +43,8 @@ public class AppCourseController {
     @PostMapping("/queries")
     @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "COURSE_APP_LIST", name = "前台课程列表")})
     public ApiResponse<IPage<FrontCourseDTO>> queryCourses(@Valid @RequestBody AppCourseQueryRequest request) {
-        IPage<FrontCourseDTO> courses = courseAppService.queryAppCourses(request);
+        String userId = UserContext.getCurrentUserId();
+        IPage<FrontCourseDTO> courses = courseAppService.queryAppCourses(request, userId);
         return ApiResponse.success(courses);
     }
 
@@ -61,7 +63,8 @@ public class AppCourseController {
     @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "COURSE_APP_DETAIL", name = "前台课程详情")})
     @ActivityLog(ActivityType.VIEW_COURSE)
     public ApiResponse<FrontCourseDetailDTO> getCourseDetail(@PathVariable String id) {
-        FrontCourseDetailDTO courseDetail = courseAppService.getAppCourseDetail(id);
+        String userId = UserContext.getCurrentUserId();
+        FrontCourseDetailDTO courseDetail = courseAppService.getAppCourseDetail(id, userId);
         return ApiResponse.success(courseDetail);
     }
 }

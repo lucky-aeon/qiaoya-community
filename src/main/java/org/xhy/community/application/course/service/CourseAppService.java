@@ -8,14 +8,20 @@ import org.xhy.community.application.course.dto.FrontCourseDetailDTO;
 import org.xhy.community.application.course.dto.PublicCourseDTO;
 import org.xhy.community.application.course.dto.PublicCourseDetailDTO;
 import org.xhy.community.application.course.assembler.PublicCourseAssembler;
+import org.xhy.community.application.subscription.assembler.SubscriptionPlanAssembler;
+import org.xhy.community.application.subscription.dto.AppSubscriptionPlanDTO;
 import org.xhy.community.domain.course.entity.CourseEntity;
 import org.xhy.community.domain.course.entity.ChapterEntity;
 import org.xhy.community.domain.course.service.CourseDomainService;
 import org.xhy.community.domain.course.service.ChapterDomainService;
 import org.xhy.community.domain.user.entity.UserEntity;
 import org.xhy.community.domain.user.service.UserDomainService;
+import org.xhy.community.domain.subscription.entity.UserSubscriptionEntity;
+import org.xhy.community.domain.subscription.service.SubscriptionDomainService;
+import org.xhy.community.domain.subscription.service.SubscriptionPlanDomainService;
 import org.xhy.community.domain.course.query.CourseQuery;
 import org.xhy.community.interfaces.course.request.AppCourseQueryRequest;
+// Do not use UserContext in App layer; userId passed from API
  
 
 import java.util.List;
@@ -33,13 +39,19 @@ public class CourseAppService {
     private final CourseDomainService courseDomainService;
     private final ChapterDomainService chapterDomainService;
     private final UserDomainService userDomainService;
+    private final SubscriptionDomainService subscriptionDomainService;
+    private final SubscriptionPlanDomainService subscriptionPlanDomainService;
     
     public CourseAppService(CourseDomainService courseDomainService,
                            ChapterDomainService chapterDomainService,
-                           UserDomainService userDomainService) {
+                           UserDomainService userDomainService,
+                           SubscriptionDomainService subscriptionDomainService,
+                           SubscriptionPlanDomainService subscriptionPlanDomainService) {
         this.courseDomainService = courseDomainService;
         this.chapterDomainService = chapterDomainService;
         this.userDomainService = userDomainService;
+        this.subscriptionDomainService = subscriptionDomainService;
+        this.subscriptionPlanDomainService = subscriptionPlanDomainService;
     }
     
     /**
@@ -49,7 +61,7 @@ public class CourseAppService {
      * @param request 查询请求参数
      * @return 课程列表分页结果
      */
-    public IPage<FrontCourseDTO> queryAppCourses(AppCourseQueryRequest request) {
+    public IPage<FrontCourseDTO> queryAppCourses(AppCourseQueryRequest request, String userId) {
         // 转换查询参数
         CourseQuery query = CourseAssembler.fromAppQueryRequest(request);
 
@@ -85,6 +97,30 @@ public class CourseAppService {
                 authorMap,
                 chapterCountMap
         );
+        
+        // 标注是否已解锁：用户购买课程 或 用户有效订阅包含该课程
+        try {
+            // 1) 用户直接拥有的课程（购买/授予）
+            Set<String> ownedCourseIds = userDomainService.getUserCourses(userId)
+                    .stream().collect(Collectors.toSet());
+
+            // 2) 用户当前有效订阅所包含的课程
+            List<UserSubscriptionEntity> actives = subscriptionDomainService.getUserActiveSubscriptions(userId);
+            Set<String> planCourseIds = actives == null || actives.isEmpty()
+                    ? java.util.Collections.emptySet()
+                    : subscriptionPlanDomainService.getCourseIdsByPlanIds(
+                    actives.stream().map(UserSubscriptionEntity::getSubscriptionPlanId)
+                            .collect(Collectors.toSet()));
+
+            Set<String> unlockedIds = new java.util.HashSet<>();
+            unlockedIds.addAll(ownedCourseIds);
+            unlockedIds.addAll(planCourseIds);
+
+            frontCourseDTOs.forEach(dto -> dto.setUnlocked(unlockedIds.contains(dto.getId())));
+        } catch (Exception ignore) {
+            // 容错：出现异常不影响主体查询，默认未解锁
+            frontCourseDTOs.forEach(dto -> dto.setUnlocked(false));
+        }
         
         // 构建结果分页对象
         IPage<FrontCourseDTO> result = coursePage.convert(entity -> (FrontCourseDTO) null);
@@ -136,7 +172,7 @@ public class CourseAppService {
      * @param courseId 课程ID
      * @return 课程详情信息
      */
-    public FrontCourseDetailDTO getAppCourseDetail(String courseId) {
+    public FrontCourseDetailDTO getAppCourseDetail(String courseId, String userId) {
         // 获取课程信息
         CourseEntity course = courseDomainService.getCourseById(courseId);
 
@@ -148,9 +184,39 @@ public class CourseAppService {
         
         // 获取章节列表
         List<ChapterEntity> chapters = chapterDomainService.getChaptersByCourseId(courseId);
-        
+
         // 转换为前台详情DTO
-        return CourseAssembler.toFrontDetailDTO(course, author, chapters);
+        FrontCourseDetailDTO dto = CourseAssembler.toFrontDetailDTO(course, author, chapters);
+
+        // 标注解锁状态及未解锁时提供可解锁套餐
+        try {
+            boolean owned = userDomainService.hasUserCourse(userId, courseId);
+            boolean unlockedByPlan = false;
+            if (!owned) {
+                List<UserSubscriptionEntity> actives = subscriptionDomainService.getUserActiveSubscriptions(userId);
+                if (actives != null && !actives.isEmpty()) {
+                    java.util.Set<String> planIds = actives.stream().map(UserSubscriptionEntity::getSubscriptionPlanId)
+                            .collect(java.util.stream.Collectors.toSet());
+                    java.util.Set<String> unionCourseIds = subscriptionPlanDomainService.getCourseIdsByPlanIds(planIds);
+                    unlockedByPlan = unionCourseIds.contains(courseId);
+                }
+            }
+
+            boolean unlocked = owned || unlockedByPlan;
+            dto.setUnlocked(unlocked);
+
+            if (!unlocked) {
+                // 未解锁时返回可解锁的套餐列表
+                List<AppSubscriptionPlanDTO> plans = SubscriptionPlanAssembler.toAppDTOList(
+                        subscriptionPlanDomainService.getPlansByCourseId(courseId)
+                );
+                dto.setUnlockPlans(plans);
+            }
+        } catch (Exception ignore) {
+            dto.setUnlocked(false);
+        }
+
+        return dto;
     }
     
     /**

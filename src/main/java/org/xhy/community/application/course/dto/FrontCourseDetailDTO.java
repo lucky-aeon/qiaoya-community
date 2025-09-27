@@ -1,10 +1,12 @@
 package org.xhy.community.application.course.dto;
 
+import org.xhy.community.application.subscription.dto.AppSubscriptionPlanDTO;
 import org.xhy.community.domain.course.valueobject.CourseResource;
 import org.xhy.community.domain.course.valueobject.CourseStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -18,7 +20,7 @@ public class FrontCourseDetailDTO {
     private String description;
     private List<String> techStack;
     private String projectUrl;
-    private List<String> tags;
+    private List<String> tags = new ArrayList<>();
     private BigDecimal rating;
     private CourseStatus status;
     private String authorName;
@@ -28,10 +30,12 @@ public class FrontCourseDetailDTO {
     private BigDecimal price;
     private String coverImage;
     private String demoUrl;
-    private List<CourseResource> resources;
+    private List<CourseResource> resources = new ArrayList<>();
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
-    private List<FrontChapterDTO> chapters;
+    private List<FrontChapterDTO> chapters = new ArrayList<>();
+    private Boolean unlocked;
+    private java.util.List<AppSubscriptionPlanDTO> unlockPlans = new ArrayList<>();
     
     public FrontCourseDetailDTO() {}
     
@@ -122,4 +126,10 @@ public class FrontCourseDetailDTO {
     
     public List<FrontChapterDTO> getChapters() { return chapters; }
     public void setChapters(List<FrontChapterDTO> chapters) { this.chapters = chapters; }
+
+    public Boolean getUnlocked() { return unlocked; }
+    public void setUnlocked(Boolean unlocked) { this.unlocked = unlocked; }
+
+    public java.util.List<org.xhy.community.application.subscription.dto.AppSubscriptionPlanDTO> getUnlockPlans() { return unlockPlans; }
+    public void setUnlockPlans(java.util.List<org.xhy.community.application.subscription.dto.AppSubscriptionPlanDTO> unlockPlans) { this.unlockPlans = unlockPlans; }
 }
