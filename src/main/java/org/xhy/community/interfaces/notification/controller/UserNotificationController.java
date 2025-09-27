@@ -12,6 +12,9 @@ import org.xhy.community.infrastructure.config.UserContext;
 import org.xhy.community.interfaces.notification.request.NotificationQueryRequest;
 import org.xhy.community.infrastructure.annotation.RequiresPlanPermissions;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * 用户消息中心控制器
  * 提供用户消息管理功能，包括消息列表查看、已读状态管理、未读数量统计等
@@ -57,10 +60,10 @@ public class UserNotificationController {
      */
     @GetMapping("/unread-count")
     @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "NOTIFICATION_UNREAD_COUNT", name = "未读消息数")})
-    public ApiResponse<Long> getUnreadCount() {
+    public ApiResponse<Map<String,Object>> getUnreadCount() {
         String userId = UserContext.getCurrentUserId();
         Long count = notificationAppService.getUnreadNotificationCount(userId);
-        return ApiResponse.success(count);
+        return ApiResponse.success(Map.of("unreadCount",count));
     }
 
     /**
