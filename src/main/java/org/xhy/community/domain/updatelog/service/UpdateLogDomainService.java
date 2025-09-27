@@ -133,9 +133,7 @@ public class UpdateLogDomainService {
                     change.setId(java.util.UUID.randomUUID().toString());
                     change.setCreateTime(now);
                     change.setUpdateTime(now);
-                    if (change.getDeleted() == null) {
-                        change.setDeleted(false);
-                    }
+                    // 逻辑删除改为时间戳模型，无需显式设置未删除标记
                 }
                 // 循环插入，避免使用不存在的批量方法
                 this.updateLogChangeRepository.insert(change);

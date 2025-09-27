@@ -22,9 +22,9 @@ public abstract class BaseEntity {
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
     
-    /** 逻辑删除标记，false表示未删除，true表示已删除 */
-    @TableLogic
-    private Boolean deleted;
+    /** 逻辑删除时间，NULL 表示未删除，非 NULL 表示已删除 */
+    @TableLogic(value = "NULL", delval = "NOW()")
+    private LocalDateTime deletedAt;
     
     // Getters and Setters
     public String getId() { return id; }
@@ -36,6 +36,6 @@ public abstract class BaseEntity {
     public LocalDateTime getUpdateTime() { return updateTime; }
     public void setUpdateTime(LocalDateTime updateTime) { this.updateTime = updateTime; }
     
-    public Boolean getDeleted() { return deleted; }
-    public void setDeleted(Boolean deleted) { this.deleted = deleted; }
+    public LocalDateTime getDeletedAt() { return deletedAt; }
+    public void setDeletedAt(LocalDateTime deletedAt) { this.deletedAt = deletedAt; }
 }

@@ -97,30 +97,9 @@ public class CourseAppService {
                 authorMap,
                 chapterCountMap
         );
-        
-        // 标注是否已解锁：用户购买课程 或 用户有效订阅包含该课程
-        try {
-            // 1) 用户直接拥有的课程（购买/授予）
-            Set<String> ownedCourseIds = userDomainService.getUserCourses(userId)
-                    .stream().collect(Collectors.toSet());
 
-            // 2) 用户当前有效订阅所包含的课程
-            List<UserSubscriptionEntity> actives = subscriptionDomainService.getUserActiveSubscriptions(userId);
-            Set<String> planCourseIds = actives == null || actives.isEmpty()
-                    ? java.util.Collections.emptySet()
-                    : subscriptionPlanDomainService.getCourseIdsByPlanIds(
-                    actives.stream().map(UserSubscriptionEntity::getSubscriptionPlanId)
-                            .collect(Collectors.toSet()));
-
-            Set<String> unlockedIds = new java.util.HashSet<>();
-            unlockedIds.addAll(ownedCourseIds);
-            unlockedIds.addAll(planCourseIds);
-
-            frontCourseDTOs.forEach(dto -> dto.setUnlocked(unlockedIds.contains(dto.getId())));
-        } catch (Exception ignore) {
-            // 容错：出现异常不影响主体查询，默认未解锁
-            frontCourseDTOs.forEach(dto -> dto.setUnlocked(false));
-        }
+        // 批量设置课程解锁状态
+        setCoursesUnlockStatus(frontCourseDTOs, userId);
         
         // 构建结果分页对象
         IPage<FrontCourseDTO> result = coursePage.convert(entity -> (FrontCourseDTO) null);
@@ -188,33 +167,8 @@ public class CourseAppService {
         // 转换为前台详情DTO
         FrontCourseDetailDTO dto = CourseAssembler.toFrontDetailDTO(course, author, chapters);
 
-        // 标注解锁状态及未解锁时提供可解锁套餐
-        try {
-            boolean owned = userDomainService.hasUserCourse(userId, courseId);
-            boolean unlockedByPlan = false;
-            if (!owned) {
-                List<UserSubscriptionEntity> actives = subscriptionDomainService.getUserActiveSubscriptions(userId);
-                if (actives != null && !actives.isEmpty()) {
-                    java.util.Set<String> planIds = actives.stream().map(UserSubscriptionEntity::getSubscriptionPlanId)
-                            .collect(java.util.stream.Collectors.toSet());
-                    java.util.Set<String> unionCourseIds = subscriptionPlanDomainService.getCourseIdsByPlanIds(planIds);
-                    unlockedByPlan = unionCourseIds.contains(courseId);
-                }
-            }
-
-            boolean unlocked = owned || unlockedByPlan;
-            dto.setUnlocked(unlocked);
-
-            if (!unlocked) {
-                // 未解锁时返回可解锁的套餐列表
-                List<AppSubscriptionPlanDTO> plans = SubscriptionPlanAssembler.toAppDTOList(
-                        subscriptionPlanDomainService.getPlansByCourseId(courseId)
-                );
-                dto.setUnlockPlans(plans);
-            }
-        } catch (Exception ignore) {
-            dto.setUnlocked(false);
-        }
+        // 设置课程解锁状态和解锁套餐
+        setCourseUnlockStatus(dto, courseId, userId);
 
         return dto;
     }
