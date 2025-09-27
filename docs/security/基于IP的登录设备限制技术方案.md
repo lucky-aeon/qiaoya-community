@@ -1,5 +1,15 @@
 # 基于 IP 的登录设备限制技术方案
 
+作者：后端
+最后更新：2025-09-27
+状态：设计稿（可落地）
+适用范围：会话并发控制、IP 近似设备数、Redis ZSET + 分布式锁
+
+维护人：后端
+关键代码路径：
+- 分布式锁抽象：src/main/java/org/xhy/community/infrastructure/lock/*
+- 设备会话领域：src/main/java/org/xhy/community/domain/session/service/*
+
 ## 1. 背景与目标
 
 - 目标：通过“并发活跃 IP 数”来近似限制“并发活跃设备数”，防止同一账号多处同时在线。

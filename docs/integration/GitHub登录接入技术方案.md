@@ -1,5 +1,16 @@
 # GitHub 登录接入技术方案（DDD + MyBatis Plus）
 
+作者：后端
+最后更新：2025-09-27
+状态：设计稿（可落地）
+适用范围：GitHub OAuth2 登录/绑定/解绑，系统配置化与分层落地
+
+维护人：后端
+关键代码路径：
+- 基础设施：src/main/java/org/xhy/community/infrastructure/oauth/*（GitHub 客户端/State 校验）
+- 领域层：src/main/java/org/xhy/community/domain/auth/*（三方绑定与规则）
+- 应用层：src/main/java/org/xhy/community/application/auth/*（编排、DTO、Assembler）
+
 ## 1. 背景与目标
 - 目标：接入 GitHub OAuth2 登录，支持首次登录创建账户、后续快捷登录，以及用户侧绑定/解绑；发放站内访问令牌。
 - 约束：严格遵循本项目 DDD 分层、命名与 MyBatis Plus 使用规范；不编写自定义 SQL；使用 UUID 主键；遵守异常与枚举规范。
