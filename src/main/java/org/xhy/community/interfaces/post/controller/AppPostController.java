@@ -48,6 +48,21 @@ public class AppPostController {
     }
 
     /**
+     * 分页查询某个用户发布的文章列表
+     * 仅返回已发布的文章，支持分类类型过滤
+     *
+     * @param userId 用户ID
+     * @param request 查询请求（分页、分类类型）
+     * @return 分页文章列表
+     */
+    @PostMapping("/user/{userId}/queries")
+    public ApiResponse<IPage<FrontPostDTO>> queryUserPublishedPosts(@PathVariable String userId,
+                                                                    @Valid @RequestBody AppPostQueryRequest request) {
+        IPage<FrontPostDTO> posts = postAppService.queryAppUserPosts(userId, request);
+        return ApiResponse.success(posts);
+    }
+
+    /**
      * 根据文章ID获取文章详情
      * 获取已发布文章的详细信息，包含完整内容
      * 

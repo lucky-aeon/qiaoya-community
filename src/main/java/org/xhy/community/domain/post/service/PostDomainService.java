@@ -502,6 +502,7 @@ public class PostDomainService {
         
         LambdaQueryWrapper<PostEntity> queryWrapper = new LambdaQueryWrapper<PostEntity>()
                 .eq(PostEntity::getStatus, PostStatus.PUBLISHED)
+                .eq(org.springframework.util.StringUtils.hasText(query.getAuthorId()), PostEntity::getAuthorId, query.getAuthorId())
                 .orderByDesc(PostEntity::getCreateTime);
         
         // 如果指定了分类类型，需要关联查询分类表

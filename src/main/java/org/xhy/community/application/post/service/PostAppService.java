@@ -184,6 +184,57 @@ public class PostAppService {
     }
     
     /**
+     * 分页查询指定用户已发布的文章列表（前台）
+     * 仅返回发布状态的文章，支持按分类类型过滤
+     */
+    public IPage<FrontPostDTO> queryAppUserPosts(String userId, AppPostQueryRequest request) {
+        PostQuery query = PostAssembler.fromAppRequest(request, userId);
+        IPage<PostEntity> entityPage = postDomainService.queryAppPosts(query);
+
+        List<PostEntity> posts = entityPage.getRecords();
+        if (posts.isEmpty()) {
+            Page<FrontPostDTO> emptyPage = new Page<>(entityPage.getCurrent(), entityPage.getSize(), entityPage.getTotal());
+            emptyPage.setRecords(java.util.Collections.emptyList());
+            return emptyPage;
+        }
+
+        java.util.Set<String> authorIds = posts.stream()
+                .map(PostEntity::getAuthorId)
+                .collect(java.util.stream.Collectors.toSet());
+
+        java.util.Set<String> categoryIds = posts.stream()
+                .map(PostEntity::getCategoryId)
+                .collect(java.util.stream.Collectors.toSet());
+
+        java.util.Map<String, UserEntity> authorMap = userDomainService.getUserEntityMapByIds(authorIds);
+        List<CategoryEntity> categories = categoryDomainService.getCategoriesByIds(categoryIds);
+
+        java.util.Map<String, String> categoryNames = categories.stream()
+                .collect(java.util.stream.Collectors.toMap(
+                    CategoryEntity::getId,
+                    CategoryEntity::getName
+                ));
+        java.util.Map<String, org.xhy.community.domain.post.valueobject.CategoryType> categoryTypes = categories.stream()
+                .collect(java.util.stream.Collectors.toMap(
+                    CategoryEntity::getId,
+                    CategoryEntity::getType
+                ));
+
+        List<FrontPostDTO> dtoList = posts.stream()
+                .map(post -> {
+                    FrontPostDTO dto = FrontPostAssembler.toDTO(post, authorMap, categoryNames);
+                    dto.setCategoryType(categoryTypes.get(post.getCategoryId()));
+                    return dto;
+                })
+                .toList();
+
+        Page<FrontPostDTO> dtoPage = new Page<>(entityPage.getCurrent(), entityPage.getSize(), entityPage.getTotal());
+        dtoPage.setRecords(dtoList);
+
+        return dtoPage;
+    }
+    
+    /**
      * 获取用户前台文章详情
      * 只能查看已发布的文章
      * 

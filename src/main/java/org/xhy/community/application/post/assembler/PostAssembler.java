@@ -30,6 +30,13 @@ public class PostAssembler {
         return query;
     }
     
+    public static PostQuery fromAppRequest(AppPostQueryRequest request, String authorId) {
+        PostQuery query = new PostQuery(request.getPageNum(), request.getPageSize());
+        query.setCategoryType(request.getCategoryType());
+        query.setAuthorId(authorId);
+        return query;
+    }
+    
     public static PostDTO toDTO(PostEntity entity) {
         if (entity == null) {
             return null;
