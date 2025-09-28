@@ -7,6 +7,8 @@ import org.xhy.community.application.session.service.DeviceSessionAppService;
 import org.xhy.community.infrastructure.config.ApiResponse;
 import org.xhy.community.infrastructure.config.UserContext;
 import org.xhy.community.infrastructure.util.ClientIpUtil;
+import org.xhy.community.infrastructure.annotation.ActivityLog;
+import org.xhy.community.domain.common.valueobject.ActivityType;
 
 import java.util.List;
 
@@ -42,6 +44,7 @@ public class DeviceSessionController {
      * 用户可以主动断开某个IP的登录会话
      */
     @DeleteMapping("/active/{ip}")
+    @ActivityLog(ActivityType.DEVICE_SESSION_TERMINATE)
     public ApiResponse<Void> removeActiveSession(@PathVariable String ip) {
         String userId = UserContext.getCurrentUserId();
         deviceSessionAppService.removeUserActiveSession(userId, ip);

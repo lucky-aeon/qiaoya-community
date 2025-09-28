@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.RestController;
 import org.xhy.community.application.security.dto.BannedIpDTO;
 import org.xhy.community.application.security.service.AdminIpAppService;
 import org.xhy.community.infrastructure.config.ApiResponse;
+import org.xhy.community.infrastructure.annotation.ActivityLog;
+import org.xhy.community.domain.common.valueobject.ActivityType;
 
 import java.util.List;
 
@@ -38,6 +40,7 @@ public class AdminIpController {
      * 解除指定IP的封禁
      */
     @DeleteMapping("/{ip:.+}")
+    @ActivityLog(ActivityType.ADMIN_IP_UNBAN)
     public ApiResponse<Void> unbanIp(@PathVariable("ip") String ip) {
         adminIpAppService.unbanIp(ip);
         return ApiResponse.success("IP已解除封禁");

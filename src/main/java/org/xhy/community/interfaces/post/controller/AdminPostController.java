@@ -13,6 +13,8 @@ import org.xhy.community.infrastructure.config.ApiResponse;
 import org.xhy.community.infrastructure.config.UserContext;
 import org.xhy.community.interfaces.post.request.AdminPostQueryRequest;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.xhy.community.infrastructure.annotation.ActivityLog;
+import org.xhy.community.domain.common.valueobject.ActivityType;
 
 /**
  * 管理员文章管理控制器
@@ -47,6 +49,7 @@ public class AdminPostController {
      * 管理员强制采纳评论
      */
     @PostMapping("/{postId}/accept/{commentId}")
+    @ActivityLog(ActivityType.ADMIN_POST_FORCE_ACCEPT)
     public ApiResponse<PostDTO> forceAccept(@PathVariable String postId, @PathVariable String commentId) {
         String adminId = UserContext.getCurrentUserId();
         PostDTO post = adminPostAppService.forceAcceptComment(postId, commentId, adminId);
@@ -57,6 +60,7 @@ public class AdminPostController {
      * 管理员强制撤销采纳
      */
     @DeleteMapping("/{postId}/accept/{commentId}")
+    @ActivityLog(ActivityType.ADMIN_POST_FORCE_REVOKE)
     public ApiResponse<PostDTO> forceRevoke(@PathVariable String postId, @PathVariable String commentId) {
         String adminId = UserContext.getCurrentUserId();
         PostDTO post = adminPostAppService.forceRevokeAcceptance(postId, commentId, adminId);

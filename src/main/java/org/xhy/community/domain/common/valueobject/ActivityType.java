@@ -42,6 +42,21 @@ public enum ActivityType {
      */
     RESET_PASSWORD("重置密码"),
     
+    /**
+     * 修改密码失败
+     */
+    CHANGE_PASSWORD_FAILED("修改密码失败"),
+    
+    /**
+     * 用户主动下线设备
+     */
+    DEVICE_SESSION_TERMINATE("用户下线设备"),
+    
+    /**
+     * 用户主动下线设备失败
+     */
+    DEVICE_SESSION_TERMINATE_FAILED("用户下线设备失败"),
+    
     // ==================== 内容浏览 ====================
     /**
      * 查看文章
@@ -78,6 +93,16 @@ public enum ActivityType {
      * 删除文章
      */
     DELETE_POST("删除文章"),
+    
+    /**
+     * 发布文章
+     */
+    PUBLISH_POST("发布文章"),
+    
+    /**
+     * 撤回文章
+     */
+    UNPUBLISH_POST("撤回文章"),
     
     /**
      * 创建课程
@@ -151,6 +176,11 @@ public enum ActivityType {
      */
     ACTIVATE_CDK("激活CDK"),
 
+    /**
+     * 下载资源
+     */
+    RESOURCE_DOWNLOAD("下载资源"),
+
     // ==================== OAuth 登录/绑定 ====================
     /**
      * OAuth 获取授权地址
@@ -196,7 +226,122 @@ public enum ActivityType {
     /**
      * 管理员更新课程
      */
-    ADMIN_UPDATE_COURSE("管理员更新课程");
+    ADMIN_UPDATE_COURSE("管理员更新课程"),
+    
+    /**
+     * 管理员强制下线
+     */
+    ADMIN_FORCE_LOGOUT("管理员强制下线"),
+    
+    /**
+     * 管理员强制下线失败
+     */
+    ADMIN_FORCE_LOGOUT_FAILED("管理员强制下线失败"),
+    
+    /**
+     * 移除用户黑名单
+     */
+    ADMIN_BLACKLIST_REMOVE("移除用户黑名单"),
+    
+    /**
+     * 解除IP封禁
+     */
+    ADMIN_IP_UNBAN("解除IP封禁"),
+    
+    /**
+     * 更新系统配置
+     */
+    ADMIN_UPDATE_CONFIG("更新系统配置"),
+    
+    /**
+     * 更新系统配置失败
+     */
+    ADMIN_UPDATE_CONFIG_FAILED("更新系统配置失败"),
+    
+    /**
+     * 管理员强制采纳评论
+     */
+    ADMIN_POST_FORCE_ACCEPT("管理员强制采纳评论"),
+    
+    /**
+     * 管理员强制撤销采纳
+     */
+    ADMIN_POST_FORCE_REVOKE("管理员强制撤销采纳"),
+    
+    /**
+     * 管理员创建分类
+     */
+    ADMIN_CATEGORY_CREATE("管理员创建分类"),
+    
+    /**
+     * 管理员更新分类
+     */
+    ADMIN_CATEGORY_UPDATE("管理员更新分类"),
+    
+    /**
+     * 管理员删除分类
+     */
+    ADMIN_CATEGORY_DELETE("管理员删除分类"),
+    
+    /**
+     * 管理员创建章节
+     */
+    ADMIN_CHAPTER_CREATE("管理员创建章节"),
+    
+    /**
+     * 管理员更新章节
+     */
+    ADMIN_CHAPTER_UPDATE("管理员更新章节"),
+    
+    /**
+     * 管理员删除章节
+     */
+    ADMIN_CHAPTER_DELETE("管理员删除章节"),
+    
+    /**
+     * 管理员排序章节
+     */
+    ADMIN_CHAPTER_REORDER("管理员排序章节"),
+    
+    /**
+     * 管理员创建更新日志
+     */
+    ADMIN_UPDATE_LOG_CREATE("管理员创建更新日志"),
+    
+    /**
+     * 管理员更新更新日志
+     */
+    ADMIN_UPDATE_LOG_UPDATE("管理员更新更新日志"),
+    
+    /**
+     * 管理员删除更新日志
+     */
+    ADMIN_UPDATE_LOG_DELETE("管理员删除更新日志"),
+    
+    /**
+     * 管理员切换更新日志状态
+     */
+    ADMIN_UPDATE_LOG_TOGGLE("管理员切换更新日志状态"),
+    
+    /**
+     * 管理员创建CDK
+     */
+    ADMIN_CDK_CREATE("管理员创建CDK"),
+    
+    /**
+     * 管理员删除CDK
+     */
+    ADMIN_CDK_DELETE("管理员删除CDK"),
+    
+    /**
+     * 管理员解绑第三方账号
+     */
+    ADMIN_OAUTH_UNBIND("管理员解绑第三方账号"),
+    
+    /**
+     * 管理员解绑第三方账号失败
+     */
+    ADMIN_OAUTH_UNBIND_FAILED("管理员解绑第三方账号失败");
     
     private final String description;
     
@@ -222,17 +367,23 @@ public enum ActivityType {
             case LOGOUT:
             case CHANGE_PASSWORD:
             case RESET_PASSWORD:
+            case CHANGE_PASSWORD_FAILED:
+            case DEVICE_SESSION_TERMINATE:
+            case DEVICE_SESSION_TERMINATE_FAILED:
                 return ActivityCategory.AUTHENTICATION;
                 
             case VIEW_POST:
             case VIEW_COURSE:
             case VIEW_USER_PROFILE:
             case SEARCH_CONTENT:
+            case RESOURCE_DOWNLOAD:
                 return ActivityCategory.BROWSING;
                 
             case CREATE_POST:
             case UPDATE_POST:
             case DELETE_POST:
+            case PUBLISH_POST:
+            case UNPUBLISH_POST:
             case CREATE_COURSE:
             case UPDATE_COURSE:
             case DELETE_COURSE:
@@ -263,6 +414,29 @@ public enum ActivityType {
             case ADMIN_UPDATE_USER:
             case ADMIN_DELETE_POST:
             case ADMIN_UPDATE_COURSE:
+            case ADMIN_FORCE_LOGOUT:
+            case ADMIN_FORCE_LOGOUT_FAILED:
+            case ADMIN_BLACKLIST_REMOVE:
+            case ADMIN_IP_UNBAN:
+            case ADMIN_UPDATE_CONFIG:
+            case ADMIN_UPDATE_CONFIG_FAILED:
+            case ADMIN_POST_FORCE_ACCEPT:
+            case ADMIN_POST_FORCE_REVOKE:
+            case ADMIN_CATEGORY_CREATE:
+            case ADMIN_CATEGORY_UPDATE:
+            case ADMIN_CATEGORY_DELETE:
+            case ADMIN_CHAPTER_CREATE:
+            case ADMIN_CHAPTER_UPDATE:
+            case ADMIN_CHAPTER_DELETE:
+            case ADMIN_CHAPTER_REORDER:
+            case ADMIN_UPDATE_LOG_CREATE:
+            case ADMIN_UPDATE_LOG_UPDATE:
+            case ADMIN_UPDATE_LOG_DELETE:
+            case ADMIN_UPDATE_LOG_TOGGLE:
+            case ADMIN_CDK_CREATE:
+            case ADMIN_CDK_DELETE:
+            case ADMIN_OAUTH_UNBIND:
+            case ADMIN_OAUTH_UNBIND_FAILED:
                 return ActivityCategory.ADMINISTRATION;
                 
             default:

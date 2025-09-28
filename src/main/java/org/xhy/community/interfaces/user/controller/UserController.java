@@ -15,6 +15,8 @@ import org.xhy.community.infrastructure.config.UserContext;
 import org.xhy.community.interfaces.user.request.ChangePasswordRequest;
 import org.xhy.community.interfaces.user.request.UpdateProfileRequest;
 import org.xhy.community.infrastructure.annotation.RequiresPlanPermissions;
+import org.xhy.community.infrastructure.annotation.LogUserActivity;
+import org.xhy.community.domain.common.valueobject.ActivityType;
 
 /**
  * 用户个人信息管理控制器
@@ -60,6 +62,10 @@ public class UserController {
      */
     @PutMapping("/password")
     @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "USER_PASSWORD_CHANGE", name = "修改密码")})
+    @LogUserActivity(
+            successType = ActivityType.CHANGE_PASSWORD,
+            failureType = ActivityType.CHANGE_PASSWORD_FAILED
+    )
     public ApiResponse<UserDTO> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
         String userId = UserContext.getCurrentUserId();
         UserDTO user = userAppService.changePassword(userId, request.getOldPassword(), request.getNewPassword());

@@ -9,6 +9,8 @@ import org.xhy.community.infrastructure.config.ApiResponse;
 import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.infrastructure.exception.SystemConfigErrorCode;
 import org.xhy.community.interfaces.config.request.UpdateSystemConfigRequest;
+import org.xhy.community.infrastructure.annotation.ActivityLog;
+import org.xhy.community.domain.common.valueobject.ActivityType;
 
 /**
  * 管理员系统配置管理控制器
@@ -46,6 +48,7 @@ public class AdminSystemConfigController {
      * @return 更新后的配置信息
      */
     @PutMapping("/{type}")
+    @ActivityLog(ActivityType.ADMIN_UPDATE_CONFIG)
     public ApiResponse<SystemConfigDTO> updateConfigByType(
             @PathVariable String type,
             @Valid @RequestBody UpdateSystemConfigRequest request) {

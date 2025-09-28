@@ -9,6 +9,8 @@ import org.xhy.community.infrastructure.config.ApiResponse;
 import org.xhy.community.interfaces.post.request.CreateCategoryRequest;
 import org.xhy.community.interfaces.post.request.UpdateCategoryRequest;
 import org.xhy.community.interfaces.post.request.CategoryQueryRequest;
+import org.xhy.community.infrastructure.annotation.ActivityLog;
+import org.xhy.community.domain.common.valueobject.ActivityType;
 
 /**
  * 管理员分类管理控制器
@@ -34,6 +36,7 @@ public class AdminCategoryController {
      * @return 创建成功的分类详情信息
      */
     @PostMapping
+    @ActivityLog(ActivityType.ADMIN_CATEGORY_CREATE)
     public ApiResponse<CategoryDTO> createCategory(@Valid @RequestBody CreateCategoryRequest request) {
         CategoryDTO category = adminCategoryAppService.createCategory(request);
         return ApiResponse.success(category);
@@ -49,6 +52,7 @@ public class AdminCategoryController {
      * @return 更新后的分类详情信息
      */
     @PutMapping("/{id}")
+    @ActivityLog(ActivityType.ADMIN_CATEGORY_UPDATE)
     public ApiResponse<CategoryDTO> updateCategory(@PathVariable String id,
                                                   @Valid @RequestBody UpdateCategoryRequest request) {
         CategoryDTO category = adminCategoryAppService.updateCategory(id, request);
@@ -64,6 +68,7 @@ public class AdminCategoryController {
      * @return 删除操作结果
      */
     @DeleteMapping("/{id}")
+    @ActivityLog(ActivityType.ADMIN_CATEGORY_DELETE)
     public ApiResponse<Void> deleteCategory(@PathVariable String id) {
         adminCategoryAppService.deleteCategory(id);
         return ApiResponse.success();

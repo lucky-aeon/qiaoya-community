@@ -11,6 +11,8 @@ import org.xhy.community.interfaces.course.request.CreateChapterRequest;
 import org.xhy.community.interfaces.course.request.UpdateChapterRequest;
 import org.xhy.community.interfaces.course.request.ChapterQueryRequest;
 import org.xhy.community.interfaces.course.request.BatchUpdateChapterOrderRequest;
+import org.xhy.community.infrastructure.annotation.ActivityLog;
+import org.xhy.community.domain.common.valueobject.ActivityType;
 
 import java.util.List;
 
@@ -38,6 +40,7 @@ public class AdminChapterController {
      * @return 创建成功的章节详情信息
      */
     @PostMapping
+    @ActivityLog(ActivityType.ADMIN_CHAPTER_CREATE)
     public ApiResponse<ChapterDTO> createChapter(@Valid @RequestBody CreateChapterRequest request) {
         String currentUserId = UserContext.getCurrentUserId();
         ChapterDTO chapter = adminChapterAppService.createChapter(request, currentUserId);
@@ -54,6 +57,7 @@ public class AdminChapterController {
      * @return 更新后的章节详情信息
      */
     @PutMapping("/{id}")
+    @ActivityLog(ActivityType.ADMIN_CHAPTER_UPDATE)
     public ApiResponse<ChapterDTO> updateChapter(@PathVariable String id,
                                                 @Valid @RequestBody UpdateChapterRequest request) {
         ChapterDTO chapter = adminChapterAppService.updateChapter(id, request);
@@ -69,6 +73,7 @@ public class AdminChapterController {
      * @return 删除操作结果
      */
     @DeleteMapping("/{id}")
+    @ActivityLog(ActivityType.ADMIN_CHAPTER_DELETE)
     public ApiResponse<Void> deleteChapter(@PathVariable String id) {
         adminChapterAppService.deleteChapter(id);
         return ApiResponse.success("删除成功");
@@ -126,6 +131,7 @@ public class AdminChapterController {
      * @return 更新操作结果
      */
     @PutMapping("/order")
+    @ActivityLog(ActivityType.ADMIN_CHAPTER_REORDER)
     public ApiResponse<Void> batchUpdateChapterOrder(@Valid @RequestBody BatchUpdateChapterOrderRequest request) {
         adminChapterAppService.batchUpdateChapterOrder(request);
         return ApiResponse.success("更新章节顺序成功");

@@ -8,6 +8,8 @@ import org.xhy.community.application.cdk.service.AdminCDKAppService;
 import org.xhy.community.infrastructure.config.ApiResponse;
 import org.xhy.community.interfaces.cdk.request.CreateCDKRequest;
 import org.xhy.community.interfaces.cdk.request.CDKQueryRequest;
+import org.xhy.community.infrastructure.annotation.ActivityLog;
+import org.xhy.community.domain.common.valueobject.ActivityType;
 
 import java.util.List;
 
@@ -33,6 +35,7 @@ public class AdminCDKController {
      * @return 创建成功的CDK列表
      */
     @PostMapping
+    @ActivityLog(ActivityType.ADMIN_CDK_CREATE)
     public ApiResponse<List<CDKDTO>> createCDK(@Valid @RequestBody CreateCDKRequest request) {
         List<CDKDTO> cdkList = adminCDKAppService.createCDK(request);
         return ApiResponse.success("创建成功",cdkList);
@@ -57,6 +60,7 @@ public class AdminCDKController {
      * @return 空响应
      */
     @DeleteMapping("/{id}")
+    @ActivityLog(ActivityType.ADMIN_CDK_DELETE)
     public ApiResponse<Void> deleteCDK(@PathVariable String id) {
         adminCDKAppService.deleteCDK(id);
         return ApiResponse.success("删除成功");

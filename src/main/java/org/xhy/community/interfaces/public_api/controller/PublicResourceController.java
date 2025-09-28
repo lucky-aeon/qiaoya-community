@@ -17,6 +17,8 @@ import org.xhy.community.infrastructure.config.ApiResponse;
 import org.xhy.community.infrastructure.config.JwtUtil;
 import org.xhy.community.interfaces.resource.request.OssCallbackRequest;
 import org.xhy.community.application.permission.service.UserPermissionAppService;
+import org.xhy.community.infrastructure.annotation.ActivityLog;
+import org.xhy.community.domain.common.valueobject.ActivityType;
 
 import java.net.URI;
 import java.util.Map;
@@ -92,6 +94,7 @@ public class PublicResourceController {
      * - 校验通过后记录访问信息并重定向至OSS签名URL
      */
     @GetMapping("/resource/{resourceId}/access")
+    @ActivityLog(ActivityType.RESOURCE_DOWNLOAD)
     public ResponseEntity<Void> accessResource(@PathVariable String resourceId,
                                                @CookieValue(name = "RAUTH", required = false) String rauthCookie,
                                                @RequestHeader(value = "Authorization", required = false) String authorization,

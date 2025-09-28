@@ -48,6 +48,15 @@ public class UrlPatternParser {
         
         // 课程注册相关
         URL_PATTERNS.put(Pattern.compile("/api/courses/(\\w+)/enroll"), new TargetTypeMapping("COURSE", 1));
+
+        // 公开资源访问
+        URL_PATTERNS.put(Pattern.compile("/api/public/resource/([\\w-]+)/access"), new TargetTypeMapping("RESOURCE", 1));
+
+        // 管理员分类/章节/CDK/更新日志
+        URL_PATTERNS.put(Pattern.compile("/api/admin/categories/([\\w-]+)"), new TargetTypeMapping("CATEGORY", 1));
+        URL_PATTERNS.put(Pattern.compile("/api/admin/chapters/([\\w-]+)"), new TargetTypeMapping("CHAPTER", 1));
+        URL_PATTERNS.put(Pattern.compile("/api/admin/cdk/([\\w-]+)"), new TargetTypeMapping("CDK", 1));
+        URL_PATTERNS.put(Pattern.compile("/api/admin/update-logs/([\\w-]+)(?:/toggle-status)?"), new TargetTypeMapping("UPDATE_LOG", 1));
     }
     
     /**

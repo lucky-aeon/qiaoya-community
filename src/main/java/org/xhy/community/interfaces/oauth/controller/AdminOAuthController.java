@@ -5,6 +5,8 @@ import org.xhy.community.application.auth.dto.AdminSocialAccountDTO;
 import org.xhy.community.application.auth.service.AdminAuthAppService;
 import org.xhy.community.infrastructure.config.ApiResponse;
 import org.xhy.community.interfaces.oauth.request.AdminSocialAccountQueryRequest;
+import org.xhy.community.infrastructure.annotation.ActivityLog;
+import org.xhy.community.domain.common.valueobject.ActivityType;
 
 @RestController
 @RequestMapping("/api/admin/auth/social-accounts")
@@ -27,6 +29,7 @@ public class AdminOAuthController {
     }
 
     @PostMapping("/{id}/unbind")
+    @ActivityLog(ActivityType.ADMIN_OAUTH_UNBIND)
     public ApiResponse<Void> unbind(@PathVariable String id) {
         adminAuthAppService.adminUnbindById(id);
         return ApiResponse.success("解绑成功");

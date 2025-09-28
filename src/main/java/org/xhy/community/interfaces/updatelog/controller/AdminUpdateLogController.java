@@ -10,6 +10,8 @@ import org.xhy.community.infrastructure.config.UserContext;
 import org.xhy.community.interfaces.updatelog.request.CreateUpdateLogRequest;
 import org.xhy.community.interfaces.updatelog.request.UpdateUpdateLogRequest;
 import org.xhy.community.interfaces.updatelog.request.AdminUpdateLogQueryRequest;
+import org.xhy.community.infrastructure.annotation.ActivityLog;
+import org.xhy.community.domain.common.valueobject.ActivityType;
 
 import java.util.List;
 
@@ -36,6 +38,7 @@ public class AdminUpdateLogController {
      * @return 创建成功的更新日志（含完整变更详情）
      */
     @PostMapping
+    @ActivityLog(ActivityType.ADMIN_UPDATE_LOG_CREATE)
     public ApiResponse<UpdateLogDTO> createUpdateLog(@Valid @RequestBody CreateUpdateLogRequest request) {
         String currentUserId = UserContext.getCurrentUserId();
 
@@ -52,6 +55,7 @@ public class AdminUpdateLogController {
      * @return 更新后的更新日志（含完整变更详情）
      */
     @PutMapping("/{id}")
+    @ActivityLog(ActivityType.ADMIN_UPDATE_LOG_UPDATE)
     public ApiResponse<UpdateLogDTO> updateUpdateLog(@PathVariable String id,
                                                    @Valid @RequestBody UpdateUpdateLogRequest request) {
         UpdateLogDTO updateLog = adminUpdateLogAppService.updateUpdateLog(id, request);
@@ -79,6 +83,7 @@ public class AdminUpdateLogController {
      * @return 空响应
      */
     @DeleteMapping("/{id}")
+    @ActivityLog(ActivityType.ADMIN_UPDATE_LOG_DELETE)
     public ApiResponse<Void> deleteUpdateLog(@PathVariable String id) {
         adminUpdateLogAppService.deleteUpdateLog(id);
         return ApiResponse.success("删除成功");
@@ -105,6 +110,7 @@ public class AdminUpdateLogController {
      * @return 更新后的更新日志基本信息
      */
     @PutMapping("/{id}/toggle-status")
+    @ActivityLog(ActivityType.ADMIN_UPDATE_LOG_TOGGLE)
     public ApiResponse<UpdateLogDTO> toggleUpdateLogStatus(@PathVariable String id) {
         UpdateLogDTO updateLog = adminUpdateLogAppService.toggleUpdateLogStatus(id);
         return ApiResponse.success("切换成功",updateLog);

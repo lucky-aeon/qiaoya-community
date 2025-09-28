@@ -10,6 +10,8 @@ import org.xhy.community.application.session.service.AdminDeviceSessionAppServic
 import org.xhy.community.infrastructure.config.ApiResponse;
 import org.xhy.community.interfaces.user.request.DeviceSessionQueryRequest;
 import org.xhy.community.interfaces.user.request.BlacklistQueryRequest;
+import org.xhy.community.infrastructure.annotation.ActivityLog;
+import org.xhy.community.domain.common.valueobject.ActivityType;
 
 /**
  * 管理员设备会话管理控制器
@@ -54,6 +56,7 @@ public class AdminDeviceSessionController {
      * @return 操作结果
      */
     @DeleteMapping("/{userId}/sessions/ip/{ip}")
+    @ActivityLog(ActivityType.ADMIN_FORCE_LOGOUT)
     public ApiResponse<Void> forceRemoveUserSession(
             @PathVariable String userId,
             @PathVariable String ip) {
@@ -69,6 +72,7 @@ public class AdminDeviceSessionController {
      * @return 操作结果
      */
     @DeleteMapping("/{userId}/sessions/all")
+    @ActivityLog(ActivityType.ADMIN_FORCE_LOGOUT)
     public ApiResponse<Void> forceRemoveAllUserSessions(@PathVariable String userId) {
         adminDeviceSessionAppService.forceRemoveAllUserSessions(userId);
         return ApiResponse.success("强制下线用户所有设备成功");
@@ -111,6 +115,7 @@ public class AdminDeviceSessionController {
      * @return 操作结果
      */
     @DeleteMapping("/blacklist/{userId}")
+    @ActivityLog(ActivityType.ADMIN_BLACKLIST_REMOVE)
     public ApiResponse<Void> removeUserFromBlacklist(@PathVariable String userId) {
         adminDeviceSessionAppService.removeUserFromBlacklist(userId);
         return ApiResponse.success("移除用户黑名单成功");
