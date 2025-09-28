@@ -12,6 +12,8 @@ import org.xhy.community.infrastructure.util.ClientIpUtil;
 import org.xhy.community.interfaces.user.request.LoginRequest;
 import org.xhy.community.interfaces.user.request.RegisterRequest;
 import org.xhy.community.interfaces.user.request.SendEmailCodeRequest;
+import org.xhy.community.interfaces.user.request.SendPasswordResetCodeRequest;
+import org.xhy.community.interfaces.user.request.ResetPasswordRequest;
 import org.xhy.community.infrastructure.annotation.LogUserActivity;
 import org.xhy.community.domain.common.valueobject.ActivityType;
 
@@ -93,5 +95,29 @@ public class AuthController {
         res.put("user",user);
         res.put("token",token);
         return ApiResponse.success("注册成功", res);
+    }
+
+    /**
+     * 发送密码重置验证码
+     */
+    @PostMapping("/password/reset-code")
+    public ApiResponse<Void> sendPasswordResetCode(@Valid @RequestBody SendPasswordResetCodeRequest request,
+                                                   HttpServletRequest httpRequest) {
+        String ip = ClientIpUtil.getClientIp(httpRequest);
+        userAppService.sendPasswordResetCode(request.getEmail(), ip);
+        return ApiResponse.success("密码重置验证码已发送");
+    }
+
+    /**
+     * 重置密码
+     */
+    @PostMapping("/password/reset")
+    @LogUserActivity(
+        successType = ActivityType.RESET_PASSWORD,
+        failureType = ActivityType.RESET_PASSWORD
+    )
+    public ApiResponse<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        userAppService.resetPassword(request.getEmail(), request.getVerificationCode(), request.getNewPassword());
+        return ApiResponse.success("密码重置成功");
     }
 }

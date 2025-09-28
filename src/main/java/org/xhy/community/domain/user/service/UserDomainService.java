@@ -122,6 +122,14 @@ public class UserDomainService {
         return user;
     }
 
+    public UserEntity resetUserPassword(String userId, String newPassword) {
+        UserEntity user = getUserById(userId);
+        String encryptedPassword = encryptPassword(newPassword);
+        user.changePassword(encryptedPassword);
+        userRepository.updateById(user);
+        return user;
+    }
+
     public UserEntity updateUserStatus(String userId, UserStatus status) {
         UserEntity user = getUserById(userId);
         switch (status) {

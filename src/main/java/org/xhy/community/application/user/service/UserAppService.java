@@ -24,9 +24,11 @@ import org.xhy.community.application.subscription.assembler.UserSubscriptionAsse
 import org.xhy.community.application.subscription.dto.UserSubscriptionDTO;
 import org.xhy.community.interfaces.user.request.UpdateProfileRequest;
 import org.xhy.community.domain.auth.service.EmailVerificationDomainService;
+import org.xhy.community.domain.auth.service.PasswordResetDomainService;
 import org.xhy.community.infrastructure.email.EmailService;
 import org.xhy.community.infrastructure.exception.AuthErrorCode;
 import org.xhy.community.domain.user.event.UserLoginEvent;
+import org.xhy.community.domain.user.valueobject.UserStatus;
 
 @Service
 public class UserAppService {
@@ -39,6 +41,7 @@ public class UserAppService {
     private final SubscriptionDomainService subscriptionDomainService;
     private final SubscriptionPlanDomainService subscriptionPlanDomainService;
     private final EmailVerificationDomainService emailVerificationDomainService;
+    private final PasswordResetDomainService passwordResetDomainService;
     private final EmailService emailService;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -50,6 +53,7 @@ public class UserAppService {
                           SubscriptionDomainService subscriptionDomainService,
                           SubscriptionPlanDomainService subscriptionPlanDomainService,
                           EmailVerificationDomainService emailVerificationDomainService,
+                          PasswordResetDomainService passwordResetDomainService,
                           EmailService emailService,
                           ApplicationEventPublisher eventPublisher) {
         this.userDomainService = userDomainService;
@@ -60,6 +64,7 @@ public class UserAppService {
         this.subscriptionDomainService = subscriptionDomainService;
         this.subscriptionPlanDomainService = subscriptionPlanDomainService;
         this.emailVerificationDomainService = emailVerificationDomainService;
+        this.passwordResetDomainService = passwordResetDomainService;
         this.emailService = emailService;
         this.eventPublisher = eventPublisher;
     }
@@ -105,6 +110,46 @@ public class UserAppService {
 
         UserEntity user = userDomainService.registerUser(email, password);
         return UserAssembler.toDTO(user);
+    }
+
+    /**
+     * 发送密码重置验证码
+     */
+    public void sendPasswordResetCode(String email, String ip) {
+        UserEntity user = userDomainService.getUserByEmail(email);
+        if (user.getStatus() == UserStatus.BANNED) {
+            throw new BusinessException(UserErrorCode.USER_BANNED);
+        }
+        if (user.getStatus() == UserStatus.INACTIVE) {
+            throw new BusinessException(UserErrorCode.USER_INACTIVE);
+        }
+
+        String code = passwordResetDomainService.requestResetCode(email, ip);
+
+        String subject = "【敲鸭社区】密码重置验证码";
+        String content = "<p>您的密码重置验证码为：<b>" + code + "</b></p>" +
+                "<p>验证码有效期10分钟，请勿泄露。如非本人操作，可忽略此邮件。</p>";
+        boolean sent = emailService.sendEmail(email, subject, content);
+        if (!sent) {
+            throw new BusinessException(AuthErrorCode.EMAIL_SEND_FAILED, "邮件发送失败，请稍后再试");
+        }
+    }
+
+    /**
+     * 使用邮箱验证码重置密码
+     */
+    public void resetPassword(String email, String verificationCode, String newPassword) {
+        passwordResetDomainService.verifyAndConsume(email, verificationCode);
+
+        UserEntity user = userDomainService.getUserByEmail(email);
+        if (user.getStatus() == UserStatus.BANNED) {
+            throw new BusinessException(UserErrorCode.USER_BANNED);
+        }
+        if (user.getStatus() == UserStatus.INACTIVE) {
+            throw new BusinessException(UserErrorCode.USER_INACTIVE);
+        }
+
+        userDomainService.resetUserPassword(user.getId(), newPassword);
     }
 
     /**

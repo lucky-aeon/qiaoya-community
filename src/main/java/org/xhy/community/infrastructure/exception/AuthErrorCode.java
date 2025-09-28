@@ -12,7 +12,11 @@ public enum AuthErrorCode implements ErrorCode {
     OAUTH_ALREADY_BOUND(3208, "该第三方账号已绑定其他用户"),
     OAUTH_BIND_CONFLICT(3209, "绑定冲突，请检查账号关系"),
     USER_DISABLED(3210, "用户已被禁用"),
-    OAUTH_EMAIL_REQUIRED(3211, "未获取到邮箱，请授权邮箱或稍后重试");
+    OAUTH_EMAIL_REQUIRED(3211, "未获取到邮箱，请授权邮箱或稍后重试"),
+    PASSWORD_RESET_CODE_INVALID(3212, "密码重置验证码无效或已过期"),
+    PASSWORD_RESET_CODE_MISMATCH(3213, "密码重置验证码不正确"),
+    PASSWORD_RESET_RATE_LIMIT(3214, "密码重置请求过于频繁，请稍后再试"),
+    PASSWORD_RESET_PARAM_INVALID(3215, "密码重置参数无效");
 
     private final int code;
     private final String message;
