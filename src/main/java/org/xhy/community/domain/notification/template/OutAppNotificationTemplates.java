@@ -59,7 +59,7 @@ public class OutAppNotificationTemplates {
                 "敲鸭社区团队",
                 data.getRecipientName(),
                 data.getAuthorName(),
-                data.getContentType(),
+                data.getContentType() == null ? "内容" : data.getContentType().getDescription(),
                 data.getContentTitle(),
                 data.getContentUrl(),
                 data.getContentUrl()
@@ -153,7 +153,7 @@ public class OutAppNotificationTemplates {
                 "敲鸭社区团队",
                 data.getRecipientName(),
                 data.getCommenterName(),
-                data.getTargetType(),
+                data.getTargetType() == null ? "内容" : data.getTargetType().getDescription(),
                 data.getTargetTitle(),
                 data.getTruncatedCommentContent(),
                 data.getTargetUrl(),

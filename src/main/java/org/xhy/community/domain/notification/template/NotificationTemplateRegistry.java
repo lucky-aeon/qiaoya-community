@@ -10,6 +10,9 @@ import org.xhy.community.infrastructure.config.EmailBrandingConfig;
 import org.xhy.community.infrastructure.template.ClasspathTemplateLoader;
 import org.xhy.community.infrastructure.template.SimpleTemplateRenderer;
 import org.xhy.community.infrastructure.config.WebUrlConfig;
+import org.xhy.community.infrastructure.util.ContentUrlResolver;
+import org.xhy.community.domain.common.valueobject.ContentType;
+import org.xhy.community.domain.follow.valueobject.FollowTargetType;
 
 import jakarta.annotation.PostConstruct;
 import java.util.HashMap;
@@ -33,15 +36,18 @@ public class NotificationTemplateRegistry {
     private final SimpleTemplateRenderer templateRenderer;
     private final EmailBrandingConfig brandingConfig;
     private final WebUrlConfig webUrlConfig;
+    private final ContentUrlResolver contentUrlResolver;
 
     public NotificationTemplateRegistry(ClasspathTemplateLoader templateLoader,
                                         SimpleTemplateRenderer templateRenderer,
                                         EmailBrandingConfig brandingConfig,
-                                        WebUrlConfig webUrlConfig) {
+                                        WebUrlConfig webUrlConfig,
+                                        ContentUrlResolver contentUrlResolver) {
         this.templateLoader = templateLoader;
         this.templateRenderer = templateRenderer;
         this.brandingConfig = brandingConfig;
         this.webUrlConfig = webUrlConfig;
+        this.contentUrlResolver = contentUrlResolver;
     }
 
     @PostConstruct
@@ -52,6 +58,8 @@ public class NotificationTemplateRegistry {
         registerInAppTemplate(new InAppNotificationTemplates.CDKActivatedTemplate());
         registerInAppTemplate(new InAppNotificationTemplates.SubscriptionExpiredTemplate());
         registerInAppTemplate(new InAppNotificationTemplates.CommentTemplate());
+        registerInAppTemplate(new InAppNotificationTemplates.ChapterUpdatedTemplate());
+        registerInAppTemplate(new InAppNotificationTemplates.ChapterCommentTemplate());
 
         // 注册站外消息模板
         registerFileBasedOutAppTemplates();
@@ -91,9 +99,9 @@ public class NotificationTemplateRegistry {
                 java.util.Map<String, String> m = new java.util.HashMap<>();
                 m.put("RECIPIENT_NAME", data.getRecipientName());
                 m.put("AUTHOR_NAME", data.getAuthorName());
-                m.put("CONTENT_TYPE", data.getContentType());
+                m.put("CONTENT_TYPE", data.getContentType() == null ? "" : data.getContentType().getDescription());
                 m.put("CONTENT_TITLE", data.getContentTitle());
-                m.put("CONTENT_URL", resolveUrl(buildContentPath(data.getContentType(), data.getContentId())));
+                m.put("CONTENT_URL", resolveUrl(contentUrlResolver.contentPath(data.getContentType(), data.getContentId())));
                 return m;
             },
             webUrlConfig
@@ -147,10 +155,10 @@ public class NotificationTemplateRegistry {
                 java.util.Map<String, String> m = new java.util.HashMap<>();
                 m.put("RECIPIENT_NAME", data.getRecipientName());
                 m.put("COMMENTER_NAME", data.getCommenterName());
-                m.put("TARGET_TYPE", data.getTargetType());
+                m.put("TARGET_TYPE", data.getTargetType() == null ? "" : data.getTargetType().getDescription());
                 m.put("TARGET_TITLE", data.getTargetTitle());
                 m.put("TRUNCATED_COMMENT", data.getTruncatedCommentContent());
-                m.put("TARGET_URL", resolveUrl(buildTargetPath(data.getTargetType(), data.getTargetId())));
+                m.put("TARGET_URL", resolveUrl(contentUrlResolver.targetPath(data.getTargetType(), data.getTargetId())));
                 return m;
             },
             webUrlConfig
@@ -213,30 +221,7 @@ public class NotificationTemplateRegistry {
         return webUrlConfig.resolve(url);
     }
 
-    private String buildContentPath(String contentType, String id) {
-        if (contentType == null || id == null) return null;
-        String t = contentType.toLowerCase();
-        if ("post".equals(t) || "discussion".equals(t)) {
-            return "/dashboard/discussions/" + id;
-        }
-        if ("course".equals(t)) {
-            return "/dashboard/courses/" + id;
-        }
-        // fallback: 原始路径格式
-        return "/" + t + "/" + id;
-    }
-
-    private String buildTargetPath(String targetType, String id) {
-        if (targetType == null || id == null) return null;
-        String t = targetType.toLowerCase();
-        if ("post".equals(t) || "discussion".equals(t)) {
-            return "/dashboard/discussions/" + id;
-        }
-        if ("course".equals(t)) {
-            return "/dashboard/courses/" + id;
-        }
-        return "/" + t + "/" + id;
-    }
+    // 内容路径构建改由 ContentUrlResolver 统一处理
     
     /**
      * 注册站内消息模板

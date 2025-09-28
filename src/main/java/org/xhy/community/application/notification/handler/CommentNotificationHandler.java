@@ -63,7 +63,7 @@ public class CommentNotificationHandler implements NotificationHandler {
             String targetAuthorId = "";
             String targetAuthorName = "";
             String targetAuthorEmail = "";
-            String targetType = "";
+            org.xhy.community.domain.follow.valueobject.FollowTargetType targetType = null;
 
             // 根据业务类型获取被评论内容信息
             if (comment.getBusinessType() == BusinessType.POST) {
@@ -74,7 +74,7 @@ public class CommentNotificationHandler implements NotificationHandler {
                 targetAuthorId = post.getAuthorId();
                 targetAuthorName = postAuthor.getName();
                 targetAuthorEmail = postAuthor.getEmail();
-                targetType = "post";
+                targetType = org.xhy.community.domain.follow.valueobject.FollowTargetType.POST;
             } else if (comment.getBusinessType() == BusinessType.COURSE) {
                 CourseEntity course = courseDomainService.getCourseById(comment.getBusinessId());
                 UserEntity courseAuthor = userDomainService.getUserById(course.getAuthorId());
@@ -83,7 +83,7 @@ public class CommentNotificationHandler implements NotificationHandler {
                 targetAuthorId = course.getAuthorId();
                 targetAuthorName = courseAuthor.getName();
                 targetAuthorEmail = courseAuthor.getEmail();
-                targetType = "course";
+                targetType = org.xhy.community.domain.follow.valueobject.FollowTargetType.COURSE;
             }
 
             // 只有当评论者不是内容作者时才发送通知（避免自己评论自己的内容收到通知）

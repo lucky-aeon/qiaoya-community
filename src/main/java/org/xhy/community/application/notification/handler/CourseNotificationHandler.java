@@ -53,7 +53,7 @@ public class CourseNotificationHandler implements NotificationHandler {
                         recipient.getEmailNotificationEnabled(),
                         author.getName(),
                         course.getTitle(),
-                        "课程",
+                        ContentType.COURSE,
                         course.getId()
                 );
 

@@ -4,6 +4,7 @@ import org.springframework.stereotype.Component;
 import org.xhy.community.application.notification.service.ContentNotificationService;
 import org.xhy.community.domain.common.valueobject.ContentType;
 import org.xhy.community.domain.notification.context.ContentUpdateNotificationData;
+import org.xhy.community.domain.notification.context.ChapterUpdatedNotificationData;
 import org.xhy.community.domain.notification.service.NotificationDomainService;
 import org.xhy.community.domain.course.service.ChapterDomainService;
 import org.xhy.community.domain.course.service.CourseDomainService;
@@ -64,15 +65,15 @@ public class ChapterNotificationHandler implements NotificationHandler {
             String notificationTitle = "课程《" + course.getTitle() + "》新增章节：" + chapter.getTitle();
 
             for (ContentNotificationService.NotificationRecipient recipient : courseFollowers) {
-                ContentUpdateNotificationData notificationData = new ContentUpdateNotificationData(
+                ChapterUpdatedNotificationData notificationData = new ChapterUpdatedNotificationData(
                         recipient.getUserId(),
                         recipient.getUserName(),
                         recipient.getUserEmail(),
                         recipient.getEmailNotificationEnabled(),
-                        author.getName(),
-                        notificationTitle,
-                        "课程",
-                        course.getId()  // 使用课程ID作为目标内容ID
+                        course.getId(),
+                        course.getTitle(),
+                        chapter.getId(),
+                        chapter.getTitle()
                 );
 
                 notificationDomainService.sendNotification(notificationData);

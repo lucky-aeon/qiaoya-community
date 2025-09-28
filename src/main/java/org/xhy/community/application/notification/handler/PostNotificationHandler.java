@@ -53,7 +53,7 @@ public class PostNotificationHandler implements NotificationHandler {
                         recipient.getEmailNotificationEnabled(),
                         author.getName(),
                         post.getTitle(),
-                        "文章",
+                        ContentType.POST,
                         post.getId()
                 );
 

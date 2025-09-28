@@ -40,8 +40,8 @@ public class InAppNotificationTemplates {
         
         @Override
         public String renderContent(ContentUpdateNotificationData data) {
-            return data.getAuthorName() + " 发布了新的" + 
-                   data.getContentType() + "：" + data.getContentTitle();
+            String typeLabel = data.getContentType() == null ? "内容" : data.getContentType().getDescription();
+            return data.getAuthorName() + " 发布了新的" + typeLabel + "：" + data.getContentTitle();
         }
         
         @Override
@@ -104,13 +104,55 @@ public class InAppNotificationTemplates {
         
         @Override
         public String renderContent(CommentNotificationData data) {
-            return data.getCommenterName() + " 评论了你的" + 
-                   data.getTargetType() + "：" + data.getTargetTitle();
+            String targetLabel = data.getTargetType() == null ? "内容" : data.getTargetType().getDescription();
+            return data.getCommenterName() + " 评论了你的" + targetLabel + "：" + data.getTargetTitle();
         }
         
         @Override
         public Class<CommentNotificationData> getSupportedDataType() {
             return CommentNotificationData.class;
+        }
+    }
+
+    /**
+     * 章节更新站内消息模板
+     */
+    public static class ChapterUpdatedTemplate implements NotificationTemplate<ChapterUpdatedNotificationData> {
+
+        @Override
+        public String renderTitle(ChapterUpdatedNotificationData data) {
+            return "章节更新";
+        }
+
+        @Override
+        public String renderContent(ChapterUpdatedNotificationData data) {
+            return "课程《" + data.getCourseTitle() + "》新增章节：" + data.getChapterTitle();
+        }
+
+        @Override
+        public Class<ChapterUpdatedNotificationData> getSupportedDataType() {
+            return ChapterUpdatedNotificationData.class;
+        }
+    }
+
+    /**
+     * 章节评论站内消息模板
+     */
+    public static class ChapterCommentTemplate implements NotificationTemplate<ChapterCommentNotificationData> {
+
+        @Override
+        public String renderTitle(ChapterCommentNotificationData data) {
+            return "章节新评论";
+        }
+
+        @Override
+        public String renderContent(ChapterCommentNotificationData data) {
+            return data.getCommenterName() + " 评论了你的课程《" + data.getCourseTitle() + "》中的章节《" + data.getChapterTitle() + "》";
+        }
+
+        @Override
+        public Class<ChapterCommentNotificationData> getSupportedDataType() {
+            return ChapterCommentNotificationData.class;
         }
     }
 }

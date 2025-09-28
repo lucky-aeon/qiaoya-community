@@ -7,7 +7,13 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.xhy.community.domain.comment.event.CommentCreatedEvent;
 import org.xhy.community.domain.notification.context.CommentNotificationData;
+import org.xhy.community.domain.notification.context.ChapterCommentNotificationData;
 import org.xhy.community.domain.notification.service.NotificationDomainService;
+import org.xhy.community.domain.follow.valueobject.FollowTargetType;
+import org.xhy.community.domain.course.service.ChapterDomainService;
+import org.xhy.community.domain.course.service.CourseDomainService;
+import org.xhy.community.domain.course.entity.ChapterEntity;
+import org.xhy.community.domain.course.entity.CourseEntity;
 import org.xhy.community.domain.user.service.UserDomainService;
 
 /**
@@ -21,11 +27,17 @@ public class CommentNotificationListener {
     
     private final NotificationDomainService notificationDomainService;
     private final UserDomainService userDomainService;
+    private final ChapterDomainService chapterDomainService;
+    private final CourseDomainService courseDomainService;
 
     public CommentNotificationListener(NotificationDomainService notificationDomainService,
-                                     UserDomainService userDomainService) {
+                                     UserDomainService userDomainService,
+                                     ChapterDomainService chapterDomainService,
+                                     CourseDomainService courseDomainService) {
         this.notificationDomainService = notificationDomainService;
         this.userDomainService = userDomainService;
+        this.chapterDomainService = chapterDomainService;
+        this.courseDomainService = courseDomainService;
     }
     
     /**
@@ -45,22 +57,38 @@ public class CommentNotificationListener {
             Boolean emailNotificationEnabled = userDomainService.getUserById(event.getTargetAuthorId())
                 .getEmailNotificationEnabled();
 
-            // Application层流程编排：从事件构建通知数据
-            CommentNotificationData notificationData =
-                new CommentNotificationData(
-                    event.getTargetAuthorId(),
-                    event.getTargetAuthorName(),
-                    event.getTargetAuthorEmail(),
-                    emailNotificationEnabled,
-                    event.getCommenterName(),
-                    event.getTargetTitle(),
-                    event.getTargetType(),
-                    event.getCommentContent(),
-                    event.getTargetId()
+            if (event.getTargetType() == FollowTargetType.CHAPTER) {
+                // 章节评论：构建章节专用通知，带有章节路径
+                ChapterEntity chapter = chapterDomainService.getChapterById(event.getTargetId());
+                CourseEntity course = courseDomainService.getCourseById(chapter.getCourseId());
+
+                ChapterCommentNotificationData notificationData = new ChapterCommentNotificationData(
+                        event.getTargetAuthorId(),
+                        event.getTargetAuthorName(),
+                        event.getTargetAuthorEmail(),
+                        emailNotificationEnabled,
+                        event.getCommenterName(),
+                        course.getId(), course.getTitle(),
+                        chapter.getId(), chapter.getTitle(),
+                        event.getCommentContent()
                 );
-            
-            // Application层职责：调用Domain服务
-            notificationDomainService.sendNotification(notificationData);
+                notificationDomainService.sendNotification(notificationData);
+            } else {
+                // 文章/课程评论：使用通用评论通知
+                CommentNotificationData notificationData =
+                        new CommentNotificationData(
+                                event.getTargetAuthorId(),
+                                event.getTargetAuthorName(),
+                                event.getTargetAuthorEmail(),
+                                emailNotificationEnabled,
+                                event.getCommenterName(),
+                                event.getTargetTitle(),
+                                event.getTargetType(),
+                                event.getCommentContent(),
+                                event.getTargetId()
+                        );
+                notificationDomainService.sendNotification(notificationData);
+            }
             
         } catch (Exception e) {
             log.error("处理评论事件失败", e);
