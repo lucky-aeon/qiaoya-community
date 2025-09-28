@@ -38,7 +38,9 @@ public class CDKDomainService {
      * 批量创建CDK - 扩展版本，支持获得方式
      */
     public List<CDKEntity> createCDKBatch(CDKType cdkType, String targetId, int quantity,
-                                         CDKAcquisitionType acquisitionType, String remark) {
+                                         CDKAcquisitionType acquisitionType, String remark,
+                                         java.math.BigDecimal price,
+                                         org.xhy.community.domain.cdk.valueobject.CDKSubscriptionStrategy subscriptionStrategy) {
         String batchId = UUID.randomUUID().toString();
         List<CDKEntity> cdkList = new ArrayList<>();
 
@@ -46,6 +48,8 @@ public class CDKDomainService {
             String code = generateCDKCode();
             CDKEntity cdk = new CDKEntity(code, cdkType, targetId, batchId, acquisitionType);
             cdk.setRemark(remark);
+            cdk.setPrice(price);
+            cdk.setSubscriptionStrategy(subscriptionStrategy);
             cdkRepository.insert(cdk);
             cdkList.add(cdk);
         }

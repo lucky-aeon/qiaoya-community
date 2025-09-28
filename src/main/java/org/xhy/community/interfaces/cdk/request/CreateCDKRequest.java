@@ -7,6 +7,9 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import org.xhy.community.domain.cdk.valueobject.CDKType;
 import org.xhy.community.domain.cdk.valueobject.CDKAcquisitionType;
+import org.xhy.community.domain.cdk.valueobject.CDKSubscriptionStrategy;
+
+import java.math.BigDecimal;
 
 
 /**
@@ -29,6 +32,10 @@ public class CreateCDKRequest {
 
     @Size(max = 500, message = "备注长度不能超过500字符")
     private String remark;
+
+    // 新增字段
+    private BigDecimal price; // 可选：覆盖价格/补差价
+    private CDKSubscriptionStrategy subscriptionStrategy; // 可选：套餐策略（仅套餐型CDK有效，默认PURCHASE）
     
     public CreateCDKRequest() {
     }
@@ -47,4 +54,10 @@ public class CreateCDKRequest {
 
     public String getRemark() { return remark; }
     public void setRemark(String remark) { this.remark = remark; }
+
+    public BigDecimal getPrice() { return price; }
+    public void setPrice(BigDecimal price) { this.price = price; }
+
+    public CDKSubscriptionStrategy getSubscriptionStrategy() { return subscriptionStrategy; }
+    public void setSubscriptionStrategy(CDKSubscriptionStrategy subscriptionStrategy) { this.subscriptionStrategy = subscriptionStrategy; }
 }

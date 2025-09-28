@@ -479,3 +479,21 @@ Map<String, String> categoryNames = categoryService.getCategoryNameMapByIds(cate
 // 在Assembler中组装完整的DTO
 List<AdminPostDTO> dtos = AdminPostAssembler.toDTOList(posts, authorNames, categoryNames);
 ```
+
+### 提交信息（Commit Message）规范
+- 标题行：`<type>(<scope>): <subject>`，建议中文描述，简洁明确。
+- 空一行（必须换行）。
+- 正文使用“无序列表”逐条描述改动点：每行以 `- ` 开头，使用真实换行，不要用 `\n` 拼接。
+- 列表项尽量使用并列的动宾短语，必要时可继续拆分为多条；句末不强制标点。
+- 若包含破坏性变更或迁移步骤，也以无序列表补充在正文中。
+
+示例：
+
+```
+feat(admin-cdk): 显示使用者昵称并支持订阅策略与价格
+
+- 列表新增策略、价格列，使用者显示昵称（回退ID）
+- 创建表单新增 subscriptionStrategy、price 与联动校验
+- 数量上限改为 1000，新增 code 筛选
+- 类型对齐：CDKDTO/CreateCDKRequest/CDKQueryRequest
+```

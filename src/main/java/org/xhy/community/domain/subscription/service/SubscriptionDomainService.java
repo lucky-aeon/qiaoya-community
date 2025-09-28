@@ -39,17 +39,10 @@ public class SubscriptionDomainService {
         // 验证套餐存在，如果不存在会自动抛出 PLAN_NOT_FOUND 异常
         SubscriptionPlanEntity plan = getSubscriptionPlanOrThrow(subscriptionPlanId);
 
-        // 检查重复订阅
-        if (checkActiveSubscriptionExists(userId, plan.getId())) {
-            throw new BusinessException(SubscriptionErrorCode.SUBSCRIPTION_ALREADY_EXISTS);
-        }
-
-        // 删除旧套餐
-        userSubscriptionRepository.delete(new LambdaQueryWrapper<UserSubscriptionEntity>().eq(UserSubscriptionEntity::getUserId,userId));
-        // 创建订阅记录
+        // 兼容旧方法，默认按 PURCHASE 语义处理（替换为新订阅）
+        userSubscriptionRepository.delete(new LambdaQueryWrapper<UserSubscriptionEntity>().eq(UserSubscriptionEntity::getUserId, userId));
         UserSubscriptionEntity subscription = createSubscription(userId, plan, cdkCode);
         userSubscriptionRepository.insert(subscription);
-
         return subscription;
     }
 
@@ -87,6 +80,83 @@ public class SubscriptionDomainService {
         LocalDateTime endTime = now.plusMonths(plan.getValidityMonths());
         
         return new UserSubscriptionEntity(userId, plan.getId(), now, endTime, cdkCode);
+    }
+
+    /**
+     * 套餐CDK创建订阅（支持升级/购买策略）
+     */
+    public UserSubscriptionEntity createSubscriptionFromCDK(String userId, String subscriptionPlanId, String cdkCode,
+                                                            org.xhy.community.domain.cdk.valueobject.CDKSubscriptionStrategy strategy) {
+        SubscriptionPlanEntity newPlan = getSubscriptionPlanOrThrow(subscriptionPlanId);
+        LocalDateTime now = LocalDateTime.now();
+
+        // 查询当前有效订阅（若存在）
+        UserSubscriptionEntity currentActive = getCurrentActiveSubscription(userId);
+
+        if (currentActive == null) {
+            // 无有效订阅：UPGRADE 退化为 PURCHASE
+            if (strategy == org.xhy.community.domain.cdk.valueobject.CDKSubscriptionStrategy.UPGRADE) {
+                log.info("[订阅] 用户无有效订阅，UPGRADE 退化为 PURCHASE: userId={}, planId={}", userId, subscriptionPlanId);
+            }
+            UserSubscriptionEntity subscription = createSubscription(userId, newPlan, cdkCode);
+            userSubscriptionRepository.insert(subscription);
+            return subscription;
+        }
+
+        // 有有效订阅：根据策略与等级处理
+        SubscriptionPlanEntity oldPlan = getSubscriptionPlanOrThrow(currentActive.getSubscriptionPlanId());
+
+        if (strategy == org.xhy.community.domain.cdk.valueobject.CDKSubscriptionStrategy.UPGRADE) {
+            if (newPlan.getLevel() <= oldPlan.getLevel()) {
+                // 同级或降级升级：报错
+                throw new BusinessException(SubscriptionErrorCode.UPGRADE_LEVEL_INVALID);
+            }
+            // 低->高：替换为新订阅，承接旧订阅剩余时间
+            LocalDateTime endTime = currentActive.getEndTime();
+            // 替换：删除旧订阅
+            userSubscriptionRepository.delete(new LambdaQueryWrapper<UserSubscriptionEntity>().eq(UserSubscriptionEntity::getUserId, userId));
+            UserSubscriptionEntity subscription = new UserSubscriptionEntity(userId, newPlan.getId(), now, endTime, cdkCode);
+            userSubscriptionRepository.insert(subscription);
+            log.info("[订阅] 升级成功：userId={}, fromLevel={} toLevel={}, carryRemaining=true, end={}",
+                    userId, oldPlan.getLevel(), newPlan.getLevel(), endTime);
+            return subscription;
+        } else {
+            // PURCHASE
+            if (newPlan.getLevel() < oldPlan.getLevel()) {
+                throw new BusinessException(SubscriptionErrorCode.DOWNGRADE_PURCHASE_NOT_ALLOWED);
+            }
+            if (newPlan.getLevel().equals(oldPlan.getLevel())) {
+                // 同级：续费（在现有 endTime 基础上累加）
+                LocalDateTime oldEnd = currentActive.getEndTime();
+                LocalDateTime newEnd = oldEnd.plusMonths(newPlan.getValidityMonths());
+                currentActive.setEndTime(newEnd);
+                currentActive.setCdkCode(cdkCode);
+                userSubscriptionRepository.updateById(currentActive);
+                log.info("[订阅] 续费成功：userId={}, level={}, oldEnd={}, newEnd={}",
+                        userId, newPlan.getLevel(), oldEnd, newEnd);
+                return currentActive;
+            } else {
+                // 更高等级：替换为新订阅（不承接剩余）
+                userSubscriptionRepository.delete(new LambdaQueryWrapper<UserSubscriptionEntity>().eq(UserSubscriptionEntity::getUserId, userId));
+                UserSubscriptionEntity subscription = createSubscription(userId, newPlan, cdkCode);
+                userSubscriptionRepository.insert(subscription);
+                log.info("[订阅] 购买更高等级，替换成功：userId={}, fromLevel={} toLevel={}, end={}",
+                        userId, oldPlan.getLevel(), newPlan.getLevel(), subscription.getEndTime());
+                return subscription;
+            }
+        }
+    }
+
+    private UserSubscriptionEntity getCurrentActiveSubscription(String userId) {
+        LocalDateTime now = LocalDateTime.now();
+        return userSubscriptionRepository.selectOne(
+                new LambdaQueryWrapper<UserSubscriptionEntity>()
+                        .eq(UserSubscriptionEntity::getUserId, userId)
+                        .le(UserSubscriptionEntity::getStartTime, now)
+                        .gt(UserSubscriptionEntity::getEndTime, now)
+                        .orderByDesc(UserSubscriptionEntity::getEndTime)
+                        .last("LIMIT 1")
+        );
     }
 
     private SubscriptionPlanEntity getSubscriptionPlanOrThrow(String planId) {

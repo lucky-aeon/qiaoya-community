@@ -8,6 +8,9 @@ import org.xhy.community.domain.cdk.event.CDKActivatedEvent;
 import org.xhy.community.domain.cdk.valueobject.CDKType;
 import org.xhy.community.domain.subscription.entity.UserSubscriptionEntity;
 import org.xhy.community.domain.subscription.service.SubscriptionDomainService;
+import org.xhy.community.domain.cdk.service.CDKDomainService;
+import org.xhy.community.domain.cdk.entity.CDKEntity;
+import org.xhy.community.domain.cdk.valueobject.CDKSubscriptionStrategy;
 
 @Component
 public class SubscriptionCDKEventListener {
@@ -15,9 +18,12 @@ public class SubscriptionCDKEventListener {
     private static final Logger log = LoggerFactory.getLogger(SubscriptionCDKEventListener.class);
 
     private final SubscriptionDomainService subscriptionDomainService;
+    private final CDKDomainService cdkDomainService;
 
-    public SubscriptionCDKEventListener(SubscriptionDomainService subscriptionDomainService) {
+    public SubscriptionCDKEventListener(SubscriptionDomainService subscriptionDomainService,
+                                        CDKDomainService cdkDomainService) {
         this.subscriptionDomainService = subscriptionDomainService;
+        this.cdkDomainService = cdkDomainService;
     }
 
     @EventListener
@@ -27,10 +33,15 @@ public class SubscriptionCDKEventListener {
             log.info("[CDK激活-监听] 处理套餐CDK: userId={}, planId={}, cdk={}",
                     event.getUserId(), event.getTargetId(), cdkCode);
 
+            // 读取CDK策略（若为空默认 PURCHASE）
+            CDKEntity cdk = cdkDomainService.getCDKByCode(cdkCode);
+            CDKSubscriptionStrategy strategy = cdk.getSubscriptionStrategy();
+
             UserSubscriptionEntity created = subscriptionDomainService.createSubscriptionFromCDK(
-                event.getUserId(),
-                event.getTargetId(),
-                    cdkCode
+                    event.getUserId(),
+                    event.getTargetId(),
+                    cdkCode,
+                    strategy
             );
 
             if (created != null) {

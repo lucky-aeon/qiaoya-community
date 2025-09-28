@@ -8,7 +8,9 @@ public enum SubscriptionErrorCode implements ErrorCode {
     INVALID_SUBSCRIPTION_PERIOD(50005, "无效的订阅周期"),
     COURSE_CDK_ACTIVATION_FAILED(50006, "课程CDK激活失败"),
     PLAN_NOT_FOUND_FOR_CDK(50007, "CDK对应的套餐不存在"),
-    COURSE_NOT_FOUND_FOR_CDK(50008, "CDK对应的课程不存在");
+    COURSE_NOT_FOUND_FOR_CDK(50008, "CDK对应的课程不存在"),
+    DOWNGRADE_PURCHASE_NOT_ALLOWED(50009, "购买低等级套餐不允许"),
+    UPGRADE_LEVEL_INVALID(50010, "升级仅允许从低等级到高等级");
     
     private final int code;
     private final String message;

@@ -11,6 +11,8 @@ import org.xhy.community.domain.order.entity.OrderEntity;
 import org.xhy.community.domain.order.service.OrderDomainService;
 import org.xhy.community.domain.order.valueobject.OrderType;
 import org.xhy.community.domain.subscription.service.SubscriptionPlanDomainService;
+import org.xhy.community.domain.cdk.service.CDKDomainService;
+import org.xhy.community.domain.cdk.entity.CDKEntity;
 
 @Component
 public class OrderEventHandler {
@@ -20,13 +22,16 @@ public class OrderEventHandler {
     private final OrderDomainService orderDomainService;
     private final CourseDomainService courseDomainService;
     private final SubscriptionPlanDomainService subscriptionPlanDomainService;
+    private final CDKDomainService cdkDomainService;
 
     public OrderEventHandler(OrderDomainService orderDomainService,
                            CourseDomainService courseDomainService,
-                           SubscriptionPlanDomainService subscriptionPlanDomainService) {
+                           SubscriptionPlanDomainService subscriptionPlanDomainService,
+                           CDKDomainService cdkDomainService) {
         this.orderDomainService = orderDomainService;
         this.courseDomainService = courseDomainService;
         this.subscriptionPlanDomainService = subscriptionPlanDomainService;
+        this.cdkDomainService = cdkDomainService;
     }
 
     /**
@@ -46,9 +51,22 @@ public class OrderEventHandler {
                 return;
             }
 
-            // 获取商品名称与价格
+            // 获取商品名称与原始价格
             String productName = getProductName(event.getCdkType(), event.getTargetId());
-            java.math.BigDecimal amount = getProductPrice(event.getCdkType(), event.getTargetId());
+            java.math.BigDecimal originalPrice = getProductPrice(event.getCdkType(), event.getTargetId());
+
+            // 获取CDK详情以决定最终金额与extra
+            CDKEntity cdk = cdkDomainService.getCDKByCode(event.getCdkCode());
+
+            // 金额优先级：GIFT → 0；否则CDK.price（非空）→ price；否则商品原价
+            java.math.BigDecimal amount = java.math.BigDecimal.ZERO;
+            if (event.getAcquisitionType() == CDKAcquisitionType.GIFT) {
+                amount = java.math.BigDecimal.ZERO;
+            } else if (cdk.getPrice() != null) {
+                amount = cdk.getPrice();
+            } else {
+                amount = originalPrice != null ? originalPrice : java.math.BigDecimal.ZERO;
+            }
 
             // 转换订单类型
             OrderType orderType = event.getAcquisitionType() == CDKAcquisitionType.PURCHASE ?
@@ -66,6 +84,15 @@ public class OrderEventHandler {
                 amount,
                 event.getActivatedTime()
             );
+
+            // 组装 extra 信息
+            java.util.Map<String, Object> extra = new java.util.HashMap<>();
+            extra.put("acquisitionType", event.getAcquisitionType() != null ? event.getAcquisitionType().name() : null);
+            extra.put("subscriptionStrategy", cdk.getSubscriptionStrategy() != null ? cdk.getSubscriptionStrategy().name() : null);
+            extra.put("cdkPrice", cdk.getPrice());
+            extra.put("productOriginalPrice", originalPrice);
+            extra.put("cdkRemark", cdk.getRemark());
+            order.setExtra(extra);
 
             OrderEntity createdOrder = orderDomainService.createOrder(order);
 

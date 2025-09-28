@@ -3,8 +3,10 @@ package org.xhy.community.application.cdk.dto;
 import org.xhy.community.domain.cdk.valueobject.CDKType;
 import org.xhy.community.domain.cdk.valueobject.CDKStatus;
 import org.xhy.community.domain.cdk.valueobject.CDKAcquisitionType;
+import org.xhy.community.domain.cdk.valueobject.CDKSubscriptionStrategy;
 
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 
 public class CDKDTO {
     
@@ -20,6 +22,8 @@ public class CDKDTO {
     private LocalDateTime usedTime;
     private CDKAcquisitionType acquisitionType; // 新增
     private String remark;                      // 新增
+    private BigDecimal price;                   // 新增：覆盖价格/补差价
+    private CDKSubscriptionStrategy subscriptionStrategy; // 新增：套餐策略（升级/购买）
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
     
@@ -67,4 +71,10 @@ public class CDKDTO {
 
     public String getRemark() { return remark; }
     public void setRemark(String remark) { this.remark = remark; }
+
+    public BigDecimal getPrice() { return price; }
+    public void setPrice(BigDecimal price) { this.price = price; }
+
+    public CDKSubscriptionStrategy getSubscriptionStrategy() { return subscriptionStrategy; }
+    public void setSubscriptionStrategy(CDKSubscriptionStrategy subscriptionStrategy) { this.subscriptionStrategy = subscriptionStrategy; }
 }

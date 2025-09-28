@@ -5,8 +5,10 @@ import org.xhy.community.domain.common.entity.BaseEntity;
 import org.xhy.community.domain.cdk.valueobject.CDKType;
 import org.xhy.community.domain.cdk.valueobject.CDKStatus;
 import org.xhy.community.domain.cdk.valueobject.CDKAcquisitionType;
+import org.xhy.community.domain.cdk.valueobject.CDKSubscriptionStrategy;
 
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 
 @TableName("cdk_codes")
 public class CDKEntity extends BaseEntity {
@@ -22,6 +24,8 @@ public class CDKEntity extends BaseEntity {
     // 新增字段
     private CDKAcquisitionType acquisitionType;  // CDK获得方式
     private String remark;                       // 备注信息
+    private BigDecimal price;                    // 覆盖价格（可空）
+    private CDKSubscriptionStrategy subscriptionStrategy; // 套餐策略（仅套餐型CDK有效）
     
     public CDKEntity() {
     }
@@ -33,6 +37,7 @@ public class CDKEntity extends BaseEntity {
         this.batchId = batchId;
         this.status = CDKStatus.ACTIVE;
         this.acquisitionType = CDKAcquisitionType.PURCHASE; // 默认为购买
+        this.subscriptionStrategy = CDKSubscriptionStrategy.PURCHASE; // 套餐策略默认购买
     }
 
     public CDKEntity(String code, CDKType cdkType, String targetId, String batchId,
@@ -81,4 +86,10 @@ public class CDKEntity extends BaseEntity {
 
     public String getRemark() { return remark; }
     public void setRemark(String remark) { this.remark = remark; }
+
+    public BigDecimal getPrice() { return price; }
+    public void setPrice(BigDecimal price) { this.price = price; }
+
+    public CDKSubscriptionStrategy getSubscriptionStrategy() { return subscriptionStrategy; }
+    public void setSubscriptionStrategy(CDKSubscriptionStrategy subscriptionStrategy) { this.subscriptionStrategy = subscriptionStrategy; }
 }

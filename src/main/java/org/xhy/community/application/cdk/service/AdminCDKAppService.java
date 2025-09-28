@@ -48,7 +48,9 @@ public class AdminCDKAppService {
             request.getTargetId(),
             request.getQuantity(),
             request.getAcquisitionType(),
-            request.getRemark()
+            request.getRemark(),
+            request.getPrice(),
+            request.getSubscriptionStrategy()
         );
 
         String targetName = getTargetName(request.getCdkType(), request.getTargetId());

@@ -1,12 +1,15 @@
 package org.xhy.community.domain.order.entity;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import org.xhy.community.domain.common.entity.BaseEntity;
 import org.xhy.community.domain.cdk.valueobject.CDKType;
 import org.xhy.community.domain.order.valueobject.OrderType;
+import org.xhy.community.infrastructure.converter.MapJsonTypeHandler;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @TableName("orders")
 public class OrderEntity extends BaseEntity {
@@ -21,6 +24,8 @@ public class OrderEntity extends BaseEntity {
     private BigDecimal amount;           // 金额
     private LocalDateTime activatedTime; // CDK激活时间
     private String remark;               // 备注
+    @TableField(value = "extra", typeHandler = MapJsonTypeHandler.class)
+    private Map<String, Object> extra;   // 额外信息（JSON）
 
     public OrderEntity() {
     }
@@ -69,4 +74,7 @@ public class OrderEntity extends BaseEntity {
 
     public String getRemark() { return remark; }
     public void setRemark(String remark) { this.remark = remark; }
+
+    public Map<String, Object> getExtra() { return extra; }
+    public void setExtra(Map<String, Object> extra) { this.extra = extra; }
 }
