@@ -70,6 +70,12 @@
   - 文件：docs/deployment/后端CI-CD技术方案-GitHub-Actions-SSH-Docker.md
 - 发布可靠性与回滚策略（蓝绿/金丝雀/候选容器预检）
   - 文件：docs/deployment/发布可靠性与回滚策略-蓝绿-金丝雀-候选容器预检.md
+- Nginx/Traefik 蓝绿切流运维操作手册
+  - 文件：docs/deployment/Nginx-Traefik-蓝绿切流-运维操作手册.md
+- CI 容器级冒烟测试：复用步骤与示例
+  - 文件：docs/deployment/CI-容器级冒烟测试-复用步骤与示例.md
+- 在现有工作流中插入冒烟并分离部署（操作清单）
+  - 文件：docs/deployment/CI-在现有工作流中插入冒烟与分离部署-操作清单.md
 
 ### 可观测性（Observability）
 - Prometheus 指标接入与打点方案
