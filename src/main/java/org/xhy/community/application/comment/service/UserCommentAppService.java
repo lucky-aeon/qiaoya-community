@@ -208,6 +208,7 @@ public class UserCommentAppService {
             case POST -> maps.postTitleMap.get(businessId);
             case COURSE -> maps.courseTitleMap.get(businessId);
             case CHAPTER -> maps.chapterTitleMap.get(businessId);
+            case COMMENT, MEETING, AI_NEWS -> null;
         };
     }
 
