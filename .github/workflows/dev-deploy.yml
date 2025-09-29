@@ -170,9 +170,10 @@ jobs:
       - name: Run app container
         run: |
           docker run -d --name app -p 18520:8520 \
+            --add-host=host.docker.internal:host-gateway \
             -e SPRING_PROFILES_ACTIVE=dev \
-            -e DB_HOST=127.0.0.1 -e DB_PORT=5432 -e DB_USERNAME=postgres -e DB_PASSWORD=postgres \
-            -e REDIS_HOST=127.0.0.1 -e REDIS_PORT=6379 -e REDIS_DATABASE=0 \
+            -e DB_HOST=host.docker.internal -e DB_PORT=5432 -e DB_USERNAME=postgres -e DB_PASSWORD=postgres \
+            -e REDIS_HOST=host.docker.internal -e REDIS_PORT=6379 -e REDIS_DATABASE=0 \
             "$IMAGE_RESOLVED"
 
       - name: Wait health up
