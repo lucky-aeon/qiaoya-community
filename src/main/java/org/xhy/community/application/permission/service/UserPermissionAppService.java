@@ -1,6 +1,7 @@
 package org.xhy.community.application.permission.service;
 
 import org.springframework.stereotype.Service;
+import org.xhy.community.infrastructure.cache.PlanPermissionCache;
 import org.xhy.community.domain.subscription.entity.UserSubscriptionEntity;
 import org.xhy.community.domain.user.service.UserDomainService;
 import org.xhy.community.domain.subscription.service.SubscriptionDomainService;
@@ -19,13 +20,16 @@ public class UserPermissionAppService {
     private final UserDomainService userDomainService;
     private final SubscriptionDomainService subscriptionDomainService;
     private final SubscriptionPlanDomainService subscriptionPlanDomainService;
+    private final PlanPermissionCache planPermissionCache;
     
     public UserPermissionAppService(UserDomainService userDomainService,
                                     SubscriptionDomainService subscriptionDomainService,
-                                    SubscriptionPlanDomainService subscriptionPlanDomainService) {
+                                    SubscriptionPlanDomainService subscriptionPlanDomainService,
+                                    PlanPermissionCache planPermissionCache) {
         this.userDomainService = userDomainService;
         this.subscriptionDomainService = subscriptionDomainService;
         this.subscriptionPlanDomainService = subscriptionPlanDomainService;
+        this.planPermissionCache = planPermissionCache;
     }
     
     /**
@@ -141,7 +145,12 @@ public class UserPermissionAppService {
         if (actives == null || actives.isEmpty()) return List.of();
         java.util.LinkedHashSet<String> set = new java.util.LinkedHashSet<>();
         for (UserSubscriptionEntity sub : actives) {
-            List<String> codes = subscriptionPlanDomainService.getSubscriptionPlanPermissionCodes(sub.getSubscriptionPlanId());
+            String planId = sub.getSubscriptionPlanId();
+            List<String> codes = planPermissionCache.getPlanCodes(planId);
+            if (codes == null) {
+                codes = subscriptionPlanDomainService.getSubscriptionPlanPermissionCodes(planId);
+                planPermissionCache.cachePlanCodes(planId, codes);
+            }
             if (codes != null) set.addAll(codes);
         }
         return new java.util.ArrayList<>(set);

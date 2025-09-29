@@ -6,6 +6,7 @@ import org.xhy.community.domain.subscription.service.SubscriptionPlanDomainServi
 import org.xhy.community.interfaces.subscription.request.UpdateSubscriptionPlanPermissionsRequest;
 import org.xhy.community.application.subscription.dto.PermissionOptionDTO;
 import org.xhy.community.infrastructure.permission.PermissionCodeScanner;
+import org.xhy.community.infrastructure.cache.PlanPermissionCache;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -15,11 +16,14 @@ public class AdminSubscriptionPlanPermissionAppService {
 
     private final SubscriptionPlanDomainService subscriptionPlanDomainService;
     private final PermissionCodeScanner permissionCodeScanner;
+    private final PlanPermissionCache planPermissionCache;
 
     public AdminSubscriptionPlanPermissionAppService(SubscriptionPlanDomainService subscriptionPlanDomainService,
-                                                     PermissionCodeScanner permissionCodeScanner) {
+                                                     PermissionCodeScanner permissionCodeScanner,
+                                                     PlanPermissionCache planPermissionCache) {
         this.subscriptionPlanDomainService = subscriptionPlanDomainService;
         this.permissionCodeScanner = permissionCodeScanner;
+        this.planPermissionCache = planPermissionCache;
     }
 
     public List<String> getSubscriptionPlanPermissionCodes(String planId) {
@@ -34,6 +38,8 @@ public class AdminSubscriptionPlanPermissionAppService {
                 .distinct()
                 .collect(Collectors.toList());
         subscriptionPlanDomainService.syncSubscriptionPlanPermissions(planId, normalized);
+        // 主动失效套餐权限码缓存
+        planPermissionCache.evictPlanCodes(planId);
     }
 
     public List<PermissionOptionDTO> getPermissionOptions() {
