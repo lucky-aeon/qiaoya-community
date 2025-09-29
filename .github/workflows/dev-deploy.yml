@@ -204,14 +204,34 @@ jobs:
     name: Deploy (dev)
     runs-on: ubuntu-latest
     needs: [ build-and-push, smoke-test ]
+    env:
+      CN_IMAGE: ${{ secrets.CN_IMAGE }}
+      REGISTRY: ghcr.io
+      IMAGE_NAME: ${{ github.repository }}
+      TAG_SHA: dev-${{ github.sha }}
     steps:
+      - name: Resolve image tag for deploy
+        env:
+          IMAGE_FROM_BUILD: ${{ needs.build-and-push.outputs.image }}
+        run: |
+          set -e
+          IMAGE="$IMAGE_FROM_BUILD"
+          if [ -z "$IMAGE" ]; then
+            if [ -n "$CN_IMAGE" ]; then
+              IMAGE="$CN_IMAGE:$TAG_SHA"
+            else
+              IMAGE="$REGISTRY/$IMAGE_NAME:$TAG_SHA"
+            fi
+          fi
+          echo "Using deploy image: $IMAGE"
+          echo "IMAGE_RESOLVED=$IMAGE" >> $GITHUB_ENV
       - name: Deploy via SSH (dev)
         uses: appleboy/ssh-action@v1.0.3
         env:
           GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
           GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
           SCRIPT_PATH: ${{ secrets.DEPLOY_SCRIPT_PATH }}
-          IMAGE: ${{ needs.build-and-push.outputs.image }}
+          IMAGE: ${{ env.IMAGE_RESOLVED }}
           PROFILE: dev
           PORT: 8520
           CONTAINER_NAME: qiaoya-community-backend
