@@ -108,11 +108,15 @@ public class DeviceSessionDomainService {
         });
     }
 
+
+
     /**
-     * 检查IP是否活跃（纯读操作，无锁）
-     * 同时进行懒清理：过滤掉已过期的IP
+     * 检查IP是否活跃（纯读操作，无锁），按传入TTL判定过期
+     * @param userId 用户ID
+     * @param ip     IP地址
+     * @param sessionTtlMs 会话TTL（毫秒）
      */
-    public boolean isIpActive(String userId, String ip) {
+    public boolean isIpActive(String userId, String ip, long sessionTtlMs) {
         if (Boolean.TRUE.equals(redis.hasKey(keyBan(userId)))) {
             return false;
         }
@@ -124,10 +128,8 @@ public class DeviceSessionDomainService {
             return false;
         }
 
-        // 懒清理：检查该IP是否已过期（30天TTL）
+        // 懒清理：检查该IP是否已过期（按配置TTL）
         long now = System.currentTimeMillis();
-        long sessionTtlMs = Duration.ofDays(30).toMillis();
-
         if (score < now - sessionTtlMs) {
             // IP已过期，异步移除（避免阻塞当前请求）
             redis.opsForZSet().remove(activeKey, ip);

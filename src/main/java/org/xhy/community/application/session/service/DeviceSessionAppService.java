@@ -4,6 +4,7 @@ import org.springframework.stereotype.Service;
 import org.xhy.community.application.session.assembler.DeviceSessionAssembler;
 import org.xhy.community.application.session.dto.ActiveSessionDTO;
 import org.xhy.community.domain.session.service.DeviceSessionDomainService;
+import org.xhy.community.domain.config.service.UserSessionConfigService;
 import org.xhy.community.domain.session.valueobject.ActiveIpInfo;
 import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.infrastructure.exception.UserErrorCode;
@@ -17,9 +18,12 @@ import java.util.List;
 public class DeviceSessionAppService {
 
     private final DeviceSessionDomainService deviceSessionDomainService;
+    private final UserSessionConfigService userSessionConfigService;
 
-    public DeviceSessionAppService(DeviceSessionDomainService deviceSessionDomainService) {
+    public DeviceSessionAppService(DeviceSessionDomainService deviceSessionDomainService,
+                                   UserSessionConfigService userSessionConfigService) {
         this.deviceSessionDomainService = deviceSessionDomainService;
+        this.userSessionConfigService = userSessionConfigService;
     }
 
     /**
@@ -48,9 +52,9 @@ public class DeviceSessionAppService {
 
     /**
      * 校验指定用户在给定IP上的会话是否被允许（是否活跃）
-     * 供接口层拦截器调用，避免直接依赖领域服务。
      */
     public boolean isIpAllowed(String userId, String ip) {
-        return deviceSessionDomainService.isIpActive(userId, ip);
+        long ttlMs = userSessionConfigService.getUserSessionConfig().getTtl().toMillis();
+        return deviceSessionDomainService.isIpActive(userId, ip, ttlMs);
     }
 }

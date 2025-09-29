@@ -17,7 +17,8 @@
       "Bash(mkdir:*)",
       "Read(//Users/xhy/GoLandProjects/community/cmd/community/routers/frontend/**)",
       "Read(//Users/xhy/IdeaProjects/qiaoya-community/qiaoya-community-frontend/public/avatars/**)",
-      "Bash(git restore:*)"
+      "Bash(git restore:*)",
+      "Bash(tree:*)"
     ],
     "deny": [],
     "ask": []

@@ -87,11 +87,12 @@ public class JwtUtil {
      * 从token中获取Claims
      */
     private Claims getClaimsFromToken(String token) {
+        // 兼容 jjwt 0.12.x：使用 verifyWith(..).build().parseSignedClaims(..).getPayload()
         return Jwts.parser()
-                .setSigningKey(secretKey)
+                .verifyWith(secretKey)
                 .build()
-                .parseClaimsJws(token)
-                .getBody();
+                .parseSignedClaims(token)
+                .getPayload();
     }
     
     /**
