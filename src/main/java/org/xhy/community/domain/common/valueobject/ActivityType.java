@@ -341,7 +341,17 @@ public enum ActivityType {
     /**
      * 管理员解绑第三方账号失败
      */
-    ADMIN_OAUTH_UNBIND_FAILED("管理员解绑第三方账号失败");
+    ADMIN_OAUTH_UNBIND_FAILED("管理员解绑第三方账号失败"),
+
+    // ==================== 表情管理 ====================
+    /** 管理员创建表情类型 */
+    ADMIN_EXPRESSION_CREATE("管理员创建表情类型"),
+    /** 管理员更新表情类型 */
+    ADMIN_EXPRESSION_UPDATE("管理员更新表情类型"),
+    /** 管理员删除表情类型 */
+    ADMIN_EXPRESSION_DELETE("管理员删除表情类型"),
+    /** 管理员切换表情类型状态 */
+    ADMIN_EXPRESSION_TOGGLE("管理员切换表情类型状态");
     
     private final String description;
     
@@ -437,6 +447,10 @@ public enum ActivityType {
             case ADMIN_CDK_DELETE:
             case ADMIN_OAUTH_UNBIND:
             case ADMIN_OAUTH_UNBIND_FAILED:
+            case ADMIN_EXPRESSION_CREATE:
+            case ADMIN_EXPRESSION_UPDATE:
+            case ADMIN_EXPRESSION_DELETE:
+            case ADMIN_EXPRESSION_TOGGLE:
                 return ActivityCategory.ADMINISTRATION;
                 
             default:
