@@ -14,6 +14,7 @@
 ## 目录索引
 
 ### 架构与规范（横切）
+- 后端架构总览（推广/总览）：docs/architecture.md
 - DDD 分层规范：当前在项目说明与团队约定中维护（后续可沉淀到 docs/architecture/ddd-guidelines.md）
 
 ### 课程（Course）
@@ -66,14 +67,16 @@
   - 文件：docs/security/基于IP的登录设备限制技术方案.md
 
 ### 运维（Ops）
-- CI/CD（GitHub Actions + SSH + Docker）
+ - CI/CD（GitHub Actions + SSH + Docker）
   - 文件：docs/deployment/后端CI-CD技术方案-GitHub-Actions-SSH-Docker.md
-- 发布可靠性与回滚策略（蓝绿/金丝雀/候选容器预检）
+ - 发布可靠性与回滚策略（蓝绿/金丝雀/候选容器预检）
   - 文件：docs/deployment/发布可靠性与回滚策略-蓝绿-金丝雀-候选容器预检.md
-- Nginx/Traefik 蓝绿切流运维操作手册
+ - Nginx/Traefik 蓝绿切流运维操作手册
   - 文件：docs/deployment/Nginx-Traefik-蓝绿切流-运维操作手册.md
-- CI 容器级冒烟测试：复用步骤与示例
+ - CI 容器级冒烟测试：复用步骤与示例
   - 文件：docs/deployment/CI-容器级冒烟测试-复用步骤与示例.md
+ - CI 构建提速方案（国内仓库 + 缓存 + 自托管 Runner）
+  - 文件：docs/deployment/CI构建提速方案-国内仓库与自托管Runner.md
 - 在现有工作流中插入冒烟并分离部署（操作清单）
   - 文件：docs/deployment/CI-在现有工作流中插入冒烟与分离部署-操作清单.md
 
