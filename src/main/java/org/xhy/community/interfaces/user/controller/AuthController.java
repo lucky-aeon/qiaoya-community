@@ -15,6 +15,7 @@ import org.xhy.community.interfaces.user.request.SendEmailCodeRequest;
 import org.xhy.community.interfaces.user.request.SendPasswordResetCodeRequest;
 import org.xhy.community.interfaces.user.request.ResetPasswordRequest;
 import org.xhy.community.infrastructure.annotation.LogUserActivity;
+import org.xhy.community.infrastructure.annotation.ActivityLog;
 import org.xhy.community.domain.common.valueobject.ActivityType;
 
 import java.util.HashMap;
@@ -119,5 +120,31 @@ public class AuthController {
     public ApiResponse<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         userAppService.resetPassword(request.getEmail(), request.getVerificationCode(), request.getNewPassword());
         return ApiResponse.success("密码重置成功");
+    }
+
+    /**
+     * 退出登录（当前设备）
+     * - 将当前token加入黑名单（剩余TTL）
+     * - 移除token与IP映射
+     * - 从活跃设备集合移除当前IP
+     * - 幂等：无论token是否有效，都返回成功
+     */
+    @PostMapping("/logout")
+    @ActivityLog(ActivityType.LOGOUT)
+    public ApiResponse<HashMap<String, Object>> logout(HttpServletRequest httpRequest) {
+        String authorization = httpRequest.getHeader("Authorization");
+        String ip = ClientIpUtil.getClientIp(httpRequest);
+
+        if (authorization != null && authorization.startsWith("Bearer ")) {
+            String token = authorization.substring(7);
+            if (jwtUtil.validateToken(token)) {
+                String userId = jwtUtil.getUserIdFromToken(token);
+                userAppService.logout(userId, token, ip);
+            }
+        }
+
+        HashMap<String, Object> data = new HashMap<>();
+        data.put("message", "退出成功");
+        return ApiResponse.success("退出成功", data);
     }
 }

@@ -15,6 +15,7 @@ import org.xhy.community.domain.user.service.UserDomainService;
 import org.xhy.community.infrastructure.config.JwtUtil;
 import org.xhy.community.domain.session.service.DeviceSessionDomainService;
 import org.xhy.community.domain.session.service.TokenIpMappingDomainService;
+import org.xhy.community.domain.session.service.TokenBlacklistDomainService;
 import org.xhy.community.domain.config.service.UserSessionConfigService;
 import org.xhy.community.domain.config.valueobject.UserSessionConfig;
 import org.xhy.community.domain.subscription.service.SubscriptionDomainService;
@@ -38,6 +39,7 @@ public class UserAppService {
     private final DeviceSessionDomainService deviceSessionDomainService;
     private final UserSessionConfigService userSessionConfigService;
     private final TokenIpMappingDomainService tokenIpMappingDomainService;
+    private final TokenBlacklistDomainService tokenBlacklistDomainService;
     private final SubscriptionDomainService subscriptionDomainService;
     private final SubscriptionPlanDomainService subscriptionPlanDomainService;
     private final EmailVerificationDomainService emailVerificationDomainService;
@@ -50,6 +52,7 @@ public class UserAppService {
                           DeviceSessionDomainService deviceSessionDomainService,
                           UserSessionConfigService userSessionConfigService,
                           TokenIpMappingDomainService tokenIpMappingDomainService,
+                          TokenBlacklistDomainService tokenBlacklistDomainService,
                           SubscriptionDomainService subscriptionDomainService,
                           SubscriptionPlanDomainService subscriptionPlanDomainService,
                           EmailVerificationDomainService emailVerificationDomainService,
@@ -61,6 +64,7 @@ public class UserAppService {
         this.deviceSessionDomainService = deviceSessionDomainService;
         this.userSessionConfigService = userSessionConfigService;
         this.tokenIpMappingDomainService = tokenIpMappingDomainService;
+        this.tokenBlacklistDomainService = tokenBlacklistDomainService;
         this.subscriptionDomainService = subscriptionDomainService;
         this.subscriptionPlanDomainService = subscriptionPlanDomainService;
         this.emailVerificationDomainService = emailVerificationDomainService;
@@ -256,5 +260,35 @@ public class UserAppService {
     public UserStatsDTO getUserStats() {
         long totalCount = userDomainService.getTotalUserCount();
         return new UserStatsDTO(totalCount);
+    }
+
+    /**
+     * 用户退出当前设备
+     * 说明：
+     * - 将当前JWT加入黑名单（TTL=剩余有效期）
+     * - 移除token与IP映射
+     * - 从活跃设备集合中移除当前IP
+     * - 幂等：异常或无效token不抛出业务异常
+     */
+    public void logout(String userId, String token, String ip) {
+        try {
+            if (token != null && !token.isBlank()) {
+                long remainingMs = jwtUtil.getRemainingTime(token);
+                if (remainingMs > 0) {
+                    tokenBlacklistDomainService.addToBlacklist(token, java.time.Duration.ofMillis(remainingMs));
+                }
+            }
+
+            if (userId != null && !userId.isBlank()) {
+                if (token != null && !token.isBlank()) {
+                    tokenIpMappingDomainService.removeSpecificToken(userId, token);
+                }
+                if (ip != null && !ip.isBlank()) {
+                    deviceSessionDomainService.removeActiveIp(userId, ip);
+                }
+            }
+        } catch (Exception ignored) {
+            // 幂等与安全：任何异常均不影响前端登出流程
+        }
     }
 }

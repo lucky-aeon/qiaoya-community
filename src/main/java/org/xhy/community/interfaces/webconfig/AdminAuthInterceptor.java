@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.xhy.community.application.user.service.UserAppService;
+import org.xhy.community.application.session.service.TokenBlacklistAppService;
 import org.xhy.community.infrastructure.config.JwtUtil;
 import org.xhy.community.infrastructure.config.UserContext;
 import org.xhy.community.infrastructure.exception.BusinessException;
@@ -20,10 +21,12 @@ public class AdminAuthInterceptor implements HandlerInterceptor {
 
     private final JwtUtil jwtUtil;
     private final UserAppService userAppService;
+    private final TokenBlacklistAppService tokenBlacklistAppService;
 
-    public AdminAuthInterceptor(JwtUtil jwtUtil, UserAppService userAppService) {
+    public AdminAuthInterceptor(JwtUtil jwtUtil, UserAppService userAppService, TokenBlacklistAppService tokenBlacklistAppService) {
         this.jwtUtil = jwtUtil;
         this.userAppService = userAppService;
+        this.tokenBlacklistAppService = tokenBlacklistAppService;
     }
 
     @Override
@@ -61,6 +64,13 @@ public class AdminAuthInterceptor implements HandlerInterceptor {
         String authorization = request.getHeader("Authorization");
         if (StringUtils.hasText(authorization) && authorization.startsWith("Bearer ")) {
             String token = authorization.substring(7);
+
+            // 黑名单校验：被登出的token不可访问任何管理员接口
+            if (tokenBlacklistAppService.isBlacklisted(token)) {
+                log.warn("管理员接口访问拦截：Token在黑名单中");
+                return null;
+            }
+
             return parseUserIdFromToken(token);
         }
         return null;
