@@ -6,7 +6,7 @@ BEGIN
         WHERE table_schema = current_schema() AND table_name = 'subscription_plan_menus'
     ) THEN
         -- 创建表（与旧版本结构一致，包含 deleted 字段；后续迁移会移除此列）
-        EXECUTE $$
+        EXECUTE $DDL$
         CREATE TABLE subscription_plan_menus (
             id VARCHAR(36) PRIMARY KEY,
             subscription_plan_id VARCHAR(36) NOT NULL,
@@ -15,15 +15,15 @@ BEGIN
             update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             deleted BOOLEAN DEFAULT FALSE
         )
-        $$;
+        $DDL$;
 
         -- 表与列注释
-        EXECUTE $$ COMMENT ON TABLE subscription_plan_menus IS '套餐-菜单关联表，定义套餐可访问哪些菜单（预留功能）' $$;
-        EXECUTE $$ COMMENT ON COLUMN subscription_plan_menus.subscription_plan_id IS '套餐ID' $$;
-        EXECUTE $$ COMMENT ON COLUMN subscription_plan_menus.menu_id IS '菜单ID（作为菜单码使用）' $$;
-        EXECUTE $$ COMMENT ON COLUMN subscription_plan_menus.create_time IS '创建时间' $$;
-        EXECUTE $$ COMMENT ON COLUMN subscription_plan_menus.update_time IS '更新时间' $$;
-        EXECUTE $$ COMMENT ON COLUMN subscription_plan_menus.deleted IS '逻辑删除标记' $$;
+        EXECUTE $DDL$ COMMENT ON TABLE subscription_plan_menus IS '套餐-菜单关联表，定义套餐可访问哪些菜单（预留功能）' $DDL$;
+        EXECUTE $DDL$ COMMENT ON COLUMN subscription_plan_menus.subscription_plan_id IS '套餐ID' $DDL$;
+        EXECUTE $DDL$ COMMENT ON COLUMN subscription_plan_menus.menu_id IS '菜单ID（作为菜单码使用）' $DDL$;
+        EXECUTE $DDL$ COMMENT ON COLUMN subscription_plan_menus.create_time IS '创建时间' $DDL$;
+        EXECUTE $DDL$ COMMENT ON COLUMN subscription_plan_menus.update_time IS '更新时间' $DDL$;
+        EXECUTE $DDL$ COMMENT ON COLUMN subscription_plan_menus.deleted IS '逻辑删除标记' $DDL$;
     END IF;
 
     -- 创建唯一索引（若不存在）
