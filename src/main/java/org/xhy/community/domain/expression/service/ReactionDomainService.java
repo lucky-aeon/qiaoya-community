@@ -57,20 +57,17 @@ public class ReactionDomainService {
         }
     }
 
-    /** 聚合：单业务对象的各表情计数 reactionType -> count */
+    /** 聚合：单业务对象的各表情计数 reactionType -> count（避免 selectMaps 触发全局 Map 类型处理器） */
     public Map<String, Integer> getCounts(BusinessType businessType, String businessId) {
-        QueryWrapper<ReactionEntity> qw = new QueryWrapper<>();
-        qw.select("reaction_type as reactionType", "count(*) as cnt")
-                .eq("business_type", businessType.name())
-                .eq("business_id", businessId)
-                .groupBy("reaction_type");
-        List<Map<String, Object>> rows = reactionRepository.selectMaps(qw);
+        List<ReactionEntity> list = reactionRepository.selectList(new LambdaQueryWrapper<ReactionEntity>()
+                .eq(ReactionEntity::getBusinessType, businessType)
+                .eq(ReactionEntity::getBusinessId, businessId)
+                .select(ReactionEntity::getReactionType));
         Map<String, Integer> result = new HashMap<>();
-        for (Map<String, Object> row : rows) {
-            String type = Objects.toString(row.get("reactionType"), null);
-            Number cntNum = (Number) row.get("cnt");
-            int cnt = cntNum != null ? cntNum.intValue() : 0;
-            result.put(type, cnt);
+        for (ReactionEntity r : list) {
+            String type = r.getReactionType();
+            if (type == null) continue;
+            result.merge(type, 1, Integer::sum);
         }
         return result;
     }
@@ -100,19 +97,16 @@ public class ReactionDomainService {
     /** 批量聚合：businessId -> (reactionType -> count) */
     public Map<String, Map<String, Integer>> getCountsBatch(BusinessType businessType, List<String> businessIds) {
         if (CollectionUtils.isEmpty(businessIds)) return Collections.emptyMap();
-        QueryWrapper<ReactionEntity> qw = new QueryWrapper<>();
-        qw.select("business_id as businessId", "reaction_type as reactionType", "count(*) as cnt")
-                .eq("business_type", businessType.name())
-                .in("business_id", businessIds)
-                .groupBy("business_id", "reaction_type");
-        List<Map<String, Object>> rows = reactionRepository.selectMaps(qw);
+        List<ReactionEntity> list = reactionRepository.selectList(new LambdaQueryWrapper<ReactionEntity>()
+                .eq(ReactionEntity::getBusinessType, businessType)
+                .in(ReactionEntity::getBusinessId, businessIds)
+                .select(ReactionEntity::getBusinessId, ReactionEntity::getReactionType));
         Map<String, Map<String, Integer>> res = new HashMap<>();
-        for (Map<String, Object> row : rows) {
-            String bid = Objects.toString(row.get("businessId"));
-            String type = Objects.toString(row.get("reactionType"));
-            Number cntNum = (Number) row.get("cnt");
-            int cnt = cntNum != null ? cntNum.intValue() : 0;
-            res.computeIfAbsent(bid, k -> new HashMap<>()).put(type, cnt);
+        for (ReactionEntity r : list) {
+            String bid = r.getBusinessId();
+            String type = r.getReactionType();
+            if (bid == null || type == null) continue;
+            res.computeIfAbsent(bid, k -> new HashMap<>()).merge(type, 1, Integer::sum);
         }
         return res;
     }

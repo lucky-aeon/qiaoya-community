@@ -31,7 +31,7 @@ public class ReactionController {
         boolean added = reactionAppService.toggle(request, userId);
         Map<String, Object> data = new HashMap<>();
         data.put("added", added);
-        return ApiResponse.success(data);
+        return ApiResponse.success("添加成功",data);
     }
 
     /** 获取单个业务对象的表情统计 */
