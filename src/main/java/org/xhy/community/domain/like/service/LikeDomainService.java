@@ -29,42 +29,34 @@ public class LikeDomainService {
     }
 
     /**
-     * 切换点赞状态（Toggle）
+     * 切换点赞状态（Toggle，物理写入/删除）
      * 未点赞 -> 点赞（插入）
-     * 已点赞 -> 取消（软删除）
+     * 已点赞 -> 取消（物理删除）
      */
     public boolean toggleLike(String userId, String targetId, LikeTargetType targetType) {
-        // 1. 查询是否存在点赞记录（包含已软删除的）
         LambdaQueryWrapper<LikeEntity> queryWrapper = new LambdaQueryWrapper<LikeEntity>()
                 .eq(LikeEntity::getUserId, userId)
                 .eq(LikeEntity::getTargetId, targetId)
                 .eq(LikeEntity::getTargetType, targetType)
                 .last("LIMIT 1");
 
-        LikeEntity existingLike = likeRepository.selectOne(queryWrapper, false); // 查询包含已删除的记录
-
+        LikeEntity existingLike = likeRepository.selectOne(queryWrapper);
         if (existingLike == null) {
-            // 2. 不存在 -> 创建新点赞（并发兜底）
             try {
                 LikeEntity like = new LikeEntity(userId, targetId, targetType);
                 likeRepository.insert(like);
-                return true; // 返回true表示点赞成功
+                return true; // 点赞成功
             } catch (DataIntegrityViolationException e) {
-                // 并发情况下可能出现唯一约束冲突
+                // 唯一约束冲突视为已经点赞
                 throw new BusinessException(LikeErrorCode.ALREADY_LIKED);
             }
         } else {
-            // 3. 已存在 -> 判断是否已删除
-            if (existingLike.getDeletedAt() == null) {
-                // 未删除 -> 软删除（取消点赞）
-                likeRepository.deleteById(existingLike.getId());
-                return false; // 返回false表示取消点赞
-            } else {
-                // 已删除 -> 恢复记录（重新点赞）
-                existingLike.setDeletedAt(null);
-                likeRepository.updateById(existingLike);
-                return true; // 返回true表示重新点赞
-            }
+            // 已点赞 -> 取消（物理删除）
+            likeRepository.delete(new LambdaQueryWrapper<LikeEntity>()
+                    .eq(LikeEntity::getUserId, userId)
+                    .eq(LikeEntity::getTargetId, targetId)
+                    .eq(LikeEntity::getTargetType, targetType));
+            return false;
         }
     }
 
@@ -93,15 +85,13 @@ public class LikeDomainService {
 
         // 构建查询条件
         LambdaQueryWrapper<LikeEntity> queryWrapper = new LambdaQueryWrapper<LikeEntity>()
-                .eq(LikeEntity::getUserId, userId);
-
-        // 添加OR条件：(targetId = ? AND targetType = ?) OR (targetId = ? AND targetType = ?)
-        queryWrapper.and(wrapper -> {
-            for (Map.Entry<String, LikeTargetType> entry : targets.entrySet()) {
-                wrapper.or(w -> w.eq(LikeEntity::getTargetId, entry.getKey())
-                        .eq(LikeEntity::getTargetType, entry.getValue()));
-            }
-        });
+                .eq(LikeEntity::getUserId, userId)
+                .and(wrapper -> {
+                    for (Map.Entry<String, LikeTargetType> entry : targets.entrySet()) {
+                        wrapper.or(w -> w.eq(LikeEntity::getTargetId, entry.getKey())
+                                .eq(LikeEntity::getTargetType, entry.getValue()));
+                    }
+                });
 
         List<LikeEntity> likes = likeRepository.selectList(queryWrapper);
 
@@ -141,7 +131,7 @@ public class LikeDomainService {
             return new HashMap<>();
         }
 
-        // 分组查询：按targetType和targetId分组统计
+        // 按目标集合查询
         LambdaQueryWrapper<LikeEntity> queryWrapper = new LambdaQueryWrapper<LikeEntity>()
                 .and(wrapper -> {
                     for (Map.Entry<String, LikeTargetType> entry : targets.entrySet()) {
