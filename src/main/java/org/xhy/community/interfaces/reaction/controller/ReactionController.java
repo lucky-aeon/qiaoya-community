@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.*;
 import org.xhy.community.application.reaction.dto.ReactionSummaryDTO;
 import org.xhy.community.application.reaction.service.ReactionAppService;
 import org.xhy.community.infrastructure.config.ApiResponse;
+import org.xhy.community.infrastructure.annotation.RequiresPlanPermissions;
 import org.xhy.community.infrastructure.config.UserContext;
 import org.xhy.community.interfaces.reaction.request.ToggleReactionRequest;
 
@@ -24,6 +25,7 @@ public class ReactionController {
 
     /** 切换通用表情回复状态（需要登录） */
     @PostMapping("/toggle")
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "REACTION_TOGGLE", name = "切换表情回复")})
     public ApiResponse<Map<String, Object>> toggle(@Valid @RequestBody ToggleReactionRequest request) {
         String userId = UserContext.getCurrentUserId();
         boolean added = reactionAppService.toggle(request, userId);
@@ -34,6 +36,7 @@ public class ReactionController {
 
     /** 获取单个业务对象的表情统计 */
     @GetMapping("/{businessType}/{businessId}")
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "REACTION_SUMMARY", name = "获取表情统计")})
     public ApiResponse<List<ReactionSummaryDTO>> getSummary(@PathVariable String businessType,
                                                             @PathVariable String businessId) {
         String currentUserId = UserContext.hasCurrentUser() ? UserContext.getCurrentUserId() : null;
@@ -43,6 +46,7 @@ public class ReactionController {
 
     /** 批量获取多个业务对象的表情统计 */
     @GetMapping("/{businessType}/batch")
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "REACTION_SUMMARY_BATCH", name = "批量表情统计")})
     public ApiResponse<Map<String, List<ReactionSummaryDTO>>> getSummaryBatch(@PathVariable String businessType,
                                                                               @RequestParam("businessIds") String businessIdsCsv) {
         if (!StringUtils.hasText(businessIdsCsv)) {
@@ -57,4 +61,3 @@ public class ReactionController {
         return ApiResponse.success(map);
     }
 }
-
