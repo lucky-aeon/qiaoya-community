@@ -23,14 +23,14 @@ public class ExpressionController {
         this.expressionAppService = expressionAppService;
     }
 
-    /** 获取 Markdown 别名映射（需登录） */
+    /** 获取 Markdown 别名映射） */
     @GetMapping("/alias-map")
     public ApiResponse<Map<String, String>> getAliasMap() {
         Map<String, String> map = expressionAppService.getAliasMap();
         return ApiResponse.success(map);
     }
 
-    /** 获取启用的表情列表（需登录） */
+    /** 获取启用的表情列表 */
     @GetMapping
     public ApiResponse<List<ExpressionDTO>> listEnabled() {
         List<ExpressionDTO> list = expressionAppService.listEnabled();
