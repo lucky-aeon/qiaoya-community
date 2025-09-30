@@ -65,6 +65,37 @@ public class AibaseIngestAppService {
         return new IngestResult(start, items.size(), inserted);
     }
 
+    /**
+     * 手动触发（带条数限制）
+     * @param maxCount 最多抓取条数（<=0 表示不限）
+     */
+    public IngestResult ingestLatest(int maxCount) {
+        Long maxId = dailyItemDomainService.getMaxSourceItemId(DailySource.AIBASE);
+        long start = (maxId == null ? DEFAULT_START_ID : maxId) + 1;
+        log.info("[AIBase] start incremental crawling with limit: id={}, maxCount={}", start, maxCount);
+
+        List<CrawledItem> items = aibaseCrawlerClient.crawlIncremental(start, MAX_CONSECUTIVE_404, MAX_RETRIES, INTERVAL_MILLIS, maxCount);
+        List<DailyItemEntity> entities = new ArrayList<>();
+        for (CrawledItem i : items) {
+            DailyItemEntity e = new DailyItemEntity();
+            e.setSource(DailySource.AIBASE);
+            e.setSourceItemId(i.getSourceItemId());
+            e.setTitle(i.getTitle());
+            e.setContent(i.getContentHtml());
+            e.setSummary(i.getSummary());
+            e.setUrl(i.getUrl());
+            e.setPublishedAt(i.getPublishedAt());
+            e.setFetchedAt(java.time.LocalDateTime.now());
+            e.setStatus(DailyItemStatus.PUBLISHED);
+            e.setUrlHash(md5Hex(i.getUrl()));
+            e.setMetadata(i.getMetadata());
+            entities.add(e);
+        }
+
+        int inserted = dailyItemDomainService.upsertItems(entities);
+        return new IngestResult(start, items.size(), inserted);
+    }
+
     private String md5Hex(String input) {
         try {
             MessageDigest md = MessageDigest.getInstance("MD5");
