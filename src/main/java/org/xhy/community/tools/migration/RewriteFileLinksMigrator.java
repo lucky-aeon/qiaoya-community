@@ -36,7 +36,7 @@ public class RewriteFileLinksMigrator {
             System.out.println("[RewriteFileLinksMigrator] fileKey mappings: " + fk2id.size());
 
             rewritePosts(pg, fk2id);
-            rewriteUsers(pg, fk2id);
+//            rewriteUsers(pg, fk2id);
 
             pg.commit();
         }
