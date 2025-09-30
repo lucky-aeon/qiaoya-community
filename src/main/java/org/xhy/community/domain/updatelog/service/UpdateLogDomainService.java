@@ -114,14 +114,19 @@ public class UpdateLogDomainService {
      * 创建更新日志聚合（原子操作）
      * 同时创建日志主体和变更详情
      */
+    @Transactional
     public UpdateLogEntity createUpdateLogAggregate(UpdateLogEntity updateLog, List<UpdateLogChangeEntity> changes) {
         // 校验版本号唯一性
         if (isVersionExists(updateLog.getVersion(), null)) {
             throw new BusinessException(ValidationErrorCode.PARAM_INVALID, "版本号已存在");
         }
 
-        // 创建更新日志主体
-        updateLogRepository.insert(updateLog);
+        // 创建更新日志主体（并发兜底：版本唯一约束）
+        try {
+            updateLogRepository.insert(updateLog);
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            throw new BusinessException(ValidationErrorCode.PARAM_INVALID, "版本号已存在");
+        }
 
         // 批量创建变更详情
         if (!CollectionUtils.isEmpty(changes)) {
@@ -147,6 +152,7 @@ public class UpdateLogDomainService {
      * 更新更新日志聚合（全量替换）
      * 先删除原有变更详情，再插入新的变更详情
      */
+    @Transactional
     public UpdateLogEntity updateUpdateLogAggregate(UpdateLogEntity updateLog, List<UpdateLogChangeEntity> changes) {
         // 校验版本号唯一性（排除当前记录）
         if (isVersionExists(updateLog.getVersion(), updateLog.getId())) {
@@ -174,6 +180,7 @@ public class UpdateLogDomainService {
      * 删除更新日志聚合（级联删除）
      * 同时删除日志主体和所有变更详情
      */
+    @Transactional
     public void deleteUpdateLogAggregate(String updateLogId) {
         UpdateLogEntity updateLog = getUpdateLogById(updateLogId);
         if (updateLog == null) {

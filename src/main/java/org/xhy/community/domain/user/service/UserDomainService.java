@@ -51,15 +51,24 @@ public class UserDomainService {
     public UserEntity createUser(String name, String email, String password) {
         String encryptedPassword = encryptPassword(password);
         UserEntity user = new UserEntity(name, email.trim().toLowerCase(), encryptedPassword);
-        userRepository.insert(user);
-        return user;
+        try {
+            userRepository.insert(user);
+            return user;
+        } catch (DataIntegrityViolationException e) {
+            // 并发注册场景下邮箱唯一约束冲突，转为业务异常
+            throw new BusinessException(UserErrorCode.EMAIL_EXISTS);
+        }
     }
 
     public UserEntity createUser(String name, String email, String password, String avatar) {
         String encryptedPassword = encryptPassword(password);
         UserEntity user = new UserEntity(name, email.trim().toLowerCase(), encryptedPassword, avatar);
-        userRepository.insert(user);
-        return user;
+        try {
+            userRepository.insert(user);
+            return user;
+        } catch (DataIntegrityViolationException e) {
+            throw new BusinessException(UserErrorCode.EMAIL_EXISTS);
+        }
     }
 
 
@@ -107,8 +116,13 @@ public class UserDomainService {
     public UserEntity changeUserEmail(String userId, String newEmail) {
         UserEntity user = getUserById(userId);
         user.changeEmail(newEmail.trim().toLowerCase());
-        userRepository.updateById(user);
-        return user;
+        try {
+            userRepository.updateById(user);
+            return user;
+        } catch (DataIntegrityViolationException e) {
+            // 邮箱唯一约束冲突
+            throw new BusinessException(UserErrorCode.EMAIL_EXISTS);
+        }
     }
 
     public UserEntity changeUserPassword(String userId, String oldPassword, String newPassword) {
