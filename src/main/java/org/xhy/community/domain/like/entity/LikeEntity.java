@@ -1,13 +1,26 @@
 package org.xhy.community.domain.like.entity;
 
+import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import org.xhy.community.domain.common.entity.BaseEntity;
 import org.xhy.community.domain.like.valueobject.LikeTargetType;
 import org.xhy.community.infrastructure.converter.LikeTargetTypeConverter;
 
+import java.time.LocalDateTime;
+
 @TableName("likes")
-public class LikeEntity extends BaseEntity {
+public class LikeEntity {
+
+    @TableId(type = IdType.ASSIGN_UUID)
+    private String id;
+
+    @TableField(fill = FieldFill.INSERT)
+    private LocalDateTime createTime;
+
+    @TableField(fill = FieldFill.INSERT_UPDATE)
+    private LocalDateTime updateTime;
 
     /** 点赞用户ID */
     private String userId;
@@ -28,28 +41,21 @@ public class LikeEntity extends BaseEntity {
         this.targetType = targetType;
     }
 
-    // Getters and Setters
-    public String getUserId() {
-        return userId;
-    }
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
 
-    public void setUserId(String userId) {
-        this.userId = userId;
-    }
+    public LocalDateTime getCreateTime() { return createTime; }
+    public void setCreateTime(LocalDateTime createTime) { this.createTime = createTime; }
 
-    public String getTargetId() {
-        return targetId;
-    }
+    public LocalDateTime getUpdateTime() { return updateTime; }
+    public void setUpdateTime(LocalDateTime updateTime) { this.updateTime = updateTime; }
 
-    public void setTargetId(String targetId) {
-        this.targetId = targetId;
-    }
+    public String getUserId() { return userId; }
+    public void setUserId(String userId) { this.userId = userId; }
 
-    public LikeTargetType getTargetType() {
-        return targetType;
-    }
+    public String getTargetId() { return targetId; }
+    public void setTargetId(String targetId) { this.targetId = targetId; }
 
-    public void setTargetType(LikeTargetType targetType) {
-        this.targetType = targetType;
-    }
+    public LikeTargetType getTargetType() { return targetType; }
+    public void setTargetType(LikeTargetType targetType) { this.targetType = targetType; }
 }
