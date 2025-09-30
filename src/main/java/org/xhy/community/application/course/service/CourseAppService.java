@@ -22,6 +22,9 @@ import org.xhy.community.domain.subscription.service.SubscriptionPlanDomainServi
 import org.xhy.community.domain.course.query.CourseQuery;
 import org.xhy.community.interfaces.course.request.AppCourseQueryRequest;
 // Do not use UserContext in App layer; userId passed from API
+import org.xhy.community.domain.like.service.LikeDomainService;
+import org.xhy.community.domain.like.valueobject.LikeTargetType;
+import org.xhy.community.application.like.helper.LikeCountHelper;
  
 
 import java.util.List;
@@ -41,17 +44,20 @@ public class CourseAppService {
     private final UserDomainService userDomainService;
     private final SubscriptionDomainService subscriptionDomainService;
     private final SubscriptionPlanDomainService subscriptionPlanDomainService;
+    private final LikeDomainService likeDomainService;
     
     public CourseAppService(CourseDomainService courseDomainService,
                            ChapterDomainService chapterDomainService,
                            UserDomainService userDomainService,
                            SubscriptionDomainService subscriptionDomainService,
-                           SubscriptionPlanDomainService subscriptionPlanDomainService) {
+                           SubscriptionPlanDomainService subscriptionPlanDomainService,
+                           LikeDomainService likeDomainService) {
         this.courseDomainService = courseDomainService;
         this.chapterDomainService = chapterDomainService;
         this.userDomainService = userDomainService;
         this.subscriptionDomainService = subscriptionDomainService;
         this.subscriptionPlanDomainService = subscriptionPlanDomainService;
+        this.likeDomainService = likeDomainService;
     }
     
     /**
@@ -98,6 +104,8 @@ public class CourseAppService {
                 chapterCountMap
         );
 
+        LikeCountHelper.fillLikeCount(frontCourseDTOs, FrontCourseDTO::getId, LikeTargetType.COURSE, FrontCourseDTO::setLikeCount, likeDomainService);
+
         // 批量设置课程解锁状态
         setCoursesUnlockStatus(frontCourseDTOs, userId);
         
@@ -129,6 +137,8 @@ public class CourseAppService {
                 coursePage.getRecords(), chapterCountMap
         );
 
+        LikeCountHelper.fillLikeCount(dtos, PublicCourseDTO::getId, LikeTargetType.COURSE, PublicCourseDTO::setLikeCount, likeDomainService);
+
         IPage<PublicCourseDTO> result = coursePage.convert(entity -> (PublicCourseDTO) null);
         result.setRecords(dtos);
         return result;
@@ -141,7 +151,10 @@ public class CourseAppService {
         CourseEntity course = courseDomainService.getCourseById(courseId);
 
         List<ChapterEntity> chapters = chapterDomainService.getChaptersByCourseId(courseId);
-        return PublicCourseAssembler.toPublicDetailDTO(course, chapters);
+        PublicCourseDetailDTO dto = PublicCourseAssembler.toPublicDetailDTO(course, chapters);
+        dto.setLikeCount(LikeCountHelper.getLikeCount(courseId, LikeTargetType.COURSE, likeDomainService));
+        LikeCountHelper.fillLikeCount(dto.getChapters(), PublicCourseDetailDTO.FrontChapterDTO::getId, LikeTargetType.CHAPTER, PublicCourseDetailDTO.FrontChapterDTO::setLikeCount, likeDomainService);
+        return dto;
     }
 
     /**
@@ -169,6 +182,10 @@ public class CourseAppService {
 
         // 设置课程解锁状态和解锁套餐
         setCourseUnlockStatus(dto, courseId, userId);
+
+        dto.setLikeCount(LikeCountHelper.getLikeCount(courseId, LikeTargetType.COURSE, likeDomainService));
+
+        LikeCountHelper.fillLikeCount(dto.getChapters(), FrontCourseDetailDTO.FrontChapterDTO::getId, LikeTargetType.CHAPTER, FrontCourseDetailDTO.FrontChapterDTO::setLikeCount, likeDomainService);
 
         return dto;
     }

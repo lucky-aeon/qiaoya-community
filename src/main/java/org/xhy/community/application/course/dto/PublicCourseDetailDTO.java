@@ -27,6 +27,7 @@ public class PublicCourseDetailDTO {
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
     private List<FrontChapterDTO> chapters;
+    private Integer likeCount;
 
     public PublicCourseDetailDTO() {}
 
@@ -39,6 +40,7 @@ public class PublicCourseDetailDTO {
         private Integer sortOrder;
         private Integer readingTime;
         private LocalDateTime createTime;
+        private Integer likeCount;
 
         public FrontChapterDTO() {}
 
@@ -57,6 +59,9 @@ public class PublicCourseDetailDTO {
 
         public LocalDateTime getCreateTime() { return createTime; }
         public void setCreateTime(LocalDateTime createTime) { this.createTime = createTime; }
+
+        public Integer getLikeCount() { return likeCount; }
+        public void setLikeCount(Integer likeCount) { this.likeCount = likeCount; }
     }
 
     // Getters and Setters
@@ -106,4 +111,7 @@ public class PublicCourseDetailDTO {
 
     public List<FrontChapterDTO> getChapters() { return chapters; }
     public void setChapters(List<FrontChapterDTO> chapters) { this.chapters = chapters; }
+
+    public Integer getLikeCount() { return likeCount; }
+    public void setLikeCount(Integer likeCount) { this.likeCount = likeCount; }
 }

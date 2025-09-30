@@ -9,6 +9,9 @@ import org.xhy.community.domain.course.entity.CourseEntity;
 import org.xhy.community.domain.course.query.CourseQuery;
 import org.xhy.community.domain.course.service.CourseDomainService;
 import org.xhy.community.domain.course.valueobject.CourseStatus;
+import org.xhy.community.domain.like.service.LikeDomainService;
+import org.xhy.community.domain.like.valueobject.LikeTargetType;
+import org.xhy.community.application.like.helper.LikeCountHelper;
 import org.xhy.community.interfaces.course.request.CreateCourseRequest;
 import org.xhy.community.interfaces.course.request.UpdateCourseRequest;
 import org.xhy.community.interfaces.course.request.CourseQueryRequest;
@@ -19,9 +22,12 @@ import java.math.BigDecimal;
 public class AdminCourseAppService {
     
     private final CourseDomainService courseDomainService;
+    private final LikeDomainService likeDomainService;
     
-    public AdminCourseAppService(CourseDomainService courseDomainService) {
+    public AdminCourseAppService(CourseDomainService courseDomainService,
+                                 LikeDomainService likeDomainService) {
         this.courseDomainService = courseDomainService;
+        this.likeDomainService = likeDomainService;
     }
     
     public CourseDTO createCourse(CreateCourseRequest request, String authorId) {
@@ -46,13 +52,19 @@ public class AdminCourseAppService {
     
     public CourseDTO getCourseById(String courseId) {
         CourseEntity course = courseDomainService.getCourseById(courseId);
-        return CourseAssembler.toDTO(course);
+        CourseDTO dto = CourseAssembler.toDTO(course);
+        dto.setLikeCount(LikeCountHelper.getLikeCount(courseId, LikeTargetType.COURSE, likeDomainService));
+        return dto;
     }
     
     public IPage<CourseDTO> getPagedCourses(CourseQueryRequest request) {
         CourseQuery query = CourseAssembler.fromPageRequest(request.getPageNum(), request.getPageSize());
         IPage<CourseEntity> coursePage = courseDomainService.getPagedCourses(query);
-        
-        return coursePage.convert(CourseAssembler::toDTO);
+
+        IPage<CourseDTO> dtoPage = coursePage.convert(CourseAssembler::toDTO);
+        if (dtoPage.getRecords() != null && !dtoPage.getRecords().isEmpty()) {
+            LikeCountHelper.fillLikeCount(dtoPage.getRecords(), CourseDTO::getId, LikeTargetType.COURSE, CourseDTO::setLikeCount, likeDomainService);
+        }
+        return dtoPage;
     }
 }

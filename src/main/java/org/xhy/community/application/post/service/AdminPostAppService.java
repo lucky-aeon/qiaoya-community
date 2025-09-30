@@ -6,6 +6,9 @@ import org.springframework.stereotype.Service;
 import org.xhy.community.application.post.assembler.AdminPostAssembler;
 import org.xhy.community.application.post.dto.AdminPostDTO;
 import org.xhy.community.application.post.dto.PostDTO;
+import org.xhy.community.application.like.helper.LikeCountHelper;
+import org.xhy.community.domain.like.service.LikeDomainService;
+import org.xhy.community.domain.like.valueobject.LikeTargetType;
 import org.xhy.community.domain.common.valueobject.AccessLevel;
 import org.xhy.community.domain.post.entity.CategoryEntity;
 import org.xhy.community.domain.post.entity.PostEntity;
@@ -32,13 +35,16 @@ public class AdminPostAppService {
     private final PostDomainService postDomainService;
     private final UserDomainService userDomainService;
     private final CategoryDomainService categoryDomainService;
+    private final LikeDomainService likeDomainService;
     
     public AdminPostAppService(PostDomainService postDomainService,
                               UserDomainService userDomainService,
-                              CategoryDomainService categoryDomainService) {
+                              CategoryDomainService categoryDomainService,
+                              LikeDomainService likeDomainService) {
         this.postDomainService = postDomainService;
         this.userDomainService = userDomainService;
         this.categoryDomainService = categoryDomainService;
+        this.likeDomainService = likeDomainService;
     }
     
     /**
@@ -82,6 +88,7 @@ public class AdminPostAppService {
         
         // 组装AdminPostDTO
         List<AdminPostDTO> dtoList = AdminPostAssembler.toDTOList(posts, authorMap, categoryNames);
+        LikeCountHelper.fillLikeCount(dtoList, AdminPostDTO::getId, LikeTargetType.POST, AdminPostDTO::setLikeCount, likeDomainService);
         
         Page<AdminPostDTO> dtoPage = new Page<>(entityPage.getCurrent(), entityPage.getSize(), entityPage.getTotal());
         dtoPage.setRecords(dtoList);

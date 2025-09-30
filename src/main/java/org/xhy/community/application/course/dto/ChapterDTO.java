@@ -13,6 +13,7 @@ public class ChapterDTO {
     private Integer readingTime;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
+    private Integer likeCount;
     
     public ChapterDTO() {
     }
@@ -44,4 +45,7 @@ public class ChapterDTO {
     
     public LocalDateTime getUpdateTime() { return updateTime; }
     public void setUpdateTime(LocalDateTime updateTime) { this.updateTime = updateTime; }
+
+    public Integer getLikeCount() { return likeCount; }
+    public void setLikeCount(Integer likeCount) { this.likeCount = likeCount; }
 }

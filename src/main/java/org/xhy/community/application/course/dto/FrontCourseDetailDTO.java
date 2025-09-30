@@ -36,6 +36,7 @@ public class FrontCourseDetailDTO {
     private List<FrontChapterDTO> chapters = new ArrayList<>();
     private Boolean unlocked;
     private java.util.List<AppSubscriptionPlanDTO> unlockPlans = new ArrayList<>();
+    private Integer likeCount;
     
     public FrontCourseDetailDTO() {}
     
@@ -49,6 +50,7 @@ public class FrontCourseDetailDTO {
         private Integer sortOrder;
         private Integer readingTime;
         private LocalDateTime createTime;
+        private Integer likeCount;
         
         public FrontChapterDTO() {}
         
@@ -67,6 +69,9 @@ public class FrontCourseDetailDTO {
         
         public LocalDateTime getCreateTime() { return createTime; }
         public void setCreateTime(LocalDateTime createTime) { this.createTime = createTime; }
+
+        public Integer getLikeCount() { return likeCount; }
+        public void setLikeCount(Integer likeCount) { this.likeCount = likeCount; }
     }
     
     // Getters and Setters
@@ -132,4 +137,7 @@ public class FrontCourseDetailDTO {
 
     public java.util.List<org.xhy.community.application.subscription.dto.AppSubscriptionPlanDTO> getUnlockPlans() { return unlockPlans; }
     public void setUnlockPlans(java.util.List<org.xhy.community.application.subscription.dto.AppSubscriptionPlanDTO> unlockPlans) { this.unlockPlans = unlockPlans; }
+
+    public Integer getLikeCount() { return likeCount; }
+    public void setLikeCount(Integer likeCount) { this.likeCount = likeCount; }
 }

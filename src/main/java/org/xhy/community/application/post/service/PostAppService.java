@@ -13,6 +13,9 @@ import org.xhy.community.application.post.dto.PostDTO;
 import org.xhy.community.application.post.dto.PublicPostDTO;
 import org.xhy.community.domain.common.valueobject.AccessLevel;
 import org.xhy.community.domain.post.entity.CategoryEntity;
+import org.xhy.community.domain.like.service.LikeDomainService;
+import org.xhy.community.domain.like.valueobject.LikeTargetType;
+import org.xhy.community.application.like.helper.LikeCountHelper;
 import org.xhy.community.domain.post.entity.PostEntity;
 import org.xhy.community.domain.post.query.PostQuery;
 import org.xhy.community.domain.post.service.CategoryDomainService;
@@ -38,13 +41,16 @@ public class PostAppService {
     private final PostDomainService postDomainService;
     private final UserDomainService userDomainService;
     private final CategoryDomainService categoryDomainService;
+    private final LikeDomainService likeDomainService;
     
     public PostAppService(PostDomainService postDomainService, 
                          UserDomainService userDomainService,
-                         CategoryDomainService categoryDomainService) {
+                         CategoryDomainService categoryDomainService,
+                         LikeDomainService likeDomainService) {
         this.postDomainService = postDomainService;
         this.userDomainService = userDomainService;
         this.categoryDomainService = categoryDomainService;
+        this.likeDomainService = likeDomainService;
     }
     
     public PostDTO createPost(CreatePostRequest request, String authorId) {
@@ -84,6 +90,8 @@ public class PostAppService {
         if (category != null) {
             dto.setCategoryType(category.getType());
         }
+        // 填充点赞数
+        dto.setLikeCount(LikeCountHelper.getLikeCount(postId, LikeTargetType.POST, likeDomainService));
         return dto;
     }
     
@@ -108,6 +116,8 @@ public class PostAppService {
         }
         dtoPage.setRecords(dtoList);
         
+        LikeCountHelper.fillLikeCount(dtoList, PostDTO::getId, LikeTargetType.POST, PostDTO::setLikeCount, likeDomainService);
+        dtoPage.setRecords(dtoList);
         return dtoPage;
     }
     
@@ -176,7 +186,9 @@ public class PostAppService {
                     return dto;
                 })
                 .toList();
-        
+
+        LikeCountHelper.fillLikeCount(dtoList, FrontPostDTO::getId, LikeTargetType.POST, FrontPostDTO::setLikeCount, likeDomainService);
+
         Page<FrontPostDTO> dtoPage = new Page<>(entityPage.getCurrent(), entityPage.getSize(), entityPage.getTotal());
         dtoPage.setRecords(dtoList);
         
@@ -228,6 +240,8 @@ public class PostAppService {
                 })
                 .toList();
 
+        LikeCountHelper.fillLikeCount(dtoList, FrontPostDTO::getId, LikeTargetType.POST, FrontPostDTO::setLikeCount, likeDomainService);
+
         Page<FrontPostDTO> dtoPage = new Page<>(entityPage.getCurrent(), entityPage.getSize(), entityPage.getTotal());
         dtoPage.setRecords(dtoList);
 
@@ -258,6 +272,8 @@ public class PostAppService {
         if (category != null) {
             dto.setCategoryType(category.getType());
         }
+        // 填充点赞数
+        dto.setLikeCount(LikeCountHelper.getLikeCount(postId, LikeTargetType.POST, likeDomainService));
         // 问答帖子返回采纳评论ID集合，供前台渲染
         if (category != null && category.getType() == org.xhy.community.domain.post.valueobject.CategoryType.QA) {
             java.util.Set<String> ids = postDomainService.getAcceptedCommentIds(post.getId());

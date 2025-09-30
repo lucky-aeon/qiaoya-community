@@ -20,6 +20,7 @@ public class CommentDTO {
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
     private Boolean accepted;
+    private Integer likeCount;
     
     public CommentDTO() {
     }
@@ -66,4 +67,7 @@ public class CommentDTO {
 
     public Boolean getAccepted() { return accepted; }
     public void setAccepted(Boolean accepted) { this.accepted = accepted; }
+
+    public Integer getLikeCount() { return likeCount; }
+    public void setLikeCount(Integer likeCount) { this.likeCount = likeCount; }
 }

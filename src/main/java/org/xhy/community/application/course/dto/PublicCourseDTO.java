@@ -26,6 +26,7 @@ public class PublicCourseDTO {
     private String demoUrl;
     private List<CourseResource> resources;
     private LocalDateTime createTime;
+    private Integer likeCount;
 
     public PublicCourseDTO() {}
 
@@ -72,4 +73,7 @@ public class PublicCourseDTO {
 
     public LocalDateTime getCreateTime() { return createTime; }
     public void setCreateTime(LocalDateTime createTime) { this.createTime = createTime; }
+
+    public Integer getLikeCount() { return likeCount; }
+    public void setLikeCount(Integer likeCount) { this.likeCount = likeCount; }
 }
