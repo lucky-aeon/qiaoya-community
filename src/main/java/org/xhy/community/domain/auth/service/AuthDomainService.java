@@ -3,6 +3,7 @@ package org.xhy.community.domain.auth.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import java.time.Duration;
 import org.springframework.util.StringUtils;
 import org.xhy.community.domain.auth.entity.UserSocialAccountEntity;
 import org.xhy.community.domain.auth.repository.UserSocialAccountRepository;
@@ -29,15 +30,18 @@ public class AuthDomainService {
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
     private final UserActivityLogDomainService userActivityLogDomainService;
+    private final org.xhy.community.infrastructure.lock.DistributedLock distributedLock;
 
     public AuthDomainService(UserSocialAccountRepository userSocialAccountRepository,
                              UserRepository userRepository,
                              BCryptPasswordEncoder passwordEncoder,
-                             UserActivityLogDomainService userActivityLogDomainService) {
+                             UserActivityLogDomainService userActivityLogDomainService,
+                             org.xhy.community.infrastructure.lock.DistributedLock distributedLock) {
         this.userSocialAccountRepository = userSocialAccountRepository;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.userActivityLogDomainService = userActivityLogDomainService;
+        this.distributedLock = distributedLock;
     }
 
     public UserEntity getOrCreateUserByGithub(OpenIdProfile profile) {
@@ -45,78 +49,85 @@ public class AuthDomainService {
             throw new IllegalArgumentException("profile or provider invalid");
         }
 
-        // 1) 先按 provider+openId 查绑定
-        UserSocialAccountEntity existing = userSocialAccountRepository.selectOne(
-            new LambdaQueryWrapper<UserSocialAccountEntity>()
-                .eq(UserSocialAccountEntity::getProvider, profile.getProvider())
-                .eq(UserSocialAccountEntity::getOpenId, profile.getOpenId())
-        );
-        if (existing != null) {
-            return userRepository.selectById(existing.getUserId());
-        }
-
-        // 2) 邮箱合并（允许且可用）
-        if (profile.isAllowMergeByEmail() && StringUtils.hasText(profile.getEmail())) {
-            String normalizedEmail = profile.getEmail().trim().toLowerCase();
-            UserEntity byEmail = userRepository.selectOne(
-                new LambdaQueryWrapper<UserEntity>().eq(UserEntity::getEmail, normalizedEmail)
+        String openId = profile.getOpenId();
+        String lockKey = "lock:oauth:github:openid:" + openId;
+        return distributedLock.executeWithLock(lockKey, Duration.ofMillis(300), Duration.ofSeconds(5), () -> {
+            // 1) 先按 provider+openId 查绑定
+            UserSocialAccountEntity existing = userSocialAccountRepository.selectOne(
+                new LambdaQueryWrapper<UserSocialAccountEntity>()
+                    .eq(UserSocialAccountEntity::getProvider, profile.getProvider())
+                    .eq(UserSocialAccountEntity::getOpenId, openId)
             );
-            if (byEmail != null) {
-                // 绑定到该用户
-                bindInternal(byEmail.getId(), profile);
-                // 记录邮箱合并审计
-                try {
-                    UserActivityContext ctx = HttpRequestInfoExtractor.extractUserActivityContext();
-                    userActivityLogDomainService.recordActivity(
-                        byEmail.getId(), ActivityType.OAUTH_EMAIL_MERGE,
-                        ctx.getBrowser(), ctx.getEquipment(), ctx.getIp(), ctx.getUserAgent(), null
-                    );
-                } catch (Exception ignored) {}
-                // 可选：仅当站内为空才补全头像/昵称
-                return byEmail;
+            if (existing != null) {
+                return userRepository.selectById(existing.getUserId());
             }
-        }
 
-        // 3) 创建新用户并绑定（若邮箱已被占用且不允许合并，则报冲突）
-        String email = StringUtils.hasText(profile.getEmail()) ? profile.getEmail().trim().toLowerCase() : null;
-        if (email == null) {
-            // 站内用户表邮箱非空约束，且业务需要邮箱唯一性
-            throw new BusinessException(AuthErrorCode.OAUTH_EMAIL_REQUIRED);
-        }
-        UserEntity existed = userRepository.selectOne(
-            new LambdaQueryWrapper<UserEntity>().eq(UserEntity::getEmail, email)
-        );
-        if (existed != null) {
-            throw new BusinessException(AuthErrorCode.OAUTH_BIND_CONFLICT, "邮箱已存在，无法自动合并");
-        }
-        String nickname = StringUtils.hasText(profile.getName()) ? profile.getName() :
-                (StringUtils.hasText(profile.getLogin()) ? profile.getLogin() : generateDefaultNickname());
-        String randomPassword = generateRandomPassword();
-        String encrypted = passwordEncoder.encode(randomPassword);
+            // 2) 邮箱合并（允许且可用）
+            if (profile.isAllowMergeByEmail() && StringUtils.hasText(profile.getEmail())) {
+                String normalizedEmail = profile.getEmail().trim().toLowerCase();
+                UserEntity byEmail = userRepository.selectOne(
+                    new LambdaQueryWrapper<UserEntity>().eq(UserEntity::getEmail, normalizedEmail)
+                );
+                if (byEmail != null) {
+                    // 绑定到该用户
+                    bindInternal(byEmail.getId(), profile);
+                    // 记录邮箱合并审计
+                    try {
+                        UserActivityContext ctx = HttpRequestInfoExtractor.extractUserActivityContext();
+                        userActivityLogDomainService.recordActivity(
+                            byEmail.getId(), ActivityType.OAUTH_EMAIL_MERGE,
+                            ctx.getBrowser(), ctx.getEquipment(), ctx.getIp(), ctx.getUserAgent(), null
+                        );
+                    } catch (Exception ignored) {}
+                    // 可选：仅当站内为空才补全头像/昵称
+                    return byEmail;
+                }
+            }
 
-        UserEntity user = new UserEntity(nickname, email, encrypted);
-        userRepository.insert(user);
+            // 3) 创建新用户并绑定（若邮箱已被占用且不允许合并，则报冲突）
+            String email = StringUtils.hasText(profile.getEmail()) ? profile.getEmail().trim().toLowerCase() : null;
+            if (email == null) {
+                // 站内用户表邮箱非空约束，且业务需要邮箱唯一性
+                throw new BusinessException(AuthErrorCode.OAUTH_EMAIL_REQUIRED);
+            }
+            UserEntity existed = userRepository.selectOne(
+                new LambdaQueryWrapper<UserEntity>().eq(UserEntity::getEmail, email)
+            );
+            if (existed != null) {
+                throw new BusinessException(AuthErrorCode.OAUTH_BIND_CONFLICT, "邮箱已存在，无法自动合并");
+            }
+            String nickname = StringUtils.hasText(profile.getName()) ? profile.getName() :
+                    (StringUtils.hasText(profile.getLogin()) ? profile.getLogin() : generateDefaultNickname());
+            String randomPassword = generateRandomPassword();
+            String encrypted = passwordEncoder.encode(randomPassword);
 
-        bindInternal(user.getId(), profile);
-        return user;
+            UserEntity user = new UserEntity(nickname, email, encrypted);
+            userRepository.insert(user);
+
+            bindInternal(user.getId(), profile);
+            return user;
+        });
     }
 
     public void bindGithub(String userId, OpenIdProfile profile) {
         if (profile == null || profile.getProvider() != AuthProvider.GITHUB) {
             throw new IllegalArgumentException("profile or provider invalid");
         }
-        // (provider, openId) 不可被其他用户占用
-        UserSocialAccountEntity existing = userSocialAccountRepository.selectOne(
-            new LambdaQueryWrapper<UserSocialAccountEntity>()
-                .eq(UserSocialAccountEntity::getProvider, profile.getProvider())
-                .eq(UserSocialAccountEntity::getOpenId, profile.getOpenId())
-        );
-        if (existing != null && !existing.getUserId().equals(userId)) {
-            throw new BusinessException(AuthErrorCode.OAUTH_ALREADY_BOUND);
-        }
-        if (existing == null) {
-            bindInternal(userId, profile);
-        }
+        String lockKey = "lock:oauth:github:openid:" + profile.getOpenId();
+        distributedLock.runWithLock(lockKey, Duration.ofMillis(300), Duration.ofSeconds(5), () -> {
+            // (provider, openId) 不可被其他用户占用
+            UserSocialAccountEntity existing = userSocialAccountRepository.selectOne(
+                new LambdaQueryWrapper<UserSocialAccountEntity>()
+                    .eq(UserSocialAccountEntity::getProvider, profile.getProvider())
+                    .eq(UserSocialAccountEntity::getOpenId, profile.getOpenId())
+            );
+            if (existing != null && !existing.getUserId().equals(userId)) {
+                throw new BusinessException(AuthErrorCode.OAUTH_ALREADY_BOUND);
+            }
+            if (existing == null) {
+                bindInternal(userId, profile);
+            }
+        });
     }
 
     public void unbindGithubByUserId(String userId) {

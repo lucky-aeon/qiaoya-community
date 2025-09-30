@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.context.ApplicationEventPublisher;
+import java.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -28,10 +29,14 @@ public class CDKDomainService {
     private final CDKRepository cdkRepository;
     private final ApplicationEventPublisher applicationEventPublisher;
     private static final Logger log = LoggerFactory.getLogger(CDKDomainService.class);
+    private final org.xhy.community.infrastructure.lock.DistributedLock distributedLock;
     
-    public CDKDomainService(CDKRepository cdkRepository, ApplicationEventPublisher applicationEventPublisher) {
+    public CDKDomainService(CDKRepository cdkRepository,
+                            ApplicationEventPublisher applicationEventPublisher,
+                            org.xhy.community.infrastructure.lock.DistributedLock distributedLock) {
         this.cdkRepository = cdkRepository;
         this.applicationEventPublisher = applicationEventPublisher;
+        this.distributedLock = distributedLock;
     }
     
     /**
@@ -65,33 +70,37 @@ public class CDKDomainService {
      */
     public void activateCDK(String userId, String cdkCode) {
         String masked = mask(cdkCode);
-        log.info("[CDK激活] 开始处理: userId={}, cdk={}", userId, masked);
+        String lockKey = "lock:cdk:activate:" + cdkCode;
 
-        // 1. 验证CDK有效性
-        CDKEntity cdk = getCDKByCode(cdkCode);
-        log.debug("[CDK激活] CDK可用性检查通过: type={}, targetId={}, acquisitionType={}",
-                cdk.getCdkType(), cdk.getTargetId(), cdk.getAcquisitionType());
+        distributedLock.runWithLock(lockKey, Duration.ofMillis(300), Duration.ofSeconds(5), () -> {
+            log.info("[CDK激活] 开始处理: userId={}, cdk={}", userId, masked);
 
-        if (!cdk.isUsable()) {
-            log.warn("[CDK激活] CDK不可用，拒绝处理: userId={}, cdk={}", userId, masked);
-            throw new BusinessException(CDKErrorCode.CDK_NOT_USABLE);
-        }
+            // 1. 验证CDK有效性（锁内二次校验）
+            CDKEntity cdk = getCDKByCode(cdkCode);
+            log.debug("[CDK激活] CDK可用性检查通过: type={}, targetId={}, acquisitionType={}",
+                    cdk.getCdkType(), cdk.getTargetId(), cdk.getAcquisitionType());
 
-        // 2. 标记CDK已使用
-        markCDKAsUsed(cdkCode, userId);
-        log.info("[CDK激活] 已标记为已使用: userId={}, cdk={}", userId, masked);
+            if (!cdk.isUsable()) {
+                log.warn("[CDK激活] CDK不可用，拒绝处理: userId={}, cdk={}", userId, masked);
+                throw new BusinessException(CDKErrorCode.CDK_NOT_USABLE);
+            }
 
-        // 3. 发布扩展的CDK激活事件
-        CDKActivatedEvent event = new CDKActivatedEvent(
-            userId,
-            cdkCode,
-            cdk.getCdkType(),
-            cdk.getTargetId(),
-            cdk.getAcquisitionType()
-        );
-        applicationEventPublisher.publishEvent(event);
-        log.info("[CDK激活] 已发布事件: userId={}, type={}, targetId={}, acquisitionType={}",
-                userId, cdk.getCdkType(), cdk.getTargetId(), cdk.getAcquisitionType());
+            // 2. 标记CDK已使用
+            markCDKAsUsed(cdkCode, userId);
+            log.info("[CDK激活] 已标记为已使用: userId={}, cdk={}", userId, masked);
+
+            // 3. 发布扩展的CDK激活事件
+            CDKActivatedEvent event = new CDKActivatedEvent(
+                userId,
+                cdkCode,
+                cdk.getCdkType(),
+                cdk.getTargetId(),
+                cdk.getAcquisitionType()
+            );
+            applicationEventPublisher.publishEvent(event);
+            log.info("[CDK激活] 已发布事件: userId={}, type={}, targetId={}, acquisitionType={}",
+                    userId, cdk.getCdkType(), cdk.getTargetId(), cdk.getAcquisitionType());
+        });
     }
     
     public CDKEntity getCDKById(String id) {

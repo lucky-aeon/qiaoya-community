@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class OrderDomainService {
 
     private final OrderRepository orderRepository;
-    private static final AtomicLong orderSequence = new AtomicLong(1);
+    private static final AtomicLong orderSequence = new AtomicLong(1); // 保留不删除，避免二方依赖变更
 
     public OrderDomainService(OrderRepository orderRepository) {
         this.orderRepository = orderRepository;
@@ -80,8 +80,9 @@ public class OrderDomainService {
      * 生成订单号
      */
     private String generateOrderNo() {
+        // 为避免多实例下序列冲突，采用时间戳 + UUID短码 组合
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
-        long sequence = orderSequence.getAndIncrement() % 10000;
-        return "ORD" + timestamp + String.format("%04d", sequence);
+        String rand = java.util.UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase();
+        return "ORD" + timestamp + rand;
     }
 }

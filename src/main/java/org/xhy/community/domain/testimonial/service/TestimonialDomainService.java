@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.stereotype.Service;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.util.StringUtils;
 import org.xhy.community.domain.testimonial.entity.TestimonialEntity;
 import org.xhy.community.domain.testimonial.repository.TestimonialRepository;
@@ -47,9 +48,14 @@ public class TestimonialDomainService {
 
         checkUserCanCreateTestimonial(userId);
 
-        TestimonialEntity testimonial = new TestimonialEntity(userId, content.trim(), rating);
-        testimonialRepository.insert(testimonial);
-        return testimonial;
+        try {
+            TestimonialEntity testimonial = new TestimonialEntity(userId, content.trim(), rating);
+            testimonialRepository.insert(testimonial);
+            return testimonial;
+        } catch (DataIntegrityViolationException e) {
+            // 并发重复提交导致唯一约束异常，转为业务语义
+            throw new BusinessException(TestimonialErrorCode.USER_ALREADY_SUBMITTED);
+        }
     }
 
     public TestimonialEntity getUserTestimonial(String userId) {

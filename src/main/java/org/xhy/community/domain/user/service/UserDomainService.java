@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.util.StringUtils;
 import org.xhy.community.domain.user.entity.UserEntity;
 import org.xhy.community.domain.user.entity.UserCourseEntity;
@@ -271,14 +272,17 @@ public class UserDomainService {
      * @param courseId 课程ID
      */
     public void grantCourseToUser(String userId, String courseId) {
-
         // 检查是否已存在权限，避免重复添加
         if (hasUserCourse(userId, courseId)) {
             return;
         }
-        
-        UserCourseEntity userCourse = new UserCourseEntity(userId, courseId);
-        userCourseRepository.insert(userCourse);
+
+        try {
+            UserCourseEntity userCourse = new UserCourseEntity(userId, courseId);
+            userCourseRepository.insert(userCourse);
+        } catch (DataIntegrityViolationException e) {
+            // 并发场景下的唯一约束冲突，视为已授予，保持幂等
+        }
     }
     
     /**

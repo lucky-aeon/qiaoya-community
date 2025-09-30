@@ -1,6 +1,7 @@
 package org.xhy.community.application.subscription.service;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.xhy.community.application.subscription.dto.SimpleSubscriptionPlanDTO;
 import org.xhy.community.application.course.dto.SimpleCourseDTO;
 import org.xhy.community.application.subscription.assembler.SubscriptionPlanAssembler;
@@ -41,6 +42,7 @@ public class AdminSubscriptionPlanCourseAppService {
         return subscriptionPlanDomainService.getSubscriptionPlanCourseIds(planId);
     }
     
+    @Transactional
     public void updateSubscriptionPlanCourses(String planId, UpdateSubscriptionPlanCoursesRequest request) {
         subscriptionPlanDomainService.syncSubscriptionPlanCourses(planId, request.getCourseIds());
     }

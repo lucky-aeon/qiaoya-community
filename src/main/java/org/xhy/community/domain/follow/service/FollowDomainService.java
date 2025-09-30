@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.xhy.community.domain.follow.entity.FollowEntity;
 import org.xhy.community.domain.follow.query.FollowQuery;
@@ -57,14 +58,17 @@ public class FollowDomainService {
             }
         }
         
-        // 3. 创建新的关注关系
-        FollowEntity follow = new FollowEntity(followerId, targetId, targetType);
-        followRepository.insert(follow);
-        
-        // 4. 发布关注事件
-        eventPublisher.publishEvent(new UserFollowedEvent(followerId, targetId, targetType));
-        
-        return follow;
+        // 3. 创建新的关注关系（并发兜底：唯一约束冲突视为已关注）
+        try {
+            FollowEntity follow = new FollowEntity(followerId, targetId, targetType);
+            followRepository.insert(follow);
+            // 4. 发布关注事件
+            eventPublisher.publishEvent(new UserFollowedEvent(followerId, targetId, targetType));
+            return follow;
+        } catch (DataIntegrityViolationException e) {
+            // 并发情况下可能出现唯一约束冲突，转化为业务语义：已关注
+            throw new BusinessException(FollowErrorCode.ALREADY_FOLLOWED);
+        }
     }
     
     /**
