@@ -86,11 +86,11 @@ public class SubscriptionPlanDomainService {
         subscriptionPlanCourseRepository.delete(deleteWrapper);
         
         if (courseIds != null && !courseIds.isEmpty()) {
+            java.util.List<SubscriptionPlanCourseEntity> list = new java.util.ArrayList<>(courseIds.size());
             for (String courseId : courseIds) {
-                SubscriptionPlanCourseEntity planCourse = 
-                    new SubscriptionPlanCourseEntity(subscriptionPlanId, courseId);
-                subscriptionPlanCourseRepository.insert(planCourse);
+                list.add(new SubscriptionPlanCourseEntity(subscriptionPlanId, courseId));
             }
+            subscriptionPlanCourseRepository.insert(list);
         }
     }
     
@@ -177,10 +177,11 @@ public class SubscriptionPlanDomainService {
 
         // 批量插入
         if (menuCodes != null && !menuCodes.isEmpty()) {
+            java.util.List<org.xhy.community.domain.subscription.entity.SubscriptionPlanMenuEntity> list = new java.util.ArrayList<>(menuCodes.size());
             for (String code : menuCodes) {
-                var entity = new org.xhy.community.domain.subscription.entity.SubscriptionPlanMenuEntity(subscriptionPlanId, code);
-                subscriptionPlanMenuRepository.insert(entity);
+                list.add(new org.xhy.community.domain.subscription.entity.SubscriptionPlanMenuEntity(subscriptionPlanId, code));
             }
+            subscriptionPlanMenuRepository.insert(list);
         }
     }
 
@@ -201,10 +202,11 @@ public class SubscriptionPlanDomainService {
         subscriptionPlanPermissionRepository.delete(deleteWrapper);
 
         if (permissionCodes != null && !permissionCodes.isEmpty()) {
+            java.util.List<org.xhy.community.domain.subscription.entity.SubscriptionPlanPermissionEntity> list = new java.util.ArrayList<>(permissionCodes.size());
             for (String code : permissionCodes) {
-                var entity = new org.xhy.community.domain.subscription.entity.SubscriptionPlanPermissionEntity(subscriptionPlanId, code);
-                subscriptionPlanPermissionRepository.insert(entity);
+                list.add(new org.xhy.community.domain.subscription.entity.SubscriptionPlanPermissionEntity(subscriptionPlanId, code));
             }
+            subscriptionPlanPermissionRepository.insert(list);
         }
     }
 

@@ -40,10 +40,11 @@ public class ResourceBindingDomainService {
             return;
         }
 
+        java.util.List<ResourceBindingEntity> list = new java.util.ArrayList<>(resourceIds.size());
         for (String rid : resourceIds) {
-            ResourceBindingEntity entity = new ResourceBindingEntity(rid, ResourceTargetType.CHAPTER, chapterId);
-            resourceBindingRepository.insert(entity);
+            list.add(new ResourceBindingEntity(rid, ResourceTargetType.CHAPTER, chapterId));
         }
+        resourceBindingRepository.insert(list);
     }
 
     /**
