@@ -13,6 +13,9 @@ import org.xhy.community.domain.user.service.UserDomainService;
 import org.xhy.community.domain.post.service.PostDomainService;
 import org.xhy.community.domain.course.service.CourseDomainService;
 import org.xhy.community.domain.course.service.ChapterDomainService;
+import org.xhy.community.domain.like.service.LikeDomainService;
+import org.xhy.community.domain.like.valueobject.LikeTargetType;
+import org.xhy.community.application.like.helper.LikeCountHelper;
 import org.xhy.community.interfaces.comment.request.CreateReplyCommentRequest;
 import org.xhy.community.interfaces.comment.request.CommentQueryRequest;
 import org.xhy.community.interfaces.comment.request.CreateCommentRequest;
@@ -35,17 +38,20 @@ public class UserCommentAppService {
     private final PostDomainService postDomainService;
     private final CourseDomainService courseDomainService;
     private final ChapterDomainService chapterDomainService;
+    private final LikeDomainService likeDomainService;
 
     public UserCommentAppService(CommentDomainService commentDomainService,
                                 UserDomainService userDomainService,
                                 PostDomainService postDomainService,
                                 CourseDomainService courseDomainService,
-                                ChapterDomainService chapterDomainService) {
+                                ChapterDomainService chapterDomainService,
+                                LikeDomainService likeDomainService) {
         this.commentDomainService = commentDomainService;
         this.userDomainService = userDomainService;
         this.postDomainService = postDomainService;
         this.courseDomainService = courseDomainService;
         this.chapterDomainService = chapterDomainService;
+        this.likeDomainService = likeDomainService;
     }
     
     public CommentDTO createComment(CreateCommentRequest request, String userId) {
@@ -53,7 +59,9 @@ public class UserCommentAppService {
         
         CommentEntity createdComment = commentDomainService.createComment(comment);
         
-        return CommentAssembler.toDTO(createdComment);
+        CommentDTO dto = CommentAssembler.toDTO(createdComment);
+        dto.setLikeCount(0);
+        return dto;
     }
     
     public CommentDTO replyComment(CreateReplyCommentRequest request, String userId) {
@@ -61,7 +69,9 @@ public class UserCommentAppService {
         
         CommentEntity createdComment = commentDomainService.createComment(comment);
         
-        return CommentAssembler.toDTO(createdComment);
+        CommentDTO dto = CommentAssembler.toDTO(createdComment);
+        dto.setLikeCount(0);
+        return dto;
     }
     
     @Transactional(rollbackFor = Exception.class)
@@ -103,6 +113,10 @@ public class UserCommentAppService {
                 }
             }
         }
+        // 批量填充点赞数
+        if (dtoPage.getRecords() != null && !dtoPage.getRecords().isEmpty()) {
+            LikeCountHelper.fillLikeCount(dtoPage.getRecords(), CommentDTO::getId, LikeTargetType.COMMENT, CommentDTO::setLikeCount, likeDomainService);
+        }
         return dtoPage;
     }
     
@@ -121,6 +135,10 @@ public class UserCommentAppService {
             for (CommentDTO dto : dtoPage.getRecords()) {
                 dto.setAccepted(acceptedIds.contains(dto.getId()));
             }
+        }
+        // 批量填充点赞数
+        if (dtoPage.getRecords() != null && !dtoPage.getRecords().isEmpty()) {
+            LikeCountHelper.fillLikeCount(dtoPage.getRecords(), CommentDTO::getId, LikeTargetType.COMMENT, CommentDTO::setLikeCount, likeDomainService);
         }
         return dtoPage;
     }

@@ -31,6 +31,7 @@ public class FrontCourseDTO {
     private List<CourseResource> resources;
     private LocalDateTime createTime;
     private Boolean unlocked;
+    private Integer likeCount;
     
     public FrontCourseDTO() {}
     
@@ -88,4 +89,7 @@ public class FrontCourseDTO {
 
     public Boolean getUnlocked() { return unlocked; }
     public void setUnlocked(Boolean unlocked) { this.unlocked = unlocked; }
+
+    public Integer getLikeCount() { return likeCount; }
+    public void setLikeCount(Integer likeCount) { this.likeCount = likeCount; }
 }

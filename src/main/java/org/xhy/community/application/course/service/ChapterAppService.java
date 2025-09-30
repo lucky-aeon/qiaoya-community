@@ -8,6 +8,9 @@ import org.xhy.community.domain.course.entity.ChapterEntity;
 import org.xhy.community.domain.course.entity.CourseEntity;
 import org.xhy.community.domain.course.service.ChapterDomainService;
 import org.xhy.community.domain.course.service.CourseDomainService;
+import org.xhy.community.domain.like.service.LikeDomainService;
+import org.xhy.community.domain.like.valueobject.LikeTargetType;
+import org.xhy.community.application.like.helper.LikeCountHelper;
 import org.xhy.community.application.permission.service.UserPermissionAppService;
 import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.infrastructure.exception.CourseErrorCode;
@@ -27,13 +30,16 @@ public class ChapterAppService {
     private final ChapterDomainService chapterDomainService;
     private final CourseDomainService courseDomainService;
     private final UserPermissionAppService userPermissionAppService;
+    private final LikeDomainService likeDomainService;
 
     public ChapterAppService(ChapterDomainService chapterDomainService,
                             CourseDomainService courseDomainService,
-                            UserPermissionAppService userPermissionAppService) {
+                            UserPermissionAppService userPermissionAppService,
+                            LikeDomainService likeDomainService) {
         this.chapterDomainService = chapterDomainService;
         this.courseDomainService = courseDomainService;
         this.userPermissionAppService = userPermissionAppService;
+        this.likeDomainService = likeDomainService;
     }
 
     /**
@@ -52,7 +58,9 @@ public class ChapterAppService {
         // 验证用户是否有权限访问该章节
         validateChapterAccess(chapter.getCourseId(), userId);
 
-        return ChapterAssembler.toFrontDetailDTO(chapter, course.getTitle());
+        FrontChapterDetailDTO dto = ChapterAssembler.toFrontDetailDTO(chapter, course.getTitle());
+        dto.setLikeCount(LikeCountHelper.getLikeCount(chapterId, LikeTargetType.CHAPTER, likeDomainService));
+        return dto;
     }
 
     /**

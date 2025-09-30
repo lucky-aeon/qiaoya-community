@@ -12,6 +12,9 @@ import org.xhy.community.interfaces.course.request.UpdateChapterRequest;
 import org.xhy.community.interfaces.course.request.ChapterQueryRequest;
 import org.xhy.community.interfaces.course.request.BatchUpdateChapterOrderRequest;
 import org.xhy.community.domain.course.query.ChapterQuery;
+import org.xhy.community.domain.like.service.LikeDomainService;
+import org.xhy.community.domain.like.valueobject.LikeTargetType;
+import org.xhy.community.application.like.helper.LikeCountHelper;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -21,11 +24,14 @@ public class AdminChapterAppService {
     
     private final ChapterDomainService chapterDomainService;
     private final ResourceBindingDomainService resourceBindingDomainService;
+    private final LikeDomainService likeDomainService;
     
     public AdminChapterAppService(ChapterDomainService chapterDomainService,
-                                  ResourceBindingDomainService resourceBindingDomainService) {
+                                  ResourceBindingDomainService resourceBindingDomainService,
+                                  LikeDomainService likeDomainService) {
         this.chapterDomainService = chapterDomainService;
         this.resourceBindingDomainService = resourceBindingDomainService;
+        this.likeDomainService = likeDomainService;
     }
     
     public ChapterDTO createChapter(CreateChapterRequest request, String authorId) {
@@ -38,7 +44,9 @@ public class AdminChapterAppService {
             resourceBindingDomainService.syncBindingsForChapterFromMarkdown(createdChapter.getId(), request.getContent());
         } catch (Exception ignore) {}
 
-        return ChapterAssembler.toDTO(createdChapter);
+        ChapterDTO dto = ChapterAssembler.toDTO(createdChapter);
+        dto.setLikeCount(0);
+        return dto;
     }
     
     public ChapterDTO updateChapter(String chapterId, UpdateChapterRequest request) {
@@ -51,7 +59,9 @@ public class AdminChapterAppService {
             resourceBindingDomainService.syncBindingsForChapterFromMarkdown(updatedChapter.getId(), request.getContent());
         } catch (Exception ignore) {}
 
-        return ChapterAssembler.toDTO(updatedChapter);
+        ChapterDTO dto = ChapterAssembler.toDTO(updatedChapter);
+        dto.setLikeCount(LikeCountHelper.getLikeCount(updatedChapter.getId(), LikeTargetType.CHAPTER, likeDomainService));
+        return dto;
     }
     
     public void deleteChapter(String chapterId) {
@@ -60,14 +70,20 @@ public class AdminChapterAppService {
     
     public ChapterDTO getChapterById(String chapterId) {
         ChapterEntity chapter = chapterDomainService.getChapterById(chapterId);
-        return ChapterAssembler.toDTO(chapter);
+        ChapterDTO dto = ChapterAssembler.toDTO(chapter);
+        dto.setLikeCount(LikeCountHelper.getLikeCount(chapterId, LikeTargetType.CHAPTER, likeDomainService));
+        return dto;
     }
     
     public List<ChapterDTO> getChaptersByCourseId(String courseId) {
         List<ChapterEntity> chapters = chapterDomainService.getChaptersByCourseId(courseId);
-        return chapters.stream()
+        List<ChapterDTO> list = chapters.stream()
             .map(ChapterAssembler::toDTO)
             .collect(Collectors.toList());
+        if (!list.isEmpty()) {
+            LikeCountHelper.fillLikeCount(list, ChapterDTO::getId, LikeTargetType.CHAPTER, ChapterDTO::setLikeCount, likeDomainService);
+        }
+        return list;
     }
     
     public IPage<ChapterDTO> getPagedChapters(ChapterQueryRequest request) {
@@ -76,7 +92,11 @@ public class AdminChapterAppService {
         
         IPage<ChapterEntity> chapterPage = chapterDomainService.getPagedChapters(query);
         
-        return chapterPage.convert(ChapterAssembler::toDTO);
+        var dtoPage = chapterPage.convert(ChapterAssembler::toDTO);
+        if (dtoPage.getRecords() != null && !dtoPage.getRecords().isEmpty()) {
+            LikeCountHelper.fillLikeCount(dtoPage.getRecords(), ChapterDTO::getId, LikeTargetType.CHAPTER, ChapterDTO::setLikeCount, likeDomainService);
+        }
+        return dtoPage;
     }
     
     public void batchUpdateChapterOrder(BatchUpdateChapterOrderRequest request) {
