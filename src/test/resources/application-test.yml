@@ -1,16 +1,38 @@
 server:
-  port: 8080
+  port: 8520
 
 spring:
   application:
     name: qiaoya-community
-  
+
   # 数据库配置
   datasource:
     url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/qiaoya_community
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:password}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      # Ensure each DB connection uses Asia/Shanghai so DEFAULT CURRENT_TIMESTAMP is correct
+      connection-init-sql: "SET TIME ZONE 'Asia/Shanghai'"
+
+  jackson:
+    # Ensure JSON serialization/deserialization uses Asia/Shanghai
+    time-zone: Asia/Shanghai
+
+  # Redis配置
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: ${REDIS_DATABASE:0}
+      timeout: 5000ms
+      lettuce:
+        pool:
+          max-active: 20
+          max-wait: -1ms
+          max-idle: 8
+          min-idle: 0
 
   # FlyWay配置
   flyway:
@@ -27,9 +49,6 @@ mybatis-plus:
   global-config:
     db-config:
       id-type: auto
-      logic-delete-field: deleted
-      logic-delete-value: true
-      logic-not-delete-value: false
     banner: false
   mapper-locations: classpath:mapper/*.xml
 
@@ -44,9 +63,18 @@ aliyun:
     role-arn: ${ALIYUN_STS_ROLE_ARN:acs:ram::your-account-id:role/your-role-name}
     presigned-url-expiration: 3600
     callback:
-      url: ${ALIYUN_OSS_CALLBACK_URL:http://localhost:8080/api/public/oss-callback}
+      url: ${ALIYUN_OSS_CALLBACK_URL:https://qiaoya.xhyovo.cn/api/public/oss-callback}
       body: filename=${object}&size=${size}&mimeType=${mimeType}&height=${imageInfo.height}&width=${imageInfo.width}
       body-type: application/x-www-form-urlencoded
+  # 邮件服务配置
+  email:
+    smtp:
+      host: ${ALIYUN_EMAIL_SMTP_HOST:smtpdm.aliyun.com}
+      port: ${ALIYUN_EMAIL_SMTP_PORT:25}
+      username: ${ALIYUN_EMAIL_USERNAME:your-email@your-domain.com}
+      password: ${ALIYUN_EMAIL_PASSWORD:your-smtp-password}
+      sender-name: ${ALIYUN_EMAIL_SENDER_NAME:敲鸭社区}
+      enabled: ${ALIYUN_EMAIL_ENABLED:true}
 
 # 日志配置
 logging:
@@ -66,3 +94,17 @@ management:
   endpoint:
     health:
       show-details: when_authorized
+
+# 邮件品牌配置
+community:
+  email:
+    brand:
+      # 支持 URL 或 data URI；若留空，将尝试从 logoFile/classpath 默认位置读取
+      # logoSrc: ""
+      # 使用 classpath 中的 logo 文件自动生成 data URI
+      logoFile: classpath:branding/logo-email.jpg
+      # 页脚“管理通知设置”链接
+      manageNotificationsUrl: /dashboard/user-backend/profile
+  # 站点基础域名（用于将相对路径解析为绝对 URL）
+  web:
+    base-url: ${COMMUNITY_WEB_BASE_URL:http://localhost:5173/}

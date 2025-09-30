@@ -58,6 +58,38 @@ public class AibaseCrawlerClient implements CrawlerClient {
         return results;
     }
 
+    @Override
+    public List<CrawledItem> crawlIncremental(long startId, int maxConsecutive404, int maxRetries, long intervalMillis, int maxCount) {
+        if (maxCount <= 0) {
+            return crawlIncremental(startId, maxConsecutive404, maxRetries, intervalMillis);
+        }
+        List<CrawledItem> results = new ArrayList<>();
+        int consecutive404 = 0;
+        long currentId = startId;
+
+        while (consecutive404 < maxConsecutive404 && results.size() < maxCount) {
+            String url = BASE + currentId;
+            try {
+                CrawledItem item = fetchSingle(url, currentId, maxRetries);
+                if (item != null) {
+                    results.add(item);
+                    consecutive404 = 0;
+                    log.info("[AIBASE] fetched id={} title={}", currentId, item.getTitle());
+                } else {
+                    consecutive404++;
+                    log.info("[AIBASE] not found or parse failed id={} consecutive404={}", currentId, consecutive404);
+                }
+            } catch (Exception e) {
+                log.warn("[AIBASE] error fetching id=" + currentId + ": " + e.getMessage());
+            }
+
+            currentId++;
+            try { Thread.sleep(Math.max(0, intervalMillis)); } catch (InterruptedException ignored) {}
+        }
+
+        return results;
+    }
+
     private CrawledItem fetchSingle(String url, long id, int maxRetries) throws IOException {
         IOException last = null;
         for (int i = 0; i < maxRetries; i++) {
