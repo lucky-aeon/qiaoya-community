@@ -28,8 +28,8 @@ public class DefaultSubscriptionEventListener {
     private final org.xhy.community.infrastructure.lock.DistributedLock distributedLock;
 
     public DefaultSubscriptionEventListener(SystemConfigDomainService systemConfigDomainService,
-                                            SubscriptionDomainService subscriptionDomainService,
-                                            org.xhy.community.infrastructure.lock.DistributedLock distributedLock) {
+                                           SubscriptionDomainService subscriptionDomainService,
+                                           org.xhy.community.infrastructure.lock.DistributedLock distributedLock) {
         this.systemConfigDomainService = systemConfigDomainService;
         this.subscriptionDomainService = subscriptionDomainService;
         this.distributedLock = distributedLock;
