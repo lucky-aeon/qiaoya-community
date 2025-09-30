@@ -156,6 +156,12 @@
           <artifactId>flexmark-ext-attributes</artifactId>
           <version>0.64.8</version>
       </dependency>
+      <!-- Jsoup for HTML fetching and parsing -->
+      <dependency>
+          <groupId>org.jsoup</groupId>
+          <artifactId>jsoup</artifactId>
+          <version>1.17.2</version>
+      </dependency>
   </dependencies>
     
     <build>

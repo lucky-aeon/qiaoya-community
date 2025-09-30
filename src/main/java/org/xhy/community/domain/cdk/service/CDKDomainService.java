@@ -48,15 +48,23 @@ public class CDKDomainService {
                                          org.xhy.community.domain.cdk.valueobject.CDKSubscriptionStrategy subscriptionStrategy) {
         String batchId = UUID.randomUUID().toString();
         List<CDKEntity> cdkList = new ArrayList<>();
+        java.util.Set<String> codeSet = new java.util.HashSet<>();
 
         for (int i = 0; i < quantity; i++) {
-            String code = generateCDKCode();
+            String code;
+            do {
+                code = generateCDKCode();
+            } while (!codeSet.add(code)); // 防止同一批次内重复
+
             CDKEntity cdk = new CDKEntity(code, cdkType, targetId, batchId, acquisitionType);
             cdk.setRemark(remark);
             cdk.setPrice(price);
             cdk.setSubscriptionStrategy(subscriptionStrategy);
-            cdkRepository.insert(cdk);
             cdkList.add(cdk);
+        }
+
+        if (!cdkList.isEmpty()) {
+            cdkRepository.insert(cdkList);
         }
 
         log.info("[CDK批量创建] 成功创建{}个CDK，类型：{}，获得方式：{}",

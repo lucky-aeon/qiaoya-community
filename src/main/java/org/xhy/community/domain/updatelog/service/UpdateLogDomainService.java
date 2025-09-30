@@ -102,9 +102,7 @@ public class UpdateLogDomainService {
 
     public void batchCreateChanges(List<UpdateLogChangeEntity> changes) {
         if (!CollectionUtils.isEmpty(changes)) {
-            for (UpdateLogChangeEntity change : changes) {
-                updateLogChangeRepository.insert(change);
-            }
+            updateLogChangeRepository.insert(changes);
         }
     }
 
@@ -131,6 +129,7 @@ public class UpdateLogDomainService {
         // 批量创建变更详情
         if (!CollectionUtils.isEmpty(changes)) {
             LocalDateTime now = LocalDateTime.now();
+            java.util.List<UpdateLogChangeEntity> toInsert = new java.util.ArrayList<>(changes.size());
             for (UpdateLogChangeEntity change : changes) {
                 change.setUpdateLogId(updateLog.getId());
                 if (change.getId() == null) {
@@ -138,11 +137,10 @@ public class UpdateLogDomainService {
                     change.setId(java.util.UUID.randomUUID().toString());
                     change.setCreateTime(now);
                     change.setUpdateTime(now);
-                    // 逻辑删除改为时间戳模型，无需显式设置未删除标记
                 }
-                // 循环插入，避免使用不存在的批量方法
-                this.updateLogChangeRepository.insert(change);
+                toInsert.add(change);
             }
+            this.updateLogChangeRepository.insert(toInsert);
         }
 
         return updateLog;
@@ -169,8 +167,8 @@ public class UpdateLogDomainService {
         if (!CollectionUtils.isEmpty(changes)) {
             for (UpdateLogChangeEntity change : changes) {
                 change.setUpdateLogId(updateLog.getId());
-                this.updateLogChangeRepository.insert(change);
             }
+            this.updateLogChangeRepository.insert(changes);
         }
 
         return updateLog;
