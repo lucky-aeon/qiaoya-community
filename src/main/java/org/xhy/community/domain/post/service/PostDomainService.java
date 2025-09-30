@@ -128,9 +128,13 @@ public class PostDomainService {
             return post;
         }
 
-        // 插入采纳关系
-        PostAcceptedCommentEntity relation = new PostAcceptedCommentEntity(postId, commentId);
-        postAcceptedCommentRepository.insert(relation);
+        // 插入采纳关系（并发兜底：唯一约束冲突视为已存在）
+        try {
+            PostAcceptedCommentEntity relation = new PostAcceptedCommentEntity(postId, commentId);
+            postAcceptedCommentRepository.insert(relation);
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            // 并发同时采纳造成唯一约束冲突，视为已采纳
+        }
 
         // 首次采纳则设置已解决与时间
         Long count = postAcceptedCommentRepository.selectCount(
