@@ -9,6 +9,7 @@ import org.xhy.community.domain.like.valueobject.LikeTargetType;
 import org.xhy.community.infrastructure.config.ApiResponse;
 import org.xhy.community.interfaces.like.request.BatchLikeRequest;
 import org.xhy.community.interfaces.like.request.ToggleLikeRequest;
+import org.xhy.community.infrastructure.annotation.RequiresPlanPermissions;
 
 import java.util.HashMap;
 import java.util.List;
@@ -41,6 +42,7 @@ public class LikeController {
      * @return 切换后的点赞状态
      */
     @PostMapping("/toggle")
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "LIKE_TOGGLE", name = "点赞/取消点赞")})
     public ApiResponse<Map<String, Object>> toggleLike(@Valid @RequestBody ToggleLikeRequest request) {
         boolean isLiked = likeAppService.toggleLike(request.getTargetId(), request.getTargetType());
 
@@ -61,6 +63,7 @@ public class LikeController {
      * @return 点赞状态信息
      */
     @GetMapping("/status/{targetType}/{targetId}")
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "LIKE_STATUS", name = "查询点赞状态")})
     public ApiResponse<LikeStatusDTO> getLikeStatus(@PathVariable LikeTargetType targetType,
                                                      @PathVariable String targetId) {
         LikeStatusDTO status = likeAppService.getLikeStatus(targetId, targetType);
@@ -75,6 +78,7 @@ public class LikeController {
      * @return 点赞状态列表
      */
     @PostMapping("/status/batch")
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "LIKE_STATUS_BATCH", name = "批量点赞状态")})
     public ApiResponse<List<LikeStatusDTO>> batchGetLikeStatus(@Valid @RequestBody BatchLikeRequest request) {
         Map<String, LikeTargetType> targets = request.getTargets().stream()
                 .collect(Collectors.toMap(
@@ -95,6 +99,7 @@ public class LikeController {
      * @return 点赞统计信息
      */
     @GetMapping("/count/{targetType}/{targetId}")
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "LIKE_COUNT", name = "点赞计数")})
     public ApiResponse<LikeCountDTO> getLikeCount(@PathVariable LikeTargetType targetType,
                                                    @PathVariable String targetId) {
         LikeCountDTO count = likeAppService.getLikeCount(targetId, targetType);
@@ -108,6 +113,7 @@ public class LikeController {
      * @return 点赞统计列表
      */
     @PostMapping("/count/batch")
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "LIKE_COUNT_BATCH", name = "批量点赞计数")})
     public ApiResponse<List<LikeCountDTO>> batchGetLikeCount(@Valid @RequestBody BatchLikeRequest request) {
         Map<String, LikeTargetType> targets = request.getTargets().stream()
                 .collect(Collectors.toMap(
