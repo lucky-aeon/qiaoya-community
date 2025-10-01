@@ -27,7 +27,7 @@ public class AibaseIngestAppService {
     private final CrawlerClient aibaseCrawlerClient;
 
     // 配置：默认起始ID（参考旧社区实现）
-    private static final long DEFAULT_START_ID = 18330L;
+    private static final long DEFAULT_START_ID = 21698L;
     private static final int MAX_CONSECUTIVE_404 = 50;
     private static final int MAX_RETRIES = 3;
     private static final long INTERVAL_MILLIS = 1000L;
@@ -70,8 +70,8 @@ public class AibaseIngestAppService {
      * @param maxCount 最多抓取条数（<=0 表示不限）
      */
     public IngestResult ingestLatest(int maxCount) {
-        Long maxId = dailyItemDomainService.getMaxSourceItemId(DailySource.AIBASE);
-        long start = (maxId == null ? DEFAULT_START_ID : maxId) + 1;
+//        Long maxId = dailyItemDomainService.getMaxSourceItemId(DailySource.AIBASE);
+        long start = DEFAULT_START_ID;
         log.info("[AIBase] start incremental crawling with limit: id={}, maxCount={}", start, maxCount);
 
         List<CrawledItem> items = aibaseCrawlerClient.crawlIncremental(start, MAX_CONSECUTIVE_404, MAX_RETRIES, INTERVAL_MILLIS, maxCount);

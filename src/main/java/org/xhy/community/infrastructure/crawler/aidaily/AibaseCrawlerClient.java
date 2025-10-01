@@ -8,7 +8,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -157,7 +159,7 @@ public class AibaseCrawlerClient implements CrawlerClient {
     }
 
     private String extractContentHtml(Document doc) {
-        // try main content containers
+        // 选择主要内容容器
         Elements containers = new Elements();
         String[] containerSel = new String[]{
             ".post-content",
@@ -172,21 +174,64 @@ public class AibaseCrawlerClient implements CrawlerClient {
 
         StringBuilder sb = new StringBuilder();
         for (Element c : containers) {
-            // Remove noisy nodes
+            // 1) 清理噪音节点
             c.select("script, style, nav, header, footer, .advertisement, .ads, .nav, .menu, .sidebar, iframe, object, embed, form").remove();
-            Elements parts = c.select("p, div.text, .article-text, h1, h2, h3, h4, h5, h6, ul, ol, li, blockquote, pre, code");
-            if (parts.isEmpty()) {
-                sb.append(c.html());
-            } else {
-                for (Element p : parts) {
-                    String text = p.text();
-                    if (text != null && text.trim().length() > 10) {
-                        sb.append('<').append(p.tagName()).append('>').append(p.html()).append("</").append(p.tagName()).append('>').append("\n\n");
+
+            // 2) 归一化图片（处理懒加载与相对路径）
+            normalizeImages(c);
+
+            // 3) 保留原始层级结构，避免二次展开造成重复
+            sb.append(c.html()).append("\n\n");
+        }
+        return sb.toString().trim();
+    }
+
+    /**
+     * 处理内容区域中的图片：
+     * - 将 data-src/data-original/data-lazy-src 等懒加载属性提升为 src
+     * - 将相对路径转为绝对路径
+     * - 优先保留单一 src，移除 srcset 以避免冗长
+     */
+    private void normalizeImages(Element root) {
+        Elements imgs = root.select("img");
+        for (Element img : imgs) {
+            String src = img.attr("src");
+            if (src == null || src.isBlank() || src.startsWith("data:")) {
+                String[] candidates = new String[]{
+                    "data-src", "data-original", "data-lazy-src", "data-actualsrc", "data-url", "data-srcset", "srcset"
+                };
+                for (String key : candidates) {
+                    String val = img.attr(key);
+                    if (val != null && !val.isBlank()) {
+                        // 对 srcset 取第一项 URL
+                        if ("srcset".equals(key) || "data-srcset".equals(key)) {
+                            int comma = val.indexOf(',');
+                            String first = (comma > 0) ? val.substring(0, comma) : val;
+                            val = first.trim();
+                            int space = val.indexOf(' ');
+                            if (space > 0) val = val.substring(0, space).trim();
+                        }
+                        img.attr("src", val);
+                        break;
                     }
                 }
             }
+
+            // 绝对化 URL
+            String abs = img.absUrl("src");
+            if (abs != null && !abs.isBlank()) {
+                img.attr("src", abs);
+            }
+
+            // 简化：去掉 srcset，保留单一 src
+            img.removeAttr("srcset");
+            img.removeAttr("data-src");
+            img.removeAttr("data-original");
+            img.removeAttr("data-lazy-src");
+            img.removeAttr("data-actualsrc");
+            img.removeAttr("data-url");
+            img.removeAttr("data-srcset");
         }
-        return sb.toString().trim();
     }
 
     private String sanitizeHtml(String html) {
@@ -235,21 +280,50 @@ public class AibaseCrawlerClient implements CrawlerClient {
     }
 
     private LocalDateTime parseDateFlexible(String s) {
-        String[] fmts = new String[]{
-            "yyyy-MM-dd'T'HH:mm:ss'Z'",
+        if (s == null) return null;
+        String src = s.trim();
+
+        // 1) 优先尝试带时区偏移格式，如 2025-05-23T06:00:00Z 或 +08:00
+        try {
+            return OffsetDateTime.parse(src, DateTimeFormatter.ISO_OFFSET_DATE_TIME)
+                    .atZoneSameInstant(ZoneId.of("Asia/Shanghai"))
+                    .toLocalDateTime();
+        } catch (Exception ignored) {}
+
+        // 2) 常见的本地日期时间格式
+        String[] dateTimePatterns = new String[]{
+            "yyyy-MM-dd'T'HH:mm:ss'Z'", // 作为字面量Z处理
             "yyyy-MM-dd HH:mm:ss",
-            "yyyy-MM-dd",
-            "yyyy/MM/dd",
-            "MMM d, yyyy",
-            "MMMM d, yyyy",
-            "yyyy年M月d日"
+            "yyyy/MM/dd HH:mm:ss"
         };
-        for (String f : fmts) {
+        for (String p : dateTimePatterns) {
             try {
-                DateTimeFormatter fmt = DateTimeFormatter.ofPattern(f, Locale.ENGLISH);
-                return LocalDateTime.parse(s, fmt);
+                DateTimeFormatter fmt = DateTimeFormatter.ofPattern(p, Locale.ENGLISH);
+                return LocalDateTime.parse(src, fmt);
             } catch (Exception ignored) {}
         }
+
+        // 3) 仅日期的格式（如：May 23, 2025 / 2025-05-23 / 2025/05/23 / 2025年5月23日）
+        String[] dateOnlyPatternsEn = new String[]{
+            "MMM d, yyyy",
+            "MMMM d, yyyy",
+            "yyyy-MM-dd",
+            "yyyy/MM/dd"
+        };
+        for (String p : dateOnlyPatternsEn) {
+            try {
+                DateTimeFormatter fmt = DateTimeFormatter.ofPattern(p, Locale.ENGLISH);
+                LocalDate d = LocalDate.parse(src, fmt);
+                return d.atStartOfDay();
+            } catch (Exception ignored) {}
+        }
+        // 中文日期
+        try {
+            DateTimeFormatter zh = DateTimeFormatter.ofPattern("yyyy年M月d日");
+            LocalDate d = LocalDate.parse(src, zh);
+            return d.atStartOfDay();
+        } catch (Exception ignored) {}
+
         return null;
     }
 

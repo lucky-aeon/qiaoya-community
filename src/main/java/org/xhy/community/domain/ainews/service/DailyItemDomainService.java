@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.apache.ibatis.executor.BatchResult;
 import org.springframework.stereotype.Service;
 import org.xhy.community.domain.ainews.entity.DailyItemEntity;
+import org.xhy.community.domain.ainews.query.DailyItemQuery;
 import org.xhy.community.domain.ainews.repository.DailyItemRepository;
 import org.xhy.community.domain.ainews.valueobject.DailyItemStatus;
 import org.xhy.community.domain.ainews.valueobject.DailySource;
@@ -104,13 +105,41 @@ public class DailyItemDomainService {
         LocalDateTime to = start.plusDays(1).atStartOfDay();
         qw.ge("published_at", from)
           .lt("published_at", to)
-          .orderByDesc("id");
+          .orderByDesc("create_time");
         if (accessLevel == AccessLevel.USER) {
             qw.eq("status", DailyItemStatus.PUBLISHED.name());
         }
         if (!withContent) {
             qw.select("id", "source", "title", "summary", "url", "source_item_id", "published_at", "fetched_at", "url_hash", "status");
         }
+        return dailyItemRepository.selectPage(page, qw);
+    }
+
+    /**
+     * App 端按查询对象分页
+     */
+    public IPage<DailyItemEntity> pageByQuery(DailyItemQuery query) {
+        Page<DailyItemEntity> page = new Page<>(query.getPageNum(), query.getPageSize());
+        QueryWrapper<DailyItemEntity> qw = new QueryWrapper<>();
+
+        // 日期范围
+        LocalDate start = LocalDate.parse(query.getDate());
+        LocalDateTime from = start.atStartOfDay();
+        LocalDateTime to = start.plusDays(1).atStartOfDay();
+        qw.ge("published_at", from)
+          .lt("published_at", to)
+          .orderByDesc("create_time");
+
+        // 权限访问级别
+        if (query.getAccessLevel() == AccessLevel.USER) {
+            qw.eq("status", DailyItemStatus.PUBLISHED.name());
+        }
+
+        // 字段裁剪
+        if (!Boolean.TRUE.equals(query.getWithContent())) {
+            qw.select("id", "source", "title", "summary", "url", "source_item_id", "published_at", "fetched_at", "url_hash", "status");
+        }
+
         return dailyItemRepository.selectPage(page, qw);
     }
 
