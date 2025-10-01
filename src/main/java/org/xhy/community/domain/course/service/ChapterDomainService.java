@@ -79,6 +79,19 @@ public class ChapterDomainService {
         
         return chapterRepository.selectList(queryWrapper);
     }
+
+    /**
+     * 批量根据课程ID集合查询章节列表
+     * 用于列表页做章节数量与阅读时长聚合，避免 N+1 查询
+     */
+    public List<ChapterEntity> getChaptersByCourseIds(java.util.Collection<String> courseIds) {
+        if (courseIds == null || courseIds.isEmpty()) {
+            return java.util.List.of();
+        }
+        LambdaQueryWrapper<ChapterEntity> queryWrapper = new LambdaQueryWrapper<ChapterEntity>()
+                .in(ChapterEntity::getCourseId, courseIds);
+        return chapterRepository.selectList(queryWrapper);
+    }
     
     public IPage<ChapterEntity> getPagedChapters(ChapterQuery query) {
         Page<ChapterEntity> page = new Page<>(query.getPageNum(), query.getPageSize());

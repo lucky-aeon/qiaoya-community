@@ -94,14 +94,15 @@ public class CourseAppService {
                 .map(CourseEntity::getId)
                 .collect(Collectors.toSet());
         
-        // 批量查询每个课程的章节数量
-        Map<String, Integer> chapterCountMap = getChapterCountMap(courseIds);
-        
+        // 批量查询每个课程的章节数量与总阅读时长
+        ChapterAggregates aggregates = getChapterAggregates(courseIds);
+
         // 转换为前台DTO
         List<FrontCourseDTO> frontCourseDTOs = CourseAssembler.toFrontDTOList(
                 coursePage.getRecords(),
                 authorMap,
-                chapterCountMap
+                aggregates.chapterCountMap,
+                aggregates.totalReadingTimeMap
         );
 
         LikeCountHelper.fillLikeCount(frontCourseDTOs, FrontCourseDTO::getId, LikeTargetType.COURSE, FrontCourseDTO::setLikeCount, likeDomainService);
@@ -131,10 +132,10 @@ public class CourseAppService {
         Set<String> courseIds = coursePage.getRecords().stream()
                 .map(CourseEntity::getId)
                 .collect(java.util.stream.Collectors.toSet());
-        Map<String, Integer> chapterCountMap = getChapterCountMap(courseIds);
+        ChapterAggregates aggregates = getChapterAggregates(courseIds);
 
         List<PublicCourseDTO> dtos = PublicCourseAssembler.toPublicDTOList(
-                coursePage.getRecords(), chapterCountMap
+                coursePage.getRecords(), aggregates.chapterCountMap, aggregates.totalReadingTimeMap
         );
 
         LikeCountHelper.fillLikeCount(dtos, PublicCourseDTO::getId, LikeTargetType.COURSE, PublicCourseDTO::setLikeCount, likeDomainService);
@@ -202,6 +203,45 @@ public class CourseAppService {
                         courseId -> courseId,
                         courseId -> chapterDomainService.getChaptersByCourseId(courseId).size()
                 ));
+    }
+
+    /**
+     * 批量聚合章节数量与总阅读时长，避免 N+1 查询
+     */
+    private ChapterAggregates getChapterAggregates(Set<String> courseIds) {
+        ChapterAggregates aggs = new ChapterAggregates();
+        if (courseIds == null || courseIds.isEmpty()) {
+            aggs.chapterCountMap = java.util.Map.of();
+            aggs.totalReadingTimeMap = java.util.Map.of();
+            return aggs;
+        }
+
+        List<ChapterEntity> chapters = chapterDomainService.getChaptersByCourseIds(courseIds);
+
+        java.util.Map<String, Integer> countMap = new java.util.HashMap<>();
+        java.util.Map<String, Integer> totalMap = new java.util.HashMap<>();
+
+        for (ChapterEntity ch : chapters) {
+            String cid = ch.getCourseId();
+            countMap.merge(cid, 1, Integer::sum);
+            Integer rt = ch.getReadingTime();
+            totalMap.merge(cid, rt == null ? 0 : rt, Integer::sum);
+        }
+
+        // 对于没有任何章节的课程，默认填 0
+        for (String cid : courseIds) {
+            countMap.putIfAbsent(cid, 0);
+            totalMap.putIfAbsent(cid, 0);
+        }
+
+        aggs.chapterCountMap = countMap;
+        aggs.totalReadingTimeMap = totalMap;
+        return aggs;
+    }
+
+    private static class ChapterAggregates {
+        private Map<String, Integer> chapterCountMap;
+        private Map<String, Integer> totalReadingTimeMap;
     }
 
     /**

@@ -71,7 +71,7 @@ public class CourseAssembler {
     /**
      * 将CourseEntity转换为前台课程列表DTO（使用UserEntity）
      */
-    public static FrontCourseDTO toFrontDTO(CourseEntity entity, UserEntity author, Integer chapterCount) {
+    public static FrontCourseDTO toFrontDTO(CourseEntity entity, UserEntity author, Integer chapterCount, Integer totalReadingTime) {
         if (entity == null) {
             return null;
         }
@@ -82,6 +82,7 @@ public class CourseAssembler {
             dto.setAuthorName(author.getName());
         }
         dto.setChapterCount(chapterCount);
+        dto.setTotalReadingTime(totalReadingTime);
         return dto;
     }
 
@@ -90,7 +91,8 @@ public class CourseAssembler {
      */
     public static List<FrontCourseDTO> toFrontDTOList(List<CourseEntity> entities,
                                                       Map<String, UserEntity> authorMap,
-                                                      Map<String, Integer> chapterCountMap) {
+                                                      Map<String, Integer> chapterCountMap,
+                                                      Map<String, Integer> totalReadingTimeMap) {
         if (entities == null || entities.isEmpty()) {
             return List.of();
         }
@@ -98,7 +100,8 @@ public class CourseAssembler {
         return entities.stream()
                 .map(entity -> toFrontDTO(entity,
                                         authorMap.get(entity.getAuthorId()),
-                                        chapterCountMap.getOrDefault(entity.getId(), 0)))
+                                        chapterCountMap.getOrDefault(entity.getId(), 0),
+                                        totalReadingTimeMap.getOrDefault(entity.getId(), 0)))
                 .collect(Collectors.toList());
     }
 
@@ -122,6 +125,14 @@ public class CourseAssembler {
                     .map(CourseAssembler::toFrontChapterDTO)
                     .collect(Collectors.toList());
             dto.setChapters(chapterDTOs);
+
+            // 聚合总阅读时长
+            int totalReadingTime = chapters.stream()
+                    .map(ChapterEntity::getReadingTime)
+                    .filter(java.util.Objects::nonNull)
+                    .mapToInt(Integer::intValue)
+                    .sum();
+            dto.setTotalReadingTime(totalReadingTime);
         }
 
         return dto;
