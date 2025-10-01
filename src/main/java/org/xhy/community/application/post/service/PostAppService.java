@@ -23,6 +23,8 @@ import org.xhy.community.domain.post.service.PostDomainService;
 import org.xhy.community.domain.post.valueobject.PostStatus;
 import org.xhy.community.domain.user.entity.UserEntity;
 import org.xhy.community.domain.user.service.UserDomainService;
+import org.xhy.community.domain.comment.service.CommentDomainService;
+import org.xhy.community.domain.comment.valueobject.BusinessType;
 import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.infrastructure.config.ValidationErrorCode;
 import org.xhy.community.interfaces.post.request.CreatePostRequest;
@@ -42,15 +44,18 @@ public class PostAppService {
     private final UserDomainService userDomainService;
     private final CategoryDomainService categoryDomainService;
     private final LikeDomainService likeDomainService;
+    private final CommentDomainService commentDomainService;
     
     public PostAppService(PostDomainService postDomainService, 
                          UserDomainService userDomainService,
                          CategoryDomainService categoryDomainService,
-                         LikeDomainService likeDomainService) {
+                         LikeDomainService likeDomainService,
+                         CommentDomainService commentDomainService) {
         this.postDomainService = postDomainService;
         this.userDomainService = userDomainService;
         this.categoryDomainService = categoryDomainService;
         this.likeDomainService = likeDomainService;
+        this.commentDomainService = commentDomainService;
     }
     
     public PostDTO createPost(CreatePostRequest request, String authorId) {
@@ -178,11 +183,16 @@ public class PostAppService {
                     CategoryEntity::getType
                 ));
         
-        // 组装FrontPostDTO
+        // 批量统计评论数（动态计算）
+        java.util.Set<String> postIds = posts.stream().map(PostEntity::getId).collect(java.util.stream.Collectors.toSet());
+        java.util.Map<String, Long> commentCountMap = commentDomainService.getCommentCountMapByBusinessIds(postIds, BusinessType.POST);
+
+        // 组装FrontPostDTO，并覆盖评论数
         List<FrontPostDTO> dtoList = posts.stream()
                 .map(post -> {
                     FrontPostDTO dto = FrontPostAssembler.toDTO(post, authorMap, categoryNames);
                     dto.setCategoryType(categoryTypes.get(post.getCategoryId()));
+                    dto.setCommentCount(commentCountMap.getOrDefault(post.getId(), 0L).intValue());
                     return dto;
                 })
                 .toList();
@@ -232,10 +242,15 @@ public class PostAppService {
                     CategoryEntity::getType
                 ));
 
+        // 批量统计评论数（动态计算）
+        java.util.Set<String> postIds = posts.stream().map(PostEntity::getId).collect(java.util.stream.Collectors.toSet());
+        java.util.Map<String, Long> commentCountMap = commentDomainService.getCommentCountMapByBusinessIds(postIds, BusinessType.POST);
+
         List<FrontPostDTO> dtoList = posts.stream()
                 .map(post -> {
                     FrontPostDTO dto = FrontPostAssembler.toDTO(post, authorMap, categoryNames);
                     dto.setCategoryType(categoryTypes.get(post.getCategoryId()));
+                    dto.setCommentCount(commentCountMap.getOrDefault(post.getId(), 0L).intValue());
                     return dto;
                 })
                 .toList();

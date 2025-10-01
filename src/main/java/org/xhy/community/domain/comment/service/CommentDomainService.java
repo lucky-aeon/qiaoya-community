@@ -15,6 +15,9 @@ import org.xhy.community.infrastructure.exception.CommentErrorCode;
 import org.xhy.community.domain.comment.query.CommentQuery;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Collection;
+import java.util.stream.Collectors;
 
 @Service
 public class CommentDomainService {
@@ -137,6 +140,36 @@ public class CommentDomainService {
                 .eq(CommentEntity::getRootCommentId, rootCommentId)
                 .isNotNull(CommentEntity::getParentCommentId)
         );
+    }
+
+    /**
+     * 批量获取业务对象（文章/课程/章节）的评论数量映射
+     * 使用分组统计避免 N+1 查询
+     */
+    public Map<String, Long> getCommentCountMapByBusinessIds(Collection<String> businessIds, BusinessType businessType) {
+        if (businessIds == null || businessIds.isEmpty() || businessType == null) {
+            return Map.of();
+        }
+
+        // 直接查出记录，编码层面分组统计，避免 selectMaps 与全局 MapTypeHandler 的冲突
+        List<CommentEntity> list = commentRepository.selectList(
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<CommentEntity>()
+                        .select(CommentEntity::getBusinessId) // 仅取业务ID即可
+                        .in(CommentEntity::getBusinessId, businessIds)
+                        .eq(CommentEntity::getBusinessType, businessType)
+        );
+
+        Map<String, Long> counts = list.stream()
+                .map(CommentEntity::getBusinessId)
+                .filter(java.util.Objects::nonNull)
+                .collect(Collectors.groupingBy(s -> s, Collectors.counting()));
+
+        // 确保所有传入ID都有键，缺省为0
+        java.util.HashMap<String, Long> result = new java.util.HashMap<>();
+        for (String id : businessIds) {
+            result.put(id, counts.getOrDefault(id, 0L));
+        }
+        return result;
     }
     
     public IPage<CommentEntity> getUserRelatedComments(CommentQuery query) {

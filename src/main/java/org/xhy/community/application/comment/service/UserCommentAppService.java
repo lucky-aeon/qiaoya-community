@@ -61,6 +61,7 @@ public class UserCommentAppService {
         
         CommentDTO dto = CommentAssembler.toDTO(createdComment);
         dto.setLikeCount(0);
+
         return dto;
     }
     
@@ -71,6 +72,7 @@ public class UserCommentAppService {
         
         CommentDTO dto = CommentAssembler.toDTO(createdComment);
         dto.setLikeCount(0);
+
         return dto;
     }
     

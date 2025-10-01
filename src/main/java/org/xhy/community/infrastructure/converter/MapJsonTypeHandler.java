@@ -49,12 +49,23 @@ public class MapJsonTypeHandler extends BaseTypeHandler<Map<String, Object>> {
     }
 
     private Map<String, Object> parseJsonToMap(String json) throws SQLException {
-        if (json == null || json.trim().isEmpty()) {
+        if (json == null) {
+            return null;
+        }
+        String trimmed = json.trim();
+        if (trimmed.isEmpty() || "null".equalsIgnoreCase(trimmed)) {
             return null;
         }
 
         try {
-            return objectMapper.readValue(json, new TypeReference<Map<String, Object>>() {});
+            // 优先按对象解析
+            if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+                return objectMapper.readValue(trimmed, new TypeReference<Map<String, Object>>() {});
+            }
+
+            // 非对象（数字/字符串/布尔/数组等）场景，做兼容包装
+            Object value = objectMapper.readValue(trimmed, Object.class);
+            return java.util.Map.of("value", value);
         } catch (JsonProcessingException e) {
             throw new SQLException("Error parsing JSON to Map<String, Object>: " + json, e);
         }

@@ -19,6 +19,8 @@ import org.xhy.community.domain.user.entity.UserEntity;
 import org.xhy.community.domain.user.service.UserDomainService;
 import org.xhy.community.interfaces.post.request.AdminPostQueryRequest;
 import org.springframework.transaction.annotation.Transactional;
+import org.xhy.community.domain.comment.service.CommentDomainService;
+import org.xhy.community.domain.comment.valueobject.BusinessType;
 
 import java.util.List;
 import java.util.Map;
@@ -36,15 +38,18 @@ public class AdminPostAppService {
     private final UserDomainService userDomainService;
     private final CategoryDomainService categoryDomainService;
     private final LikeDomainService likeDomainService;
+    private final CommentDomainService commentDomainService;
     
     public AdminPostAppService(PostDomainService postDomainService,
                               UserDomainService userDomainService,
                               CategoryDomainService categoryDomainService,
-                              LikeDomainService likeDomainService) {
+                              LikeDomainService likeDomainService,
+                              CommentDomainService commentDomainService) {
         this.postDomainService = postDomainService;
         this.userDomainService = userDomainService;
         this.categoryDomainService = categoryDomainService;
         this.likeDomainService = likeDomainService;
+        this.commentDomainService = commentDomainService;
     }
     
     /**
@@ -88,6 +93,11 @@ public class AdminPostAppService {
         
         // 组装AdminPostDTO
         List<AdminPostDTO> dtoList = AdminPostAssembler.toDTOList(posts, authorMap, categoryNames);
+
+        // 批量覆盖评论数为动态统计值
+        java.util.Set<String> postIds = posts.stream().map(PostEntity::getId).collect(java.util.stream.Collectors.toSet());
+        java.util.Map<String, Long> commentCountMap = commentDomainService.getCommentCountMapByBusinessIds(postIds, BusinessType.POST);
+        dtoList.forEach(dto -> dto.setCommentCount(commentCountMap.getOrDefault(dto.getId(), 0L).intValue()));
         LikeCountHelper.fillLikeCount(dtoList, AdminPostDTO::getId, LikeTargetType.POST, AdminPostDTO::setLikeCount, likeDomainService);
         
         Page<AdminPostDTO> dtoPage = new Page<>(entityPage.getCurrent(), entityPage.getSize(), entityPage.getTotal());
