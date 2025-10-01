@@ -24,7 +24,7 @@ public class AibaseIngestManualTest {
      */
     @Test
     public void ingestWithLimit() {
-        int limit = 3;
+        int limit = 20;
         try {
             String prop = System.getProperty("ainews.limit");
             if (prop != null && !prop.isBlank()) {
