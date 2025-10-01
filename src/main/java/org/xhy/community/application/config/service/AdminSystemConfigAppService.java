@@ -160,10 +160,10 @@ public class AdminSystemConfigAppService {
                     "用户会话配置数据无效");
             }
 
-            // 验证最大活跃IP数范围
-            if (config.getMaxActiveIps() < 1 || config.getMaxActiveIps() > 10) {
+            // 验证默认设备上限范围（历史字段名 maxActiveIps）
+            if (config.getDefaultMaxDevices() < 1 || config.getDefaultMaxDevices() > 10) {
                 throw new BusinessException(SystemConfigErrorCode.INVALID_CONFIG_DATA,
-                    "最大活跃IP数必须在1-10之间");
+                    "默认最大设备数必须在1-10之间");
             }
 
             // 验证封禁时长

@@ -38,6 +38,10 @@ public class DeviceSessionDomainService {
     private String keyBan(String userId) { return "u:" + userId + ":ban"; }
     private String keyLock(String userId) { return "lock:user:" + userId + ":ip"; }
 
+    // =============== 基于设备的并发控制（新增） ===============
+    private String keyDevices(String userId) { return "u:" + userId + ":devices"; }
+    private String keyDeviceIps(String userId, String deviceId) { return "u:" + userId + ":d:" + deviceId + ":ips"; }
+
     /**
      * 登录/上线：按策略新增或续活 IP，必要时执行 LRU 淘汰或封禁。
      * @return 是否允许上线
@@ -105,6 +109,143 @@ public class DeviceSessionDomainService {
             }
             redis.opsForZSet().add(activeKey, ip, now);
             return true;
+        });
+    }
+
+
+    /**
+     * 基于设备ID + IP 的会话创建/续活。
+     * 说明：
+     * - 设备并发以 deviceId 计数；同设备下容忍若干活跃 IP；
+     * - 策略：当设备数超限时，按策略拒绝或淘汰最久未活跃设备；
+     * - 返回 true 表示允许上线，false 表示拒绝（如被封禁或策略 DENY_NEW）。
+     */
+    public boolean createOrReuseByDevice(String userId, String deviceId, String ip,
+                                         int maxActiveDevices, int maxIpsPerDevice, EvictPolicy policy,
+                                         long sessionTtlMs, long historyWindowMs,
+                                         int banThreshold, long banTtlMs) {
+        Objects.requireNonNull(userId, "userId");
+        Objects.requireNonNull(deviceId, "deviceId");
+        Objects.requireNonNull(ip, "ip");
+        Objects.requireNonNull(policy, "policy");
+
+        return lock.executeWithLock(keyLock(userId), Duration.ofMillis(200), Duration.ofSeconds(3), () -> {
+            long now = System.currentTimeMillis();
+            String banKey = keyBan(userId);
+            if (Boolean.TRUE.equals(redis.hasKey(banKey))) {
+                return false;
+            }
+
+            String devicesKey = keyDevices(userId);
+            // 先清理过期设备（根据设备 lastSeen）
+            redis.opsForZSet().removeRangeByScore(devicesKey, Double.NEGATIVE_INFINITY, now - sessionTtlMs);
+
+            // 历史滑窗（沿用 IP 维度）
+            String histKey = keyHist(userId);
+            redis.opsForZSet().removeRangeByScore(histKey, Double.NEGATIVE_INFINITY, now - historyWindowMs);
+            redis.opsForZSet().add(histKey, ip, now);
+            Long histCount = redis.opsForZSet().zCard(histKey);
+            if (histCount != null && histCount > banThreshold) {
+                if (banTtlMs > 0) {
+                    redis.opsForValue().set(banKey, "1", Duration.ofMillis(banTtlMs));
+                } else {
+                    redis.opsForValue().set(banKey, "1");
+                }
+                return false;
+            }
+
+            // 设备是否已存在
+            Double devScore = redis.opsForZSet().score(devicesKey, deviceId);
+            if (devScore == null) {
+                Long devCount = redis.opsForZSet().zCard(devicesKey);
+                long count = devCount == null ? 0 : devCount;
+                if (count >= maxActiveDevices) {
+                    if (policy == EvictPolicy.DENY_NEW) {
+                        return false;
+                    }
+                    // 淘汰最久未活跃设备
+                    Set<ZSetOperations.TypedTuple<String>> oldest = redis.opsForZSet().rangeWithScores(devicesKey, 0, 0);
+                    if (oldest != null && !oldest.isEmpty()) {
+                        String victimDevice = oldest.iterator().next().getValue();
+                        if (victimDevice != null) {
+                            redis.opsForZSet().remove(devicesKey, victimDevice);
+                            // 清理该设备的 IP 集
+                            redis.delete(keyDeviceIps(userId, victimDevice));
+                        }
+                    }
+                }
+                // 加入新设备
+                redis.opsForZSet().add(devicesKey, deviceId, now);
+            } else {
+                // 续活设备
+                redis.opsForZSet().add(devicesKey, deviceId, now);
+            }
+
+            // 在设备下维护活跃 IP 集合
+            String devIpsKey = keyDeviceIps(userId, deviceId);
+            // 清理该设备下过期 IP
+            redis.opsForZSet().removeRangeByScore(devIpsKey, Double.NEGATIVE_INFINITY, now - sessionTtlMs);
+
+            Double ipScore = redis.opsForZSet().score(devIpsKey, ip);
+            if (ipScore != null) {
+                // 同设备同 IP 续活
+                redis.opsForZSet().add(devIpsKey, ip, now);
+                return true;
+            }
+
+            Long ipCount = redis.opsForZSet().zCard(devIpsKey);
+            long ic = ipCount == null ? 0 : ipCount;
+            if (ic < maxIpsPerDevice) {
+                redis.opsForZSet().add(devIpsKey, ip, now);
+                return true;
+            }
+
+            if (policy == EvictPolicy.DENY_NEW) {
+                return false;
+            }
+            // 淘汰该设备下最久未活跃 IP
+            Set<ZSetOperations.TypedTuple<String>> oldestIp = redis.opsForZSet().rangeWithScores(devIpsKey, 0, 0);
+            if (oldestIp != null && !oldestIp.isEmpty()) {
+                String victimIp = oldestIp.iterator().next().getValue();
+                if (victimIp != null) {
+                    redis.opsForZSet().remove(devIpsKey, victimIp);
+                }
+            }
+            // 接纳当前 IP
+            redis.opsForZSet().add(devIpsKey, ip, now);
+            return true;
+        });
+    }
+
+    /**
+     * 判断某设备是否处于活跃状态（不校验 IP）。
+     */
+    public boolean isDeviceActive(String userId, String deviceId, long sessionTtlMs) {
+        if (Boolean.TRUE.equals(redis.hasKey(keyBan(userId)))) {
+            return false;
+        }
+        String devicesKey = keyDevices(userId);
+        Double score = redis.opsForZSet().score(devicesKey, deviceId);
+        if (score == null) {
+            return false;
+        }
+        long now = System.currentTimeMillis();
+        if (score < now - sessionTtlMs) {
+            redis.opsForZSet().remove(devicesKey, deviceId);
+            // 同时清理该设备下 IP 集
+            redis.delete(keyDeviceIps(userId, deviceId));
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * 从活跃设备集合移除一个设备（管理员或应用层主动下线某设备）。
+     */
+    public void removeActiveDevice(String userId, String deviceId) {
+        lock.runWithLock(keyLock(userId), Duration.ofMillis(200), Duration.ofSeconds(3), () -> {
+            redis.opsForZSet().remove(keyDevices(userId), deviceId);
+            redis.delete(keyDeviceIps(userId, deviceId));
         });
     }
 

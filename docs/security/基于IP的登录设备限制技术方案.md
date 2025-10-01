@@ -1,7 +1,7 @@
-# 基于 IP 的登录设备限制技术方案
+# 登录设备限制技术方案（升级：基于设备 + IP 容忍）
 
 作者：后端
-最后更新：2025-09-27
+最后更新：2025-10-01（本次更新：引入 deviceId，按设备并发控制）
 状态：已落地
 适用范围：会话并发控制、IP 近似设备数、Redis ZSET + 分布式锁
 
@@ -9,6 +9,21 @@
 关键代码路径：
 - 分布式锁抽象：src/main/java/org/xhy/community/infrastructure/lock/*
 - 设备会话领域：src/main/java/org/xhy/community/domain/session/service/*
+
+> 重要升级说明（2025-10-01）：
+> - 新增以 deviceId 为主的“按设备并发”控制，兼容旧的“按 IP 并发”方案；
+> - 同一设备允许有限个活跃 IP（默认 3），以容忍梯子/切网；
+> - 有效设备上限优先采用用户个性化设置（UserEntity.maxConcurrentDevices），为空则回退系统默认（UserSessionConfig.defaultMaxDevices，兼容旧字段 maxActiveIps）；
+> - 客户端需在登录与后续请求携带 deviceId：请求头 X-Device-ID 或 Cookie DID；
+> - 鉴权拦截器优先校验 deviceId 是否活跃；缺失 deviceId 时退化为按 IP 校验。
+
+新增配置：src/main/java/org/xhy/community/domain/config/valueobject/UserSessionConfig.java
+- `maxIpsPerDevice`：同设备允许的活跃 IP 上限（默认 3）。
+
+新增/调整接口：
+- 登录请求增加可选字段 `deviceId`（兼容旧客户端为空的场景）。
+- 每次请求建议携带 `X-Device-ID` 请求头或 `DID` Cookie。
+
 
 ## 1. 背景与目标
 
@@ -26,7 +41,7 @@
 ## 3. 方案概述
 
 1) 基于 Redis 统计并控制“并发活跃 IP 数”：使用 ZSET 维护当前活跃 IP 及其最近活跃时间，用于容量控制与 LRU 淘汰；使用 ZSET 维护历史 IP 的最近出现时间，用于滑窗统计与封禁。
-2) 核心约束：同一用户的“活跃 IP 去重数”不得超过 `maxActiveIps`（即最大设备数）。
+2) 核心约束：同一用户的“活跃设备数”不得超过 `defaultMaxDevices`（历史配置字段 `maxActiveIps` 兼容为默认设备上限）。
 3) 新 IP 进入：
    - 策略 DENY_NEW：直接拒绝登录（返回“设备数超限”）。
    - 策略 EVICT_OLDEST：按照 LRU 淘汰最久未活跃的 IP，再接受新 IP。
@@ -183,12 +198,12 @@ public class RedisDistributedLock implements DistributedLock {
 
 ### 6.1 登录/上线（加锁串行）
 
-1) 读取配额：全局默认或套餐级覆盖（`maxActiveIps/policy`）
+1) 读取配额：全局默认或套餐级覆盖（`defaultMaxDevices/policy`）
 2) 获取分布式锁：`lock:user:{userId}:ip`
 3) 失效清理：`ZREMRANGEBYSCORE active_ips -inf (now - sessionTtlMs)`
 4) 历史滑窗：`ZREMRANGEBYSCORE ip_history -inf (now - historyWindowMs)`；`ZADD ip_history ip now`；`ZCARD` 与 `banThreshold` 比较，超阈值→设置 `ban` 并拒绝
 5) 新 IP 判定：若 `ZSCORE active_ips ip` 存在 → `ZADD active_ips ip now` 续活；否则：
-   - 若 `ZCARD active_ips < maxActiveIps` → `ZADD active_ips ip now`
+   - 若 `ZCARD active_ips < defaultMaxDevices` → `ZADD active_ips ip now`
    - 否则按策略：
      - DENY_NEW → 拒绝
      - EVICT_OLDEST → `ZPOPMIN active_ips` 淘汰最老，再 `ZADD active_ips ip now`

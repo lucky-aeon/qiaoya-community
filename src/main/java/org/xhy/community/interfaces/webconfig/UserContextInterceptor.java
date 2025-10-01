@@ -45,10 +45,25 @@ public class UserContextInterceptor implements HandlerInterceptor {
         if (StringUtils.hasText(userId)) {
             UserContext.setCurrentUserId(userId);
 
-            // 基于 IP 的设备白名单检查（无锁，纯读操作）
+            // 基于设备优先的白名单检查；若缺失 deviceId，则回退到按 IP 检查
             String ip = ClientIpUtil.getClientIp(request);
-            boolean ipAllowed = deviceSessionAppService.isIpAllowed(userId, ip);
-            if (!ipAllowed) {
+            String deviceId = request.getHeader("X-Device-ID");
+            if ((deviceId == null || deviceId.isBlank()) && request.getCookies() != null) {
+                for (var c : request.getCookies()) {
+                    if ("DID".equals(c.getName()) && c.getValue() != null && !c.getValue().isBlank()) {
+                        deviceId = c.getValue();
+                        break;
+                    }
+                }
+            }
+
+            boolean allowed;
+            if (deviceId != null && !deviceId.isBlank()) {
+                allowed = deviceSessionAppService.isDeviceAllowed(userId, deviceId);
+            } else {
+                allowed = deviceSessionAppService.isIpAllowed(userId, ip);
+            }
+            if (!allowed) {
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 return false;
             }

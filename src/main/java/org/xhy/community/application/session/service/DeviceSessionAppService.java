@@ -57,4 +57,14 @@ public class DeviceSessionAppService {
         long ttlMs = userSessionConfigService.getUserSessionConfig().getTtl().toMillis();
         return deviceSessionDomainService.isIpActive(userId, ip, ttlMs);
     }
+
+    /**
+     * 校验指定用户在给定设备上的会话是否被允许（是否活跃）。
+     * 若需要进一步校验 IP，可在领域层对同设备多 IP 做容忍阈值控制；
+     * 这里仅判断设备是否仍在活跃集合内。
+     */
+    public boolean isDeviceAllowed(String userId, String deviceId) {
+        long ttlMs = userSessionConfigService.getUserSessionConfig().getTtl().toMillis();
+        return deviceSessionDomainService.isDeviceActive(userId, deviceId, ttlMs);
+    }
 }

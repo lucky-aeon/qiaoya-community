@@ -73,22 +73,36 @@ public class UserAppService {
         this.eventPublisher = eventPublisher;
     }
     
-    public LoginResponseDTO login(String email, String password, String ip) {
+    public LoginResponseDTO login(String email, String password, String ip, String deviceId) {
         if (!userDomainService.authenticateUser(email, password)) {
             throw new BusinessException(UserErrorCode.WRONG_PASSWORD, "邮箱或密码错误");
         }
 
         UserEntity user = userDomainService.getUserByEmail(email);
 
-        // 获取用户会话配置
+        // 获取用户会话配置（系统默认 + 设备IP容忍）
         UserSessionConfig sessionConfig = userSessionConfigService.getUserSessionConfig();
 
-        // 设备/IP 并发控制：基于 IP 的会话限制
-        boolean allowed = deviceSessionDomainService.createOrReuseByIp(
-                user.getId(), ip,
-                sessionConfig.getMaxActiveIps(), sessionConfig.getPolicy(),
-                sessionConfig.getTtl().toMillis(), sessionConfig.getHistoryWindow().toMillis(),
-                sessionConfig.getBanThreshold(), sessionConfig.getBanTtl().toMillis());
+        boolean allowed;
+        if (deviceId != null && !deviceId.isBlank()) {
+            // 生效设备上限：优先使用用户个性化设置；未设置则回退系统默认
+            int maxDevicesEffective = (user.getMaxConcurrentDevices() != null)
+                    ? user.getMaxConcurrentDevices()
+                    : sessionConfig.getDefaultMaxDevices();
+
+            allowed = deviceSessionDomainService.createOrReuseByDevice(
+                    user.getId(), deviceId, ip,
+                    maxDevicesEffective, sessionConfig.getMaxIpsPerDevice(), sessionConfig.getPolicy(),
+                    sessionConfig.getTtl().toMillis(), sessionConfig.getHistoryWindow().toMillis(),
+                    sessionConfig.getBanThreshold(), sessionConfig.getBanTtl().toMillis());
+        } else {
+            // 兼容旧客户端：退化为按 IP 控制
+            allowed = deviceSessionDomainService.createOrReuseByIp(
+                    user.getId(), ip,
+                    sessionConfig.getDefaultMaxDevices(), sessionConfig.getPolicy(),
+                    sessionConfig.getTtl().toMillis(), sessionConfig.getHistoryWindow().toMillis(),
+                    sessionConfig.getBanThreshold(), sessionConfig.getBanTtl().toMillis());
+        }
         if (!allowed) {
             throw new BusinessException(UserErrorCode.USER_BANNED, "设备或IP限制，登录被拒绝");
         }
@@ -96,8 +110,11 @@ public class UserAppService {
         // 生成JWT token
         String token = jwtUtil.generateToken(user.getId(), user.getEmail());
 
-        // 建立token和IP的映射关系，用于后续设备下线时能找到对应token
+        // 建立 token 与 IP/设备 的映射关系，用于后续下线
         tokenIpMappingDomainService.mapTokenToIp(user.getId(), ip, token, sessionConfig.getTtl());
+        if (deviceId != null && !deviceId.isBlank()) {
+            tokenIpMappingDomainService.mapTokenToDevice(user.getId(), deviceId, token, sessionConfig.getTtl());
+        }
 
         // 发布用户登录事件
         eventPublisher.publishEvent(new UserLoginEvent(this, user.getId(), user.getEmail(), ip));
@@ -270,7 +287,7 @@ public class UserAppService {
      * - 从活跃设备集合中移除当前IP
      * - 幂等：异常或无效token不抛出业务异常
      */
-    public void logout(String userId, String token, String ip) {
+    public void logout(String userId, String token, String ip, String deviceId) {
         try {
             if (token != null && !token.isBlank()) {
                 long remainingMs = jwtUtil.getRemainingTime(token);
@@ -285,6 +302,10 @@ public class UserAppService {
                 }
                 if (ip != null && !ip.isBlank()) {
                     deviceSessionDomainService.removeActiveIp(userId, ip);
+                }
+                if (deviceId != null && !deviceId.isBlank()) {
+                    tokenIpMappingDomainService.removeTokensForUserDevice(userId, deviceId);
+                    // 不强制移除设备（可能存在其他 token 仍在使用）；如需“立即下线该设备”，应在上层配合黑名单与 removeActiveDevice
                 }
             }
         } catch (Exception ignored) {

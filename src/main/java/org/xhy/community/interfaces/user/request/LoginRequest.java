@@ -11,6 +11,14 @@ public class LoginRequest {
     
     @NotBlank(message = "密码不能为空")
     private String password;
+
+    /**
+     * 设备标识（可选）。
+     * 用于区分同一账号下的不同设备，配合并发设备数限制。
+     * Web 端建议由前端在首次登录生成并持久化（localStorage/Cookie），
+     * App 端建议存储在 Keychain/Keystore。
+     */
+     private String deviceId;
     
     public LoginRequest() {
     }
@@ -20,4 +28,7 @@ public class LoginRequest {
     
     public String getPassword() { return password; }
     public void setPassword(String password) { this.password = password; }
+
+    public String getDeviceId() { return deviceId; }
+    public void setDeviceId(String deviceId) { this.deviceId = deviceId; }
 }

@@ -9,7 +9,11 @@ import java.time.Duration;
  */
 public class UserSessionConfig {
 
-    /** 默认最大并发活跃IP数（即最大设备数） */
+    /**
+     * 系统默认的“最大并发设备数”。
+     * 注意：历史字段名为 maxActiveIps（为兼容旧配置沿用该字段存储）。
+     * 新口径：表示默认设备上限（defaultMaxDevices），而非“全局活跃IP上限”。
+     */
     private Integer maxActiveIps = 1;
 
     /** 超配额策略：DENY_NEW | EVICT_OLDEST */
@@ -17,6 +21,13 @@ public class UserSessionConfig {
 
     /** 封禁时长（天）*/
     private Long banTtlDays = 7L;
+
+    /**
+     * 同一设备允许的活跃 IP 数上限（用于容忍梯子/网络切换）。
+     * 仅在基于 deviceId 的并发控制启用时生效。
+     * 默认 3。
+     */
+    private Integer maxIpsPerDevice = 3;
 
     public UserSessionConfig() {
     }
@@ -33,7 +44,8 @@ public class UserSessionConfig {
     public boolean isValid() {
         return maxActiveIps != null && maxActiveIps >= 1 && maxActiveIps <= 10
                 && policy != null
-                && banTtlDays != null && banTtlDays >= 0;
+                && banTtlDays != null && banTtlDays >= 0
+                && maxIpsPerDevice != null && maxIpsPerDevice >= 1 && maxIpsPerDevice <= 10;
     }
 
     // ========== 代码层面控制的固定值 ==========
@@ -78,13 +90,14 @@ public class UserSessionConfig {
 
     // ========== Getters and Setters ==========
 
-    public Integer getMaxActiveIps() {
-        return maxActiveIps;
-    }
+    /** 兼容旧接口：获取历史字段 maxActiveIps（作为默认设备上限）。*/
+    public Integer getMaxActiveIps() { return maxActiveIps; }
+    /** 兼容旧接口：设置历史字段 maxActiveIps（作为默认设备上限）。*/
+    public void setMaxActiveIps(Integer maxActiveIps) { this.maxActiveIps = maxActiveIps; }
 
-    public void setMaxActiveIps(Integer maxActiveIps) {
-        this.maxActiveIps = maxActiveIps;
-    }
+    /** 新口径命名：默认设备上限（defaultMaxDevices） */
+    public Integer getDefaultMaxDevices() { return maxActiveIps; }
+    public void setDefaultMaxDevices(Integer defaultMaxDevices) { this.maxActiveIps = defaultMaxDevices; }
 
     public EvictPolicy getPolicy() {
         return policy;
@@ -100,5 +113,13 @@ public class UserSessionConfig {
 
     public void setBanTtlDays(Long banTtlDays) {
         this.banTtlDays = banTtlDays;
+    }
+
+    public Integer getMaxIpsPerDevice() {
+        return maxIpsPerDevice;
+    }
+
+    public void setMaxIpsPerDevice(Integer maxIpsPerDevice) {
+        this.maxIpsPerDevice = maxIpsPerDevice;
     }
 }

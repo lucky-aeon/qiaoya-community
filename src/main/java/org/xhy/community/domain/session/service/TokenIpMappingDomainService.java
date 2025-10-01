@@ -16,10 +16,10 @@ public class TokenIpMappingDomainService {
 
     private final StringRedisTemplate redis;
 
-    // Redis Key 模式：user_token_ip:{userId}:{ip} -> token
-    private static final String TOKEN_IP_KEY_PREFIX = "user_token_ip:";
     // Redis Key 模式：ip_tokens:{userId}:{ip} -> Set<token>
     private static final String IP_TOKENS_KEY_PREFIX = "ip_tokens:";
+    // Redis Key 模式：device_tokens:{userId}:{deviceId} -> Set<token>
+    private static final String DEVICE_TOKENS_KEY_PREFIX = "device_tokens:";
     private static final Duration DEFAULT_MAPPING_TTL = Duration.ofDays(1); // 映射关系默认保留1天
 
     public TokenIpMappingDomainService(StringRedisTemplate redis) {
@@ -53,6 +53,19 @@ public class TokenIpMappingDomainService {
      */
     public void mapTokenToIp(String userId, String ip, String token) {
         mapTokenToIp(userId, ip, token, null);
+    }
+
+    /**
+     * 建立 token 与 deviceId 的映射（用于基于设备的即时下线）。
+     */
+    public void mapTokenToDevice(String userId, String deviceId, String token, Duration ttl) {
+        if (userId == null || deviceId == null || token == null) {
+            return;
+        }
+        Duration actualTtl = ttl != null ? ttl : DEFAULT_MAPPING_TTL;
+        String devTokensKey = DEVICE_TOKENS_KEY_PREFIX + userId + ":" + deviceId;
+        redis.opsForSet().add(devTokensKey, token);
+        redis.expire(devTokensKey, actualTtl);
     }
 
     /**
@@ -99,6 +112,16 @@ public class TokenIpMappingDomainService {
         return allTokens;
     }
 
+    /** 获取指定用户设备对应的所有 tokens */
+    public Set<String> getTokensByUserDevice(String userId, String deviceId) {
+        if (userId == null || deviceId == null) {
+            return Set.of();
+        }
+        String key = DEVICE_TOKENS_KEY_PREFIX + userId + ":" + deviceId;
+        Set<String> tokens = redis.opsForSet().members(key);
+        return tokens != null ? tokens : Set.of();
+    }
+
     /**
      * 移除指定用户IP的token映射
      * 在设备下线时调用
@@ -126,10 +149,15 @@ public class TokenIpMappingDomainService {
             return;
         }
 
-        String pattern = IP_TOKENS_KEY_PREFIX + userId + ":*";
-        Set<String> keys = redis.keys(pattern);
+        String patternIp = IP_TOKENS_KEY_PREFIX + userId + ":*";
+        String patternDev = DEVICE_TOKENS_KEY_PREFIX + userId + ":*";
+        Set<String> keys = redis.keys(patternIp);
+        Set<String> devKeys = redis.keys(patternDev);
         if (keys != null && !keys.isEmpty()) {
             redis.delete(keys);
+        }
+        if (devKeys != null && !devKeys.isEmpty()) {
+            redis.delete(devKeys);
         }
     }
 
@@ -145,12 +173,28 @@ public class TokenIpMappingDomainService {
             return;
         }
 
-        String pattern = IP_TOKENS_KEY_PREFIX + userId + ":*";
-        Set<String> keys = redis.keys(pattern);
-        if (keys != null) {
-            for (String key : keys) {
+        String patternIp = IP_TOKENS_KEY_PREFIX + userId + ":*";
+        String patternDev = DEVICE_TOKENS_KEY_PREFIX + userId + ":*";
+        Set<String> ipKeys = redis.keys(patternIp);
+        if (ipKeys != null) {
+            for (String key : ipKeys) {
                 redis.opsForSet().remove(key, token);
             }
         }
+        Set<String> devKeys = redis.keys(patternDev);
+        if (devKeys != null) {
+            for (String key : devKeys) {
+                redis.opsForSet().remove(key, token);
+            }
+        }
+    }
+
+    /** 移除指定用户某设备的 token 映射 */
+    public void removeTokensForUserDevice(String userId, String deviceId) {
+        if (userId == null || deviceId == null) {
+            return;
+        }
+        String devTokensKey = DEVICE_TOKENS_KEY_PREFIX + userId + ":" + deviceId;
+        redis.delete(devTokensKey);
     }
 }

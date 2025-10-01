@@ -54,7 +54,8 @@ public class AuthController {
     )
     public ApiResponse<LoginResponseDTO> login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest) {
         String ip = ClientIpUtil.getClientIp(httpRequest);
-        LoginResponseDTO loginResponse = userAppService.login(request.getEmail(), request.getPassword(), ip);
+        String deviceId = extractDeviceId(httpRequest);
+        LoginResponseDTO loginResponse = userAppService.login(request.getEmail(), request.getPassword(), ip, deviceId);
         return ApiResponse.success("登录成功", loginResponse);
     }
 
@@ -134,17 +135,35 @@ public class AuthController {
     public ApiResponse<HashMap<String, Object>> logout(HttpServletRequest httpRequest) {
         String authorization = httpRequest.getHeader("Authorization");
         String ip = ClientIpUtil.getClientIp(httpRequest);
+        String deviceId = extractDeviceId(httpRequest);
 
         if (authorization != null && authorization.startsWith("Bearer ")) {
             String token = authorization.substring(7);
             if (jwtUtil.validateToken(token)) {
                 String userId = jwtUtil.getUserIdFromToken(token);
-                userAppService.logout(userId, token, ip);
+                userAppService.logout(userId, token, ip, deviceId);
             }
         }
 
         HashMap<String, Object> data = new HashMap<>();
         data.put("message", "退出成功");
         return ApiResponse.success("退出成功", data);
+    }
+
+    private String extractDeviceId(HttpServletRequest request) {
+        // 优先请求头
+        String deviceId = request.getHeader("X-Device-ID");
+        if (deviceId != null && !deviceId.isBlank()) {
+            return deviceId;
+        }
+        // 其次 Cookie（名称 DID）
+        if (request.getCookies() != null) {
+            for (var c : request.getCookies()) {
+                if ("DID".equals(c.getName()) && c.getValue() != null && !c.getValue().isBlank()) {
+                    return c.getValue();
+                }
+            }
+        }
+        return null;
     }
 }
