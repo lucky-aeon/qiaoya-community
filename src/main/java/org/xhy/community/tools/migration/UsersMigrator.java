@@ -49,7 +49,7 @@ public class UsersMigrator {
         }
 
         String mysqlUrl = String.format(
-                "jdbc:mysql://%s:%s/%s?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC&useSSL=false&allowPublicKeyRetrieval=true&useCursorFetch=true&zeroDateTimeBehavior=convertToNull",
+                "jdbc:mysql://%s:%s/%s?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true&useCursorFetch=true&zeroDateTimeBehavior=convertToNull",
                 mysqlHost, mysqlPort, mysqlDb);
 
         String pgUrl = String.format("jdbc:postgresql://%s:%s/%s", pgHost, pgPort, pgDb);
