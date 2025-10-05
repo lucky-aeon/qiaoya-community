@@ -18,6 +18,8 @@ public class FrontChapterDetailDTO {
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
     private Integer likeCount;
+    /** 章节内容类型：VIDEO 或 TEXT（通过 MarkdownParser 解析内容得到） */
+    private ChapterContentType contentType;
 
     public FrontChapterDetailDTO() {
     }
@@ -52,4 +54,7 @@ public class FrontChapterDetailDTO {
 
     public Integer getLikeCount() { return likeCount; }
     public void setLikeCount(Integer likeCount) { this.likeCount = likeCount; }
+
+    public ChapterContentType getContentType() { return contentType; }
+    public void setContentType(ChapterContentType contentType) { this.contentType = contentType; }
 }

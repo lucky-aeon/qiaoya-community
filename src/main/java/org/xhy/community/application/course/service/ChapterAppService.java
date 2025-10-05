@@ -3,6 +3,7 @@ package org.xhy.community.application.course.service;
 import org.springframework.stereotype.Service;
 import org.xhy.community.application.course.assembler.ChapterAssembler;
 import org.xhy.community.application.course.dto.FrontChapterDetailDTO;
+import org.xhy.community.application.course.dto.ChapterContentType;
 import org.xhy.community.application.course.dto.LatestChapterDTO;
 import org.xhy.community.domain.course.entity.ChapterEntity;
 import org.xhy.community.domain.course.entity.CourseEntity;
@@ -14,6 +15,9 @@ import org.xhy.community.application.like.helper.LikeCountHelper;
 import org.xhy.community.application.permission.service.UserPermissionAppService;
 import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.infrastructure.exception.CourseErrorCode;
+import org.xhy.community.infrastructure.markdown.MarkdownParser;
+import org.xhy.community.infrastructure.markdown.model.MarkdownNode;
+import org.xhy.community.infrastructure.markdown.model.NodeType;
 
 import java.util.List;
 import java.util.Map;
@@ -31,15 +35,18 @@ public class ChapterAppService {
     private final CourseDomainService courseDomainService;
     private final UserPermissionAppService userPermissionAppService;
     private final LikeDomainService likeDomainService;
+    private final MarkdownParser markdownParser;
 
     public ChapterAppService(ChapterDomainService chapterDomainService,
                             CourseDomainService courseDomainService,
                             UserPermissionAppService userPermissionAppService,
-                            LikeDomainService likeDomainService) {
+                            LikeDomainService likeDomainService,
+                            MarkdownParser markdownParser) {
         this.chapterDomainService = chapterDomainService;
         this.courseDomainService = courseDomainService;
         this.userPermissionAppService = userPermissionAppService;
         this.likeDomainService = likeDomainService;
+        this.markdownParser = markdownParser;
     }
 
     /**
@@ -59,8 +66,26 @@ public class ChapterAppService {
         validateChapterAccess(chapter.getCourseId(), userId);
 
         FrontChapterDetailDTO dto = ChapterAssembler.toFrontDetailDTO(chapter, course.getTitle());
+        // 解析 Markdown 内容，判断是否包含视频节点，返回章节内容类型
+        try {
+            MarkdownNode root = markdownParser.parse(chapter.getContent());
+            dto.setContentType(hasVideoNode(root) ? ChapterContentType.VIDEO : ChapterContentType.TEXT);
+        } catch (Exception e) {
+            dto.setContentType(ChapterContentType.TEXT);
+        }
         dto.setLikeCount(LikeCountHelper.getLikeCount(chapterId, LikeTargetType.CHAPTER, likeDomainService));
         return dto;
+    }
+
+    private boolean hasVideoNode(MarkdownNode node) {
+        if (node == null) return false;
+        if (node.getType() == NodeType.VIDEO) return true;
+        if (node.getChildren() != null) {
+            for (MarkdownNode c : node.getChildren()) {
+                if (hasVideoNode(c)) return true;
+            }
+        }
+        return false;
     }
 
     /**

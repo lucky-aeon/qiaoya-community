@@ -1,7 +1,5 @@
 package org.xhy.community.application.user.dto;
 
-import org.xhy.community.domain.user.valueobject.UserStatus;
-
 import java.time.LocalDateTime;
 
 public class UserPublicProfileDTO {
@@ -11,6 +9,7 @@ public class UserPublicProfileDTO {
     private String description;
     private String avatar;
     private LocalDateTime createTime;
+    private java.util.List<String> tags;
     
     public UserPublicProfileDTO() {
     }
@@ -30,4 +29,12 @@ public class UserPublicProfileDTO {
 
     public LocalDateTime getCreateTime() { return createTime; }
     public void setCreateTime(LocalDateTime createTime) { this.createTime = createTime; }
+
+    public java.util.List<String> getTags() {
+        return tags;
+    }
+
+    public void setTags(java.util.List<String> tags) {
+        this.tags = tags;
+    }
 }

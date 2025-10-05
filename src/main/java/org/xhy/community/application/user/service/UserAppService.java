@@ -35,6 +35,7 @@ import org.xhy.community.domain.user.valueobject.UserStatus;
 public class UserAppService {
     
     private final UserDomainService userDomainService;
+    private final org.xhy.community.domain.tag.service.TagDomainService tagDomainService;
     private final JwtUtil jwtUtil;
     private final DeviceSessionDomainService deviceSessionDomainService;
     private final UserSessionConfigService userSessionConfigService;
@@ -48,6 +49,7 @@ public class UserAppService {
     private final ApplicationEventPublisher eventPublisher;
 
     public UserAppService(UserDomainService userDomainService,
+                          org.xhy.community.domain.tag.service.TagDomainService tagDomainService,
                           JwtUtil jwtUtil,
                           DeviceSessionDomainService deviceSessionDomainService,
                           UserSessionConfigService userSessionConfigService,
@@ -60,6 +62,7 @@ public class UserAppService {
                           EmailService emailService,
                           ApplicationEventPublisher eventPublisher) {
         this.userDomainService = userDomainService;
+        this.tagDomainService = tagDomainService;
         this.jwtUtil = jwtUtil;
         this.deviceSessionDomainService = deviceSessionDomainService;
         this.userSessionConfigService = userSessionConfigService;
@@ -238,13 +241,55 @@ public class UserAppService {
             dto.setCurrentSubscriptionEndTime(current.getEndTime());
             dto.setCurrentSubscriptionLevel(subscriptionPlan.getLevel());
         }
-
+        // 聚合标签名称（授予即默认公开）
+        {
+            java.util.List<org.xhy.community.domain.tag.entity.UserTagAssignmentEntity> assigns =
+                    tagDomainService.listIssuedAssignmentsByUser(userId);
+            if (assigns != null && !assigns.isEmpty()) {
+                java.util.List<String> tagIds = assigns.stream()
+                        .map(org.xhy.community.domain.tag.entity.UserTagAssignmentEntity::getTagId)
+                        .toList();
+                java.util.Map<String, org.xhy.community.domain.tag.entity.TagDefinitionEntity> defMap =
+                        tagDomainService.getTagDefinitionMapByIds(java.util.Set.copyOf(tagIds));
+                java.util.List<String> tagNames = assigns.stream()
+                        .map(a -> defMap.get(a.getTagId()))
+                        .filter(java.util.Objects::nonNull)
+                        .map(org.xhy.community.domain.tag.entity.TagDefinitionEntity::getName)
+                        .filter(java.util.Objects::nonNull)
+                        .distinct()
+                        .toList();
+                dto.setTags(tagNames);
+            } else {
+                dto.setTags(java.util.Collections.emptyList());
+            }
+        }
         return dto;
     }
     
     public UserPublicProfileDTO getUserPublicProfile(String userId) {
         UserEntity user = userDomainService.getUserById(userId);
-        return UserAssembler.toPublicProfileDTO(user);
+        UserPublicProfileDTO dto = UserAssembler.toPublicProfileDTO(user);
+        // 聚合标签名称（公开展示：授予即公开）
+        java.util.List<org.xhy.community.domain.tag.entity.UserTagAssignmentEntity> assigns =
+                tagDomainService.listIssuedAssignmentsByUser(userId);
+        if (assigns != null && !assigns.isEmpty()) {
+            java.util.List<String> tagIds = assigns.stream()
+                    .map(org.xhy.community.domain.tag.entity.UserTagAssignmentEntity::getTagId)
+                    .toList();
+            java.util.Map<String, org.xhy.community.domain.tag.entity.TagDefinitionEntity> defMap =
+                    tagDomainService.getTagDefinitionMapByIds(java.util.Set.copyOf(tagIds));
+            java.util.List<String> tagNames = assigns.stream()
+                    .map(a -> defMap.get(a.getTagId()))
+                    .filter(java.util.Objects::nonNull)
+                    .map(org.xhy.community.domain.tag.entity.TagDefinitionEntity::getName)
+                    .filter(java.util.Objects::nonNull)
+                    .distinct()
+                    .toList();
+            dto.setTags(tagNames);
+        } else {
+            dto.setTags(java.util.Collections.emptyList());
+        }
+        return dto;
     }
 
     /**

@@ -25,6 +25,7 @@ public class UserDTO {
     private Integer currentSubscriptionLevel;
     private LocalDateTime currentSubscriptionStartTime;
     private LocalDateTime currentSubscriptionEndTime;
+    private java.util.List<String> tags;
     
     public UserDTO() {
     }
@@ -109,5 +110,13 @@ public class UserDTO {
 
     public void setCurrentSubscriptionLevel(Integer currentSubscriptionLevel) {
         this.currentSubscriptionLevel = currentSubscriptionLevel;
+    }
+
+    public java.util.List<String> getTags() {
+        return tags;
+    }
+
+    public void setTags(java.util.List<String> tags) {
+        this.tags = tags;
     }
 }
