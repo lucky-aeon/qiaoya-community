@@ -20,7 +20,16 @@
       "Bash(git restore:*)",
       "Bash(tree:*)",
       "Read(//Users/xhy/GoLandProjects/community/cmd/community/**)",
-      "Read(//Users/xhy/GoLandProjects/community/**)"
+      "Read(//Users/xhy/GoLandProjects/community/**)",
+      "WebFetch(domain:www.xiaohongshu.com)",
+      "mcp__chrome-devtools__list_pages",
+      "mcp__chrome-devtools__navigate_page",
+      "mcp__chrome-devtools__new_page",
+      "mcp__nickclyde-duckduckgo-mcp-server__fetch_content",
+      "mcp__chrome-devtools__wait_for",
+      "mcp__chrome-devtools__click",
+      "mcp__chrome-devtools__take_screenshot",
+      "mcp__chrome-devtools__navigate_page_history"
     ],
     "deny": [],
     "ask": []
