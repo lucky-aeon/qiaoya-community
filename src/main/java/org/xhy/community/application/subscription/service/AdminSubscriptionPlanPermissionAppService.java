@@ -34,7 +34,7 @@ public class AdminSubscriptionPlanPermissionAppService {
     public void updateSubscriptionPlanPermissions(String planId, UpdateSubscriptionPlanPermissionsRequest request) {
         List<String> permissions = request == null ? List.of() : (request.getPermissions() == null ? List.of() : request.getPermissions());
         List<String> normalized = permissions.stream()
-                .filter(s -> s != null && !s.isBlank())
+                .filter(org.springframework.util.StringUtils::hasText)
                 .distinct()
                 .collect(Collectors.toList());
         subscriptionPlanDomainService.syncSubscriptionPlanPermissions(planId, normalized);

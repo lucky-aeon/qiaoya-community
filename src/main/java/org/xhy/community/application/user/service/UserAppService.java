@@ -87,7 +87,7 @@ public class UserAppService {
         UserSessionConfig sessionConfig = userSessionConfigService.getUserSessionConfig();
 
         boolean allowed;
-        if (deviceId != null && !deviceId.isBlank()) {
+        if (org.springframework.util.StringUtils.hasText(deviceId)) {
             // 生效设备上限：优先使用用户个性化设置；未设置则回退系统默认
             int maxDevicesEffective = (user.getMaxConcurrentDevices() != null)
                     ? user.getMaxConcurrentDevices()
@@ -115,7 +115,7 @@ public class UserAppService {
 
         // 建立 token 与 IP/设备 的映射关系，用于后续下线
         tokenIpMappingDomainService.mapTokenToIp(user.getId(), ip, token, sessionConfig.getTtl());
-        if (deviceId != null && !deviceId.isBlank()) {
+        if (org.springframework.util.StringUtils.hasText(deviceId)) {
             tokenIpMappingDomainService.mapTokenToDevice(user.getId(), deviceId, token, sessionConfig.getTtl());
         }
 
@@ -334,21 +334,21 @@ public class UserAppService {
      */
     public void logout(String userId, String token, String ip, String deviceId) {
         try {
-            if (token != null && !token.isBlank()) {
+            if (org.springframework.util.StringUtils.hasText(token)) {
                 long remainingMs = jwtUtil.getRemainingTime(token);
                 if (remainingMs > 0) {
                     tokenBlacklistDomainService.addToBlacklist(token, java.time.Duration.ofMillis(remainingMs));
                 }
             }
 
-            if (userId != null && !userId.isBlank()) {
-                if (token != null && !token.isBlank()) {
+            if (org.springframework.util.StringUtils.hasText(userId)) {
+                if (org.springframework.util.StringUtils.hasText(token)) {
                     tokenIpMappingDomainService.removeSpecificToken(userId, token);
                 }
-                if (ip != null && !ip.isBlank()) {
+                if (org.springframework.util.StringUtils.hasText(ip)) {
                     deviceSessionDomainService.removeActiveIp(userId, ip);
                 }
-                if (deviceId != null && !deviceId.isBlank()) {
+                if (org.springframework.util.StringUtils.hasText(deviceId)) {
                     tokenIpMappingDomainService.removeTokensForUserDevice(userId, deviceId);
                     // 不强制移除设备（可能存在其他 token 仍在使用）；如需“立即下线该设备”，应在上层配合黑名单与 removeActiveDevice
                 }

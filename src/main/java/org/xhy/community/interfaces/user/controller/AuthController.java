@@ -17,6 +17,7 @@ import org.xhy.community.interfaces.user.request.ResetPasswordRequest;
 import org.xhy.community.infrastructure.annotation.LogUserActivity;
 import org.xhy.community.infrastructure.annotation.ActivityLog;
 import org.xhy.community.domain.common.valueobject.ActivityType;
+import org.springframework.util.StringUtils;
 
 import java.util.HashMap;
 
@@ -153,13 +154,13 @@ public class AuthController {
     private String extractDeviceId(HttpServletRequest request) {
         // 优先请求头
         String deviceId = request.getHeader("X-Device-ID");
-        if (deviceId != null && !deviceId.isBlank()) {
+        if (StringUtils.hasText(deviceId)) {
             return deviceId;
         }
         // 其次 Cookie（名称 DID）
         if (request.getCookies() != null) {
             for (var c : request.getCookies()) {
-                if ("DID".equals(c.getName()) && c.getValue() != null && !c.getValue().isBlank()) {
+                if ("DID".equals(c.getName()) && StringUtils.hasText(c.getValue())) {
                     return c.getValue();
                 }
             }

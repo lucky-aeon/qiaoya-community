@@ -167,9 +167,9 @@ public class AuthDomainService {
         Page<UserSocialAccountEntity> page = new Page<>(query.getPageNum(), query.getPageSize());
         com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<UserSocialAccountEntity> qw =
                 new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<UserSocialAccountEntity>()
-                        .eq(query.getUserId() != null && !query.getUserId().isBlank(), UserSocialAccountEntity::getUserId, query.getUserId())
+                        .eq(StringUtils.hasText(query.getUserId()), UserSocialAccountEntity::getUserId, query.getUserId())
                         .eq(query.getProvider() != null, UserSocialAccountEntity::getProvider, query.getProvider())
-                        .like(query.getLogin() != null && !query.getLogin().isBlank(), UserSocialAccountEntity::getLogin, query.getLogin())
+                        .like(StringUtils.hasText(query.getLogin()), UserSocialAccountEntity::getLogin, query.getLogin())
                         .ge(query.getStartTime() != null, UserSocialAccountEntity::getCreateTime, query.getStartTime())
                         .le(query.getEndTime() != null, UserSocialAccountEntity::getCreateTime, query.getEndTime())
                         .orderByDesc(UserSocialAccountEntity::getCreateTime);

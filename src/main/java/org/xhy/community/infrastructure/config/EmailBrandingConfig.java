@@ -10,6 +10,7 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.Base64;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.util.StringUtils;
 
 /**
  * 邮件品牌配置（Logo、设置链接等）
@@ -26,11 +27,11 @@ public class EmailBrandingConfig {
     private String manageNotificationsUrl = "https://qiaoya.com/settings/notifications";
 
     public String getLogoSrc() {
-        if (logoSrc != null && !logoSrc.isBlank()) {
+        if (StringUtils.hasText(logoSrc)) {
             return logoSrc;
         }
         // 优先从 logoFile 读取
-        if (logoFile != null && !logoFile.isBlank()) {
+        if (StringUtils.hasText(logoFile)) {
             // 支持 classpath: 前缀
             if (logoFile.startsWith("classpath:")) {
                 String cp = logoFile.substring("classpath:".length());

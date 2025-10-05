@@ -35,7 +35,7 @@ public class DailyItemDomainService {
 
         for (DailyItemEntity it : items) {
             String hash = it.getUrlHash();
-            if (hash != null && !hash.isBlank()) {
+            if (org.springframework.util.StringUtils.hasText(hash)) {
                 urlHashes.add(hash);
             }
             if (it.getSource() != null && it.getSourceItemId() != null) {
@@ -83,7 +83,7 @@ public class DailyItemDomainService {
             String pair = (it.getSource() != null && it.getSourceItemId() != null)
                 ? (it.getSource().name() + "|" + it.getSourceItemId()) : null;
 
-            boolean dupByHash = (hash != null && !hash.isBlank()) && (existingHashes.contains(hash) || !seenHashes.add(hash));
+            boolean dupByHash = (org.springframework.util.StringUtils.hasText(hash)) && (existingHashes.contains(hash) || !seenHashes.add(hash));
             boolean dupByPair = (pair != null) && (existingPairs.contains(pair) || !seenPairs.add(pair));
 
             if (!dupByHash && !dupByPair) {
@@ -155,7 +155,7 @@ public class DailyItemDomainService {
     public IPage<DailyItemEntity> pageAdmin(String date, DailyItemStatus status, int pageNum, int pageSize, boolean withContent) {
         Page<DailyItemEntity> page = new Page<>(pageNum, pageSize);
         QueryWrapper<DailyItemEntity> qw = new QueryWrapper<>();
-        if (date != null && !date.isBlank()) {
+        if (org.springframework.util.StringUtils.hasText(date)) {
             LocalDate start = LocalDate.parse(date);
             LocalDateTime from = start.atStartOfDay();
             LocalDateTime to = start.plusDays(1).atStartOfDay();

@@ -152,7 +152,7 @@ public class AibaseCrawlerClient implements CrawlerClient {
             Element el = doc.selectFirst(sel);
             if (el != null) {
                 String t = el.text();
-                if (t != null && !t.isBlank()) return t.trim();
+                if (org.springframework.util.StringUtils.hasText(t)) return t.trim();
             }
         }
         return null;
@@ -196,13 +196,13 @@ public class AibaseCrawlerClient implements CrawlerClient {
         Elements imgs = root.select("img");
         for (Element img : imgs) {
             String src = img.attr("src");
-            if (src == null || src.isBlank() || src.startsWith("data:")) {
+            if (!org.springframework.util.StringUtils.hasText(src) || src.startsWith("data:")) {
                 String[] candidates = new String[]{
                     "data-src", "data-original", "data-lazy-src", "data-actualsrc", "data-url", "data-srcset", "srcset"
                 };
                 for (String key : candidates) {
                     String val = img.attr(key);
-                    if (val != null && !val.isBlank()) {
+                    if (org.springframework.util.StringUtils.hasText(val)) {
                         // 对 srcset 取第一项 URL
                         if ("srcset".equals(key) || "data-srcset".equals(key)) {
                             int comma = val.indexOf(',');
@@ -219,7 +219,7 @@ public class AibaseCrawlerClient implements CrawlerClient {
 
             // 绝对化 URL
             String abs = img.absUrl("src");
-            if (abs != null && !abs.isBlank()) {
+            if (org.springframework.util.StringUtils.hasText(abs)) {
                 img.attr("src", abs);
             }
 
