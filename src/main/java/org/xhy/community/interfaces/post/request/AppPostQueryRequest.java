@@ -6,6 +6,7 @@ import org.xhy.community.interfaces.common.request.PageRequest;
 public class AppPostQueryRequest extends PageRequest {
     
     private CategoryType categoryType;
+    private String categoryId;
     
     public AppPostQueryRequest() {}
     
@@ -20,5 +21,13 @@ public class AppPostQueryRequest extends PageRequest {
     
     public void setCategoryType(CategoryType categoryType) {
         this.categoryType = categoryType;
+    }
+
+    public String getCategoryId() {
+        return categoryId;
+    }
+
+    public void setCategoryId(String categoryId) {
+        this.categoryId = categoryId;
     }
 }
