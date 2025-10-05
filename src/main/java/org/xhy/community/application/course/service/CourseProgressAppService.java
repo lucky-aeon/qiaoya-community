@@ -6,6 +6,11 @@ import org.xhy.community.application.course.dto.LearningRecordItemDTO;
 import org.xhy.community.domain.course.entity.UserCourseProgressEntity;
 // import removed: certificate replaced by tag system
 import org.xhy.community.domain.course.service.CourseProgressDomainService;
+import org.xhy.community.interfaces.course.request.ReportChapterProgressRequest;
+import org.xhy.community.domain.course.service.CourseDomainService;
+import org.xhy.community.domain.course.service.ChapterDomainService;
+import org.xhy.community.domain.tag.service.TagDomainService;
+import org.xhy.community.application.course.assembler.LearningProgressAssembler;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -18,14 +23,14 @@ import java.util.stream.Collectors;
 public class CourseProgressAppService {
 
     private final CourseProgressDomainService courseProgressDomainService;
-    private final org.xhy.community.domain.course.service.CourseDomainService courseDomainService;
-    private final org.xhy.community.domain.course.service.ChapterDomainService chapterDomainService;
-    private final org.xhy.community.domain.tag.service.TagDomainService tagDomainService;
+    private final CourseDomainService courseDomainService;
+    private final ChapterDomainService chapterDomainService;
+    private final TagDomainService tagDomainService;
 
     public CourseProgressAppService(CourseProgressDomainService courseProgressDomainService,
-                                    org.xhy.community.domain.course.service.CourseDomainService courseDomainService,
-                                    org.xhy.community.domain.course.service.ChapterDomainService chapterDomainService,
-                                    org.xhy.community.domain.tag.service.TagDomainService tagDomainService) {
+                                    CourseDomainService courseDomainService,
+                                    ChapterDomainService chapterDomainService,
+                                    TagDomainService tagDomainService) {
         this.courseProgressDomainService = courseProgressDomainService;
         this.courseDomainService = courseDomainService;
         this.chapterDomainService = chapterDomainService;
@@ -33,9 +38,9 @@ public class CourseProgressAppService {
     }
 
     public CourseProgressDTO reportProgress(String userId,
-                                            org.xhy.community.interfaces.course.request.ReportChapterProgressRequest request) {
+                                            ReportChapterProgressRequest request) {
         // 组装值对象并更新章节进度
-        var report = org.xhy.community.application.course.assembler.LearningProgressAssembler.fromReportRequest(userId, request);
+        var report = LearningProgressAssembler.fromReportRequest(userId, request);
         courseProgressDomainService.updateChapterProgress(report);
 
         // 发放标签改为事件驱动（监听课程完成事件），此处不直接发放

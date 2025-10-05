@@ -9,6 +9,7 @@ import org.xhy.community.domain.config.service.SystemConfigDomainService;
 import org.xhy.community.domain.config.valueobject.DefaultSubscriptionConfig;
 import org.xhy.community.domain.config.valueobject.SystemConfigType;
 import org.xhy.community.domain.config.valueobject.UserSessionConfig;
+import org.xhy.community.domain.config.valueobject.GithubOAuthConfig;
 import org.xhy.community.domain.subscription.service.SubscriptionPlanDomainService;
 import org.xhy.community.domain.subscription.entity.SubscriptionPlanEntity;
 import org.xhy.community.infrastructure.exception.BusinessException;
@@ -186,11 +187,11 @@ public class AdminSystemConfigAppService {
      */
     private void validateAndUpdateGithubOAuthConfig(Object configData) {
         try {
-            org.xhy.community.domain.config.valueobject.GithubOAuthConfig config;
-            if (configData instanceof org.xhy.community.domain.config.valueobject.GithubOAuthConfig g) {
+            GithubOAuthConfig config;
+            if (configData instanceof GithubOAuthConfig g) {
                 config = g;
             } else {
-                config = objectMapper.convertValue(configData, org.xhy.community.domain.config.valueobject.GithubOAuthConfig.class);
+                config = objectMapper.convertValue(configData, GithubOAuthConfig.class);
             }
 
             if (config == null || !config.isValid()) {

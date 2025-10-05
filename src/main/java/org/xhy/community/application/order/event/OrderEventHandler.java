@@ -13,6 +13,7 @@ import org.xhy.community.domain.order.valueobject.OrderType;
 import org.xhy.community.domain.subscription.service.SubscriptionPlanDomainService;
 import org.xhy.community.domain.cdk.service.CDKDomainService;
 import org.xhy.community.domain.cdk.entity.CDKEntity;
+import org.xhy.community.domain.cdk.valueobject.CDKType;
 
 @Component
 public class OrderEventHandler {
@@ -110,7 +111,7 @@ public class OrderEventHandler {
     /**
      * 根据商品类型和ID获取商品名称
      */
-    private String getProductName(org.xhy.community.domain.cdk.valueobject.CDKType cdkType, String targetId) {
+    private String getProductName(CDKType cdkType, String targetId) {
         return switch (cdkType) {
             case COURSE -> {
                 try {
@@ -131,7 +132,7 @@ public class OrderEventHandler {
         };
     }
 
-    private java.math.BigDecimal getProductPrice(org.xhy.community.domain.cdk.valueobject.CDKType cdkType, String targetId) {
+    private java.math.BigDecimal getProductPrice(CDKType cdkType, String targetId) {
         return switch (cdkType) {
             case COURSE -> {
                 try {

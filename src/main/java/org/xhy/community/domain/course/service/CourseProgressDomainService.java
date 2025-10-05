@@ -13,6 +13,8 @@ import org.xhy.community.domain.course.repository.ChapterRepository;
 import org.xhy.community.domain.course.entity.ChapterEntity;
 import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.infrastructure.exception.CourseErrorCode;
+import org.xhy.community.domain.course.valueobject.ChapterProgressReport;
+import org.xhy.community.domain.course.entity.UserChapterProgressEntity;
 
 import java.time.LocalDateTime;
 
@@ -39,7 +41,7 @@ public class CourseProgressDomainService {
     /**
      * 上报章节学习进度（只增不减，与心跳/阈值打点配合）
      */
-    public void updateChapterProgress(org.xhy.community.domain.course.valueobject.ChapterProgressReport report) {
+    public void updateChapterProgress(ChapterProgressReport report) {
         String userId = report.getUserId();
         String courseId = report.getCourseId();
         String chapterId = report.getChapterId();
@@ -170,9 +172,9 @@ public class CourseProgressDomainService {
         java.util.Map<String, Integer> map = new java.util.HashMap<>();
         if (chapterIds == null || chapterIds.isEmpty()) return map;
         var list = userChapterProgressRepository.selectList(
-                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<org.xhy.community.domain.course.entity.UserChapterProgressEntity>()
-                        .eq(org.xhy.community.domain.course.entity.UserChapterProgressEntity::getUserId, userId)
-                        .in(org.xhy.community.domain.course.entity.UserChapterProgressEntity::getChapterId, chapterIds)
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<UserChapterProgressEntity>()
+                        .eq(UserChapterProgressEntity::getUserId, userId)
+                        .in(UserChapterProgressEntity::getChapterId, chapterIds)
         );
         for (var rec : list) {
             map.put(rec.getChapterId(), rec.getLastPositionSec());

@@ -20,19 +20,21 @@ import java.util.List;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.xhy.community.infrastructure.lock.DistributedLock;
+import org.xhy.community.domain.cdk.valueobject.CDKSubscriptionStrategy;
 
 @Service
 public class SubscriptionDomainService {
 
     private static final Logger log = LoggerFactory.getLogger(SubscriptionDomainService.class);
-    private final org.xhy.community.infrastructure.lock.DistributedLock distributedLock;
+    private final DistributedLock distributedLock;
     
     private final UserSubscriptionRepository userSubscriptionRepository;
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     
     public SubscriptionDomainService(UserSubscriptionRepository userSubscriptionRepository,
                                      SubscriptionPlanRepository subscriptionPlanRepository,
-                                     org.xhy.community.infrastructure.lock.DistributedLock distributedLock) {
+                                     DistributedLock distributedLock) {
         this.userSubscriptionRepository = userSubscriptionRepository;
         this.subscriptionPlanRepository = subscriptionPlanRepository;
         this.distributedLock = distributedLock;
@@ -93,7 +95,7 @@ public class SubscriptionDomainService {
      * 套餐CDK创建订阅（支持升级/购买策略）
      */
     public UserSubscriptionEntity createSubscriptionFromCDK(String userId, String subscriptionPlanId, String cdkCode,
-                                                            org.xhy.community.domain.cdk.valueobject.CDKSubscriptionStrategy strategy) {
+                                                            CDKSubscriptionStrategy strategy) {
         String lockKey = "lock:user:subscription:" + userId;
         return distributedLock.executeWithLock(lockKey, Duration.ofMillis(300), Duration.ofSeconds(5), () -> {
             SubscriptionPlanEntity newPlan = getSubscriptionPlanOrThrow(subscriptionPlanId);
@@ -104,7 +106,7 @@ public class SubscriptionDomainService {
 
             if (currentActive == null) {
                 // 无有效订阅：UPGRADE 退化为 PURCHASE
-                if (strategy == org.xhy.community.domain.cdk.valueobject.CDKSubscriptionStrategy.UPGRADE) {
+                if (strategy == CDKSubscriptionStrategy.UPGRADE) {
                     log.info("[订阅] 用户无有效订阅，UPGRADE 退化为 PURCHASE: userId={}, planId={}", userId, subscriptionPlanId);
                 }
                 UserSubscriptionEntity subscription = createSubscription(userId, newPlan, cdkCode);
@@ -115,7 +117,7 @@ public class SubscriptionDomainService {
             // 有有效订阅：根据策略与等级处理
             SubscriptionPlanEntity oldPlan = getSubscriptionPlanOrThrow(currentActive.getSubscriptionPlanId());
 
-            if (strategy == org.xhy.community.domain.cdk.valueobject.CDKSubscriptionStrategy.UPGRADE) {
+            if (strategy == CDKSubscriptionStrategy.UPGRADE) {
                 if (newPlan.getLevel() <= oldPlan.getLevel()) {
                     // 同级或降级升级：报错
                     throw new BusinessException(SubscriptionErrorCode.UPGRADE_LEVEL_INVALID);

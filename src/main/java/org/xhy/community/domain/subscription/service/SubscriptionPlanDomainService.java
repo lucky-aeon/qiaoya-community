@@ -15,6 +15,8 @@ import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.infrastructure.exception.SubscriptionPlanErrorCode;
 import org.xhy.community.domain.subscription.query.SubscriptionPlanQuery;
 import org.xhy.community.domain.subscription.valueobject.SubscriptionPlanStatus;
+import org.xhy.community.domain.subscription.entity.SubscriptionPlanMenuEntity;
+import org.xhy.community.domain.subscription.entity.SubscriptionPlanPermissionEntity;
 
 import java.util.stream.Collectors;
 
@@ -170,52 +172,52 @@ public class SubscriptionPlanDomainService {
     // ==================== 菜单绑定 ====================
     public void syncSubscriptionPlanMenus(String subscriptionPlanId, List<String> menuCodes) {
         // 删除现有关联
-        LambdaQueryWrapper<org.xhy.community.domain.subscription.entity.SubscriptionPlanMenuEntity> deleteWrapper =
-            new LambdaQueryWrapper<org.xhy.community.domain.subscription.entity.SubscriptionPlanMenuEntity>()
-                .eq(org.xhy.community.domain.subscription.entity.SubscriptionPlanMenuEntity::getSubscriptionPlanId, subscriptionPlanId);
+        LambdaQueryWrapper<SubscriptionPlanMenuEntity> deleteWrapper =
+            new LambdaQueryWrapper<SubscriptionPlanMenuEntity>()
+                .eq(SubscriptionPlanMenuEntity::getSubscriptionPlanId, subscriptionPlanId);
         subscriptionPlanMenuRepository.delete(deleteWrapper);
 
         // 批量插入
         if (menuCodes != null && !menuCodes.isEmpty()) {
-            java.util.List<org.xhy.community.domain.subscription.entity.SubscriptionPlanMenuEntity> list = new java.util.ArrayList<>(menuCodes.size());
+            java.util.List<SubscriptionPlanMenuEntity> list = new java.util.ArrayList<>(menuCodes.size());
             for (String code : menuCodes) {
-                list.add(new org.xhy.community.domain.subscription.entity.SubscriptionPlanMenuEntity(subscriptionPlanId, code));
+                list.add(new SubscriptionPlanMenuEntity(subscriptionPlanId, code));
             }
             subscriptionPlanMenuRepository.insert(list);
         }
     }
 
     public List<String> getSubscriptionPlanMenuCodes(String subscriptionPlanId) {
-        LambdaQueryWrapper<org.xhy.community.domain.subscription.entity.SubscriptionPlanMenuEntity> queryWrapper =
-            new LambdaQueryWrapper<org.xhy.community.domain.subscription.entity.SubscriptionPlanMenuEntity>()
-                .eq(org.xhy.community.domain.subscription.entity.SubscriptionPlanMenuEntity::getSubscriptionPlanId, subscriptionPlanId);
+        LambdaQueryWrapper<SubscriptionPlanMenuEntity> queryWrapper =
+            new LambdaQueryWrapper<SubscriptionPlanMenuEntity>()
+                .eq(SubscriptionPlanMenuEntity::getSubscriptionPlanId, subscriptionPlanId);
         return subscriptionPlanMenuRepository.selectList(queryWrapper).stream()
-                .map(org.xhy.community.domain.subscription.entity.SubscriptionPlanMenuEntity::getMenuId)
+                .map(SubscriptionPlanMenuEntity::getMenuId)
                 .collect(Collectors.toList());
     }
 
     // ==================== 权限绑定 ====================
     public void syncSubscriptionPlanPermissions(String subscriptionPlanId, List<String> permissionCodes) {
-        LambdaQueryWrapper<org.xhy.community.domain.subscription.entity.SubscriptionPlanPermissionEntity> deleteWrapper =
-            new LambdaQueryWrapper<org.xhy.community.domain.subscription.entity.SubscriptionPlanPermissionEntity>()
-                .eq(org.xhy.community.domain.subscription.entity.SubscriptionPlanPermissionEntity::getSubscriptionPlanId, subscriptionPlanId);
+        LambdaQueryWrapper<SubscriptionPlanPermissionEntity> deleteWrapper =
+            new LambdaQueryWrapper<SubscriptionPlanPermissionEntity>()
+                .eq(SubscriptionPlanPermissionEntity::getSubscriptionPlanId, subscriptionPlanId);
         subscriptionPlanPermissionRepository.delete(deleteWrapper);
 
         if (permissionCodes != null && !permissionCodes.isEmpty()) {
-            java.util.List<org.xhy.community.domain.subscription.entity.SubscriptionPlanPermissionEntity> list = new java.util.ArrayList<>(permissionCodes.size());
+            java.util.List<SubscriptionPlanPermissionEntity> list = new java.util.ArrayList<>(permissionCodes.size());
             for (String code : permissionCodes) {
-                list.add(new org.xhy.community.domain.subscription.entity.SubscriptionPlanPermissionEntity(subscriptionPlanId, code));
+                list.add(new SubscriptionPlanPermissionEntity(subscriptionPlanId, code));
             }
             subscriptionPlanPermissionRepository.insert(list);
         }
     }
 
     public List<String> getSubscriptionPlanPermissionCodes(String subscriptionPlanId) {
-        LambdaQueryWrapper<org.xhy.community.domain.subscription.entity.SubscriptionPlanPermissionEntity> queryWrapper =
-            new LambdaQueryWrapper<org.xhy.community.domain.subscription.entity.SubscriptionPlanPermissionEntity>()
-                .eq(org.xhy.community.domain.subscription.entity.SubscriptionPlanPermissionEntity::getSubscriptionPlanId, subscriptionPlanId);
+        LambdaQueryWrapper<SubscriptionPlanPermissionEntity> queryWrapper =
+            new LambdaQueryWrapper<SubscriptionPlanPermissionEntity>()
+                .eq(SubscriptionPlanPermissionEntity::getSubscriptionPlanId, subscriptionPlanId);
         return subscriptionPlanPermissionRepository.selectList(queryWrapper).stream()
-                .map(org.xhy.community.domain.subscription.entity.SubscriptionPlanPermissionEntity::getPermissionCode)
+                .map(SubscriptionPlanPermissionEntity::getPermissionCode)
                 .collect(Collectors.toList());
     }
 

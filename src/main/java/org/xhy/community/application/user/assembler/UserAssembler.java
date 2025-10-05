@@ -4,6 +4,7 @@ import org.springframework.beans.BeanUtils;
 import org.xhy.community.application.user.dto.UserDTO;
 import org.xhy.community.application.user.dto.UserPublicProfileDTO;
 import org.xhy.community.domain.user.entity.UserEntity;
+import org.xhy.community.interfaces.user.request.UpdateProfileRequest;
 
 public class UserAssembler {
     
@@ -30,7 +31,7 @@ public class UserAssembler {
     /**
      * 将更新资料请求转换为用户实体（仅包含需要更新的字段）
      */
-    public static UserEntity fromUpdateProfileRequest(org.xhy.community.interfaces.user.request.UpdateProfileRequest request, String userId) {
+    public static UserEntity fromUpdateProfileRequest(UpdateProfileRequest request, String userId) {
         if (request == null) {
             return null;
         }

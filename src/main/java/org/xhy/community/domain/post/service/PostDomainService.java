@@ -25,6 +25,8 @@ import org.xhy.community.domain.comment.valueobject.BusinessType;
 import org.xhy.community.domain.common.valueobject.AccessLevel;
 import org.xhy.community.domain.common.event.ContentPublishedEvent;
 import org.xhy.community.domain.common.valueobject.ContentType;
+import org.xhy.community.domain.post.valueobject.CategoryType;
+import org.xhy.community.infrastructure.exception.CommentErrorCode;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
@@ -69,7 +71,7 @@ public class PostDomainService {
         }
 
         // 根据分类类型，初始化问答解决状态
-        if (category.getType() == org.xhy.community.domain.post.valueobject.CategoryType.QA) {
+        if (category.getType() == CategoryType.QA) {
             post.setResolveStatus(QAResolveStatus.UNSOLVED);
         }
 
@@ -99,7 +101,7 @@ public class PostDomainService {
         if (category == null) {
             throw new BusinessException(PostErrorCode.CATEGORY_NOT_FOUND);
         }
-        if (category.getType() != org.xhy.community.domain.post.valueobject.CategoryType.QA) {
+        if (category.getType() != CategoryType.QA) {
             throw new BusinessException(PostErrorCode.NOT_QA_CATEGORY);
         }
         if (accessLevel == AccessLevel.USER && !post.getAuthorId().equals(operatorId)) {
@@ -112,7 +114,7 @@ public class PostDomainService {
                 .eq(CommentEntity::getId, commentId)
         );
         if (comment == null) {
-            throw new BusinessException(org.xhy.community.infrastructure.exception.CommentErrorCode.COMMENT_NOT_FOUND);
+            throw new BusinessException(CommentErrorCode.COMMENT_NOT_FOUND);
         }
         if (comment.getBusinessType() != BusinessType.POST || !postId.equals(comment.getBusinessId())) {
             throw new BusinessException(PostErrorCode.COMMENT_NOT_BELONG_POST);
@@ -501,7 +503,7 @@ public class PostDomainService {
         postRepository.updateById(post);
     }
     
-    public IPage<PostEntity> queryAppPosts(org.xhy.community.domain.post.query.PostQuery query) {
+    public IPage<PostEntity> queryAppPosts(PostQuery query) {
         Page<PostEntity> pageQuery = new Page<>(query.getPageNum(), query.getPageSize());
         
         LambdaQueryWrapper<PostEntity> queryWrapper = new LambdaQueryWrapper<PostEntity>()

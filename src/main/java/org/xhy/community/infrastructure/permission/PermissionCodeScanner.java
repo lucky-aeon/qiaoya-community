@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 import org.xhy.community.infrastructure.annotation.RequiresPlanPermissions;
+import org.xhy.community.application.subscription.dto.PermissionOptionDTO;
 
 import java.util.*;
 
@@ -73,10 +74,10 @@ public class PermissionCodeScanner {
     }
 
     /** 返回扫描得到的权限选项（code + label） */
-    public List<org.xhy.community.application.subscription.dto.PermissionOptionDTO> getDiscoveredOptions() {
-        List<org.xhy.community.application.subscription.dto.PermissionOptionDTO> list = new ArrayList<>();
+    public List<PermissionOptionDTO> getDiscoveredOptions() {
+        List<PermissionOptionDTO> list = new ArrayList<>();
         for (Map.Entry<String, String> e : codeNameMap.entrySet()) {
-            list.add(new org.xhy.community.application.subscription.dto.PermissionOptionDTO(e.getKey(), e.getValue(), ""));
+            list.add(new PermissionOptionDTO(e.getKey(), e.getValue(), ""));
         }
         return list;
     }

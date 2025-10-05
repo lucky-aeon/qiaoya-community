@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import org.xhy.community.domain.common.entity.BaseEntity;
 import org.xhy.community.domain.testimonial.valueobject.TestimonialStatus;
 import org.xhy.community.infrastructure.converter.TestimonialStatusConverter;
+import org.xhy.community.infrastructure.exception.BusinessException;
+import org.xhy.community.infrastructure.exception.TestimonialErrorCode;
 
 @TableName("student_testimonials")
 public class TestimonialEntity extends BaseEntity {
@@ -57,8 +59,8 @@ public class TestimonialEntity extends BaseEntity {
                 this.status = TestimonialStatus.PENDING;
             }
         } else {
-            throw new org.xhy.community.infrastructure.exception.BusinessException(
-                org.xhy.community.infrastructure.exception.TestimonialErrorCode.TESTIMONIAL_NOT_MODIFIABLE
+            throw new BusinessException(
+                TestimonialErrorCode.TESTIMONIAL_NOT_MODIFIABLE
             );
         }
     }

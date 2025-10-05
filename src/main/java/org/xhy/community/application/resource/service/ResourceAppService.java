@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.xhy.community.infrastructure.exception.ResourceErrorCode.ACCESS_DENIED;
+import org.xhy.community.infrastructure.exception.BusinessException;
 
 @Service
 public class ResourceAppService {
@@ -132,7 +133,7 @@ public class ResourceAppService {
         }
 
         // 未解锁：拒绝访问
-        throw new org.xhy.community.infrastructure.exception.BusinessException(
+        throw new BusinessException(
                ACCESS_DENIED);
     }
     

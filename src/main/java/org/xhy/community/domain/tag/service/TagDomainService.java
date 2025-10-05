@@ -14,8 +14,10 @@ import org.xhy.community.domain.tag.repository.TagScopeRepository;
 import org.xhy.community.domain.tag.repository.UserTagAssignmentRepository;
 import org.xhy.community.domain.tag.valueobject.TagAssignmentStatus;
 import org.xhy.community.domain.tag.valueobject.TagSourceType;
+import org.xhy.community.domain.tag.valueobject.TagTargetType;
 import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.infrastructure.exception.TagErrorCode;
+import org.xhy.community.domain.tag.query.TagQuery;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -73,7 +75,7 @@ public class TagDomainService {
     }
 
     /** 分页查询标签定义（TagQuery 保证有默认分页参数） */
-    public IPage<TagDefinitionEntity> listTags(org.xhy.community.domain.tag.query.TagQuery query) {
+    public IPage<TagDefinitionEntity> listTags(TagQuery query) {
         Page<TagDefinitionEntity> page = new Page<>(query.getPageNum(), query.getPageSize());
         LambdaQueryWrapper<TagDefinitionEntity> wrapper = new LambdaQueryWrapper<TagDefinitionEntity>()
                 .like(StringUtils.hasText(query.getName()), TagDefinitionEntity::getName, query.getName())
@@ -119,7 +121,7 @@ public class TagDomainService {
     public void issueCourseCompletionTag(String userId, String courseId) {
         // 找到与课程绑定的标签
         List<TagScopeEntity> scopes = tagScopeRepository.selectList(new LambdaQueryWrapper<TagScopeEntity>()
-                .eq(TagScopeEntity::getTargetType, org.xhy.community.domain.tag.valueobject.TagTargetType.COURSE)
+                .eq(TagScopeEntity::getTargetType, TagTargetType.COURSE)
                 .eq(TagScopeEntity::getTargetId, courseId)
         );
         if (scopes == null || scopes.isEmpty()) return;
@@ -147,7 +149,7 @@ public class TagDomainService {
      */
     public boolean hasCourseCompletionTag(String userId, String courseId) {
         List<TagScopeEntity> scopes = tagScopeRepository.selectList(new LambdaQueryWrapper<TagScopeEntity>()
-                .eq(TagScopeEntity::getTargetType, org.xhy.community.domain.tag.valueobject.TagTargetType.COURSE)
+                .eq(TagScopeEntity::getTargetType, TagTargetType.COURSE)
                 .eq(TagScopeEntity::getTargetId, courseId)
         );
         if (scopes == null || scopes.isEmpty()) return false;
@@ -181,7 +183,7 @@ public class TagDomainService {
      * - 验证标签存在且启用
      * - 若已存在记录则更新为 ISSUED 并刷新发放时间与来源
      */
-    public void assignTagToUser(String userId, String tagId, org.xhy.community.domain.tag.valueobject.TagSourceType sourceType, String sourceId) {
+    public void assignTagToUser(String userId, String tagId, TagSourceType sourceType, String sourceId) {
         TagDefinitionEntity def = tagDefinitionRepository.selectById(tagId);
         if (def == null || Boolean.FALSE.equals(def.getEnabled())) {
             return; // 标签不存在或未启用，安全返回
@@ -200,7 +202,7 @@ public class TagDomainService {
         e.setTagId(tagId);
         e.setStatus(TagAssignmentStatus.ISSUED);
         e.setIssuedAt(now);
-        e.setSourceType(sourceType != null ? sourceType : org.xhy.community.domain.tag.valueobject.TagSourceType.MANUAL);
+        e.setSourceType(sourceType != null ? sourceType : TagSourceType.MANUAL);
         e.setSourceId(sourceId != null ? sourceId : (exist != null ? exist.getSourceId() : null));
         userTagAssignmentRepository.insertOrUpdate(e);
     }

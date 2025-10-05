@@ -11,6 +11,7 @@ import org.xhy.community.domain.subscription.service.SubscriptionDomainService;
 import org.xhy.community.domain.user.event.UserRegisteredEvent;
 import org.xhy.community.domain.user.event.UserLoginEvent;
 import org.xhy.community.domain.subscription.entity.UserSubscriptionEntity;
+import org.xhy.community.infrastructure.lock.DistributedLock;
 
 /**
  * 默认套餐分配监听器
@@ -25,11 +26,11 @@ public class DefaultSubscriptionEventListener {
 
     private final SystemConfigDomainService systemConfigDomainService;
     private final SubscriptionDomainService subscriptionDomainService;
-    private final org.xhy.community.infrastructure.lock.DistributedLock distributedLock;
+    private final DistributedLock distributedLock;
 
     public DefaultSubscriptionEventListener(SystemConfigDomainService systemConfigDomainService,
                                             SubscriptionDomainService subscriptionDomainService,
-                                            org.xhy.community.infrastructure.lock.DistributedLock distributedLock) {
+                                            DistributedLock distributedLock) {
         this.systemConfigDomainService = systemConfigDomainService;
         this.subscriptionDomainService = subscriptionDomainService;
         this.distributedLock = distributedLock;

@@ -4,39 +4,48 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import org.springframework.stereotype.Service;
 import org.xhy.community.application.tag.assembler.TagAssembler;
 import org.xhy.community.application.tag.dto.TagDefinitionDTO;
+import org.xhy.community.application.tag.dto.TagScopeDTO;
 import org.xhy.community.domain.tag.entity.TagDefinitionEntity;
+import org.xhy.community.domain.tag.entity.TagScopeEntity;
+import org.xhy.community.domain.tag.service.TagDomainService;
+import org.xhy.community.interfaces.tag.request.AddScopeRequest;
+import org.xhy.community.interfaces.tag.request.CreateTagRequest;
+import org.xhy.community.interfaces.tag.request.ManualAssignRequest;
+import org.xhy.community.interfaces.tag.request.ManualRevokeRequest;
+import org.xhy.community.interfaces.tag.request.TagQueryRequest;
+import org.xhy.community.interfaces.tag.request.UpdateTagRequest;
 
 @Service
 public class AdminTagAppService {
 
-    private final org.xhy.community.domain.tag.service.TagDomainService tagDomainService;
+    private final TagDomainService tagDomainService;
 
-    public AdminTagAppService(org.xhy.community.domain.tag.service.TagDomainService tagDomainService) {
+    public AdminTagAppService(TagDomainService tagDomainService) {
         this.tagDomainService = tagDomainService;
     }
 
-    public TagDefinitionDTO createTag(org.xhy.community.interfaces.tag.request.CreateTagRequest req) {
+    public TagDefinitionDTO createTag(CreateTagRequest req) {
         TagDefinitionEntity e = TagAssembler.fromCreateRequest(req);
         TagDefinitionEntity created = tagDomainService.createTag(e);
         return TagAssembler.toDTO(created);
     }
 
-    public TagDefinitionDTO updateTag(String id, org.xhy.community.interfaces.tag.request.UpdateTagRequest req) {
+    public TagDefinitionDTO updateTag(String id, UpdateTagRequest req) {
         TagDefinitionEntity toUpdate = TagAssembler.fromUpdateRequest(req, id);
         TagDefinitionEntity updated = tagDomainService.updateTag(toUpdate);
         return TagAssembler.toDTO(updated);
     }
 
-    public IPage<TagDefinitionDTO> listTags(org.xhy.community.interfaces.tag.request.TagQueryRequest q) {
+    public IPage<TagDefinitionDTO> listTags(TagQueryRequest q) {
         var query = TagAssembler.fromTagQueryRequest(q);
         return tagDomainService
                 .listTags(query)
                 .convert(TagAssembler::toDTO);
     }
 
-    public void addScope(String tagId, org.xhy.community.interfaces.tag.request.AddScopeRequest req) {
-        org.xhy.community.domain.tag.entity.TagScopeEntity scope =
-                org.xhy.community.application.tag.assembler.TagAssembler.fromAddScopeRequest(tagId, req);
+    public void addScope(String tagId, AddScopeRequest req) {
+        TagScopeEntity scope =
+                TagAssembler.fromAddScopeRequest(tagId, req);
         tagDomainService.addScope(scope);
     }
 
@@ -44,16 +53,16 @@ public class AdminTagAppService {
         tagDomainService.removeScope(scopeId);
     }
 
-    public java.util.List<org.xhy.community.application.tag.dto.TagScopeDTO>  listScopes(String tagId) {
+    public java.util.List<TagScopeDTO>  listScopes(String tagId) {
         return tagDomainService.listScopesByTagId(tagId)
-                .stream().map(org.xhy.community.application.tag.dto.TagScopeDTO::fromEntity).toList();
+                .stream().map(TagScopeDTO::fromEntity).toList();
     }
 
-    public void assignTagToUser(org.xhy.community.interfaces.tag.request.ManualAssignRequest req) {
+    public void assignTagToUser(ManualAssignRequest req) {
         tagDomainService.assignTagToUser(req.getUserId(), req.getTagId(), req.getSourceType(), req.getSourceId());
     }
 
-    public void revokeUserTag(org.xhy.community.interfaces.tag.request.ManualRevokeRequest req) {
+    public void revokeUserTag(ManualRevokeRequest req) {
         tagDomainService.revokeTagFromUser(req.getUserId(), req.getTagId());
     }
 }

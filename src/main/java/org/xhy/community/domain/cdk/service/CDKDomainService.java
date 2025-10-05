@@ -18,6 +18,8 @@ import org.xhy.community.domain.cdk.valueobject.CDKAcquisitionType;
 import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.infrastructure.exception.CDKErrorCode;
 import org.xhy.community.domain.cdk.query.CDKQuery;
+import org.xhy.community.infrastructure.lock.DistributedLock;
+import org.xhy.community.domain.cdk.valueobject.CDKSubscriptionStrategy;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,11 +31,11 @@ public class CDKDomainService {
     private final CDKRepository cdkRepository;
     private final ApplicationEventPublisher applicationEventPublisher;
     private static final Logger log = LoggerFactory.getLogger(CDKDomainService.class);
-    private final org.xhy.community.infrastructure.lock.DistributedLock distributedLock;
+    private final DistributedLock distributedLock;
     
     public CDKDomainService(CDKRepository cdkRepository,
                             ApplicationEventPublisher applicationEventPublisher,
-                            org.xhy.community.infrastructure.lock.DistributedLock distributedLock) {
+                            DistributedLock distributedLock) {
         this.cdkRepository = cdkRepository;
         this.applicationEventPublisher = applicationEventPublisher;
         this.distributedLock = distributedLock;
@@ -45,7 +47,7 @@ public class CDKDomainService {
     public List<CDKEntity> createCDKBatch(CDKType cdkType, String targetId, int quantity,
                                          CDKAcquisitionType acquisitionType, String remark,
                                          java.math.BigDecimal price,
-                                         org.xhy.community.domain.cdk.valueobject.CDKSubscriptionStrategy subscriptionStrategy) {
+                                         CDKSubscriptionStrategy subscriptionStrategy) {
         String batchId = UUID.randomUUID().toString();
         List<CDKEntity> cdkList = new ArrayList<>();
         java.util.Set<String> codeSet = new java.util.HashSet<>();

@@ -8,6 +8,8 @@ import org.xhy.community.domain.user.valueobject.UserStatus;
 import org.xhy.community.domain.user.valueobject.UserRole;
 import org.xhy.community.infrastructure.converter.UserStatusConverter;
 import org.xhy.community.infrastructure.converter.UserRoleConverter;
+import org.xhy.community.infrastructure.exception.BusinessException;
+import org.xhy.community.infrastructure.exception.UserErrorCode;
 
 @TableName("users")
 public class UserEntity extends BaseEntity {
@@ -99,8 +101,8 @@ public class UserEntity extends BaseEntity {
     
     public void updateMaxConcurrentDevices(Integer maxDevices) {
         if (maxDevices == null || maxDevices < 1 || maxDevices > 10) {
-            throw new org.xhy.community.infrastructure.exception.BusinessException(
-                org.xhy.community.infrastructure.exception.UserErrorCode.MAX_DEVICES_INVALID
+            throw new BusinessException(
+                UserErrorCode.MAX_DEVICES_INVALID
             );
         }
         this.maxConcurrentDevices = maxDevices;

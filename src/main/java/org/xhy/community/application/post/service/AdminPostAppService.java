@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.xhy.community.application.post.assembler.AdminPostAssembler;
 import org.xhy.community.application.post.dto.AdminPostDTO;
 import org.xhy.community.application.post.dto.PostDTO;
+import org.xhy.community.application.post.assembler.PostAssembler;
 import org.xhy.community.application.like.helper.LikeCountHelper;
 import org.xhy.community.domain.like.service.LikeDomainService;
 import org.xhy.community.domain.like.valueobject.LikeTargetType;
@@ -21,6 +22,7 @@ import org.xhy.community.interfaces.post.request.AdminPostQueryRequest;
 import org.springframework.transaction.annotation.Transactional;
 import org.xhy.community.domain.comment.service.CommentDomainService;
 import org.xhy.community.domain.comment.valueobject.BusinessType;
+import org.xhy.community.domain.log.service.UserActivityLogDomainService;
 
 import java.util.List;
 import java.util.Map;
@@ -39,17 +41,20 @@ public class AdminPostAppService {
     private final CategoryDomainService categoryDomainService;
     private final LikeDomainService likeDomainService;
     private final CommentDomainService commentDomainService;
+    private final UserActivityLogDomainService userActivityLogDomainService;
     
     public AdminPostAppService(PostDomainService postDomainService,
                               UserDomainService userDomainService,
                               CategoryDomainService categoryDomainService,
                               LikeDomainService likeDomainService,
-                              CommentDomainService commentDomainService) {
+                              CommentDomainService commentDomainService,
+                              UserActivityLogDomainService userActivityLogDomainService) {
         this.postDomainService = postDomainService;
         this.userDomainService = userDomainService;
         this.categoryDomainService = categoryDomainService;
         this.likeDomainService = likeDomainService;
         this.commentDomainService = commentDomainService;
+        this.userActivityLogDomainService = userActivityLogDomainService;
     }
     
     /**
@@ -99,6 +104,9 @@ public class AdminPostAppService {
         java.util.Map<String, Long> commentCountMap = commentDomainService.getCommentCountMapByBusinessIds(postIds, BusinessType.POST);
         dtoList.forEach(dto -> dto.setCommentCount(commentCountMap.getOrDefault(dto.getId(), 0L).intValue()));
         LikeCountHelper.fillLikeCount(dtoList, AdminPostDTO::getId, LikeTargetType.POST, AdminPostDTO::setLikeCount, likeDomainService);
+        // 批量填充按用户去重的浏览数
+        java.util.Map<String, Long> viewCountMap = userActivityLogDomainService.getDistinctViewerCountMapByPostIds(postIds);
+        dtoList.forEach(dto -> dto.setViewCount(viewCountMap.getOrDefault(dto.getId(), 0L).intValue()));
         
         Page<AdminPostDTO> dtoPage = new Page<>(entityPage.getCurrent(), entityPage.getSize(), entityPage.getTotal());
         dtoPage.setRecords(dtoList);
@@ -109,7 +117,7 @@ public class AdminPostAppService {
     @Transactional(rollbackFor = Exception.class)
     public PostDTO forceAcceptComment(String postId, String commentId, String adminId) {
         PostEntity post = postDomainService.acceptComment(postId, commentId, adminId, AccessLevel.ADMIN);
-        PostDTO dto = org.xhy.community.application.post.assembler.PostAssembler.toDTO(post);
+        PostDTO dto = PostAssembler.toDTO(post);
         CategoryEntity category = categoryDomainService.getCategoryById(post.getCategoryId());
         if (category != null) {
             dto.setCategoryType(category.getType());
@@ -120,7 +128,7 @@ public class AdminPostAppService {
     @Transactional(rollbackFor = Exception.class)
     public PostDTO forceRevokeAcceptance(String postId, String commentId, String adminId) {
         PostEntity post = postDomainService.revokeAcceptance(postId, commentId, adminId, AccessLevel.ADMIN);
-        PostDTO dto = org.xhy.community.application.post.assembler.PostAssembler.toDTO(post);
+        PostDTO dto = PostAssembler.toDTO(post);
         CategoryEntity category = categoryDomainService.getCategoryById(post.getCategoryId());
         if (category != null) {
             dto.setCategoryType(category.getType());

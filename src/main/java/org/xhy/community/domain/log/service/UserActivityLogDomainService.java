@@ -19,6 +19,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Collection;
 import java.util.stream.Collectors;
 
 /**
@@ -148,7 +149,7 @@ public class UserActivityLogDomainService {
         
         return userActivityLogRepository.selectList(queryWrapper);
     }
-    
+
     // ==================== 业务活动日志记录方法（新增） ====================
     
     /**
@@ -209,6 +210,65 @@ public class UserActivityLogDomainService {
         activityLog.setUpdateTime(LocalDateTime.now());
         
         userActivityLogRepository.insert(activityLog);
+    }
+
+    // ==================== 浏览统计（按用户去重） ====================
+
+    /**
+     * 统计某篇文章的“按用户去重”的浏览人数
+     * 口径：user_activity_logs 中 activity_type = VIEW_POST 且 target_type = 'POST'
+     *      对同一 user_id 去重；忽略 user_id 为空的记录
+     */
+    public Long getDistinctViewerCountByPostId(String postId) {
+        if (!org.springframework.util.StringUtils.hasText(postId)) {
+            return 0L;
+        }
+
+        // 使用条件构造器 + 分组，只选择 user_id，取结果数量即为去重人数
+        LambdaQueryWrapper<UserActivityLogEntity> wrapper = new LambdaQueryWrapper<UserActivityLogEntity>()
+                .eq(UserActivityLogEntity::getActivityType, ActivityType.VIEW_POST)
+                .eq(UserActivityLogEntity::getTargetType, "POST")
+                .eq(UserActivityLogEntity::getTargetId, postId)
+                .isNotNull(UserActivityLogEntity::getUserId)
+                .select(UserActivityLogEntity::getUserId)
+                .groupBy(UserActivityLogEntity::getUserId);
+
+        List<UserActivityLogEntity> list = userActivityLogRepository.selectList(wrapper);
+        return (long) list.size();
+    }
+
+    /**
+     * 批量统计多篇文章的“按用户去重”的浏览人数
+     * 返回 Map<postId, count>
+     */
+    public Map<String, Long> getDistinctViewerCountMapByPostIds(Collection<String> postIds) {
+        if (postIds == null || postIds.isEmpty()) {
+            return Map.of();
+        }
+
+        // 选择 targetId + userId，按二者分组，返回的记录条数按 targetId 聚合后即为去重人数
+        LambdaQueryWrapper<UserActivityLogEntity> wrapper = new LambdaQueryWrapper<UserActivityLogEntity>()
+                .eq(UserActivityLogEntity::getActivityType, ActivityType.VIEW_POST)
+                .eq(UserActivityLogEntity::getTargetType, "POST")
+                .in(UserActivityLogEntity::getTargetId, postIds)
+                .isNotNull(UserActivityLogEntity::getUserId)
+                .select(UserActivityLogEntity::getTargetId, UserActivityLogEntity::getUserId)
+                .groupBy(UserActivityLogEntity::getTargetId, UserActivityLogEntity::getUserId);
+
+        List<UserActivityLogEntity> rows = userActivityLogRepository.selectList(wrapper);
+        Map<String, Long> result = new HashMap<>();
+        for (UserActivityLogEntity row : rows) {
+            String pid = row.getTargetId();
+            if (pid != null) {
+                result.merge(pid, 1L, Long::sum);
+            }
+        }
+
+        // 确保所有传入ID都有键
+        for (String id : postIds) {
+            result.putIfAbsent(id, 0L);
+        }
+        return result;
     }
     
     /**

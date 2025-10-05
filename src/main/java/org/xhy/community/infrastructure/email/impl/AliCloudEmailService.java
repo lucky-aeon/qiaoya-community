@@ -15,6 +15,8 @@ import java.io.UnsupportedEncodingException;
 import java.util.Date;
 import java.util.Properties;
 import java.util.UUID;
+import org.xhy.community.infrastructure.exception.ValidationException;
+import org.xhy.community.infrastructure.config.ValidationErrorCode;
 
 /**
  * 阿里云Direct Mail邮件发送服务实现
@@ -155,8 +157,8 @@ public class AliCloudEmailService implements EmailService {
      */
     private String generateMessageID(String mailFrom) {
         if (!mailFrom.contains("@")) {
-            throw new org.xhy.community.infrastructure.exception.ValidationException(
-                org.xhy.community.infrastructure.config.ValidationErrorCode.EMAIL_FORMAT_INVALID,
+            throw new ValidationException(
+                ValidationErrorCode.EMAIL_FORMAT_INVALID,
                 "Invalid email format: " + mailFrom
             );
         }

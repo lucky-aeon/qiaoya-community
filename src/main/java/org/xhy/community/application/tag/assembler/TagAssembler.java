@@ -6,6 +6,12 @@ import org.xhy.community.application.tag.dto.UserTagDTO;
 import org.xhy.community.domain.tag.entity.TagDefinitionEntity;
 import org.xhy.community.domain.tag.entity.UserTagAssignmentEntity;
 import org.xhy.community.domain.tag.entity.TagScopeEntity;
+import org.xhy.community.interfaces.tag.request.AddScopeRequest;
+import org.xhy.community.interfaces.tag.request.CreateTagRequest;
+import org.xhy.community.interfaces.tag.request.TagQueryRequest;
+import org.xhy.community.interfaces.tag.request.UpdateTagRequest;
+import org.xhy.community.domain.tag.valueobject.TagTargetType;
+import org.xhy.community.domain.tag.query.TagQuery;
 
 public class TagAssembler {
 
@@ -34,7 +40,7 @@ public class TagAssembler {
 
     // ====== from Request to Entity ======
 
-    public static TagDefinitionEntity fromCreateRequest(org.xhy.community.interfaces.tag.request.CreateTagRequest req) {
+    public static TagDefinitionEntity fromCreateRequest(CreateTagRequest req) {
         if (req == null) return null;
         TagDefinitionEntity e = new TagDefinitionEntity();
         e.setCode(req.getCode());
@@ -48,7 +54,7 @@ public class TagAssembler {
         return e;
     }
 
-    public static TagDefinitionEntity fromUpdateRequest(org.xhy.community.interfaces.tag.request.UpdateTagRequest req, String tagId) {
+    public static TagDefinitionEntity fromUpdateRequest(UpdateTagRequest req, String tagId) {
         if (req == null) return null;
         TagDefinitionEntity e = new TagDefinitionEntity();
         e.setId(tagId);
@@ -62,18 +68,18 @@ public class TagAssembler {
         return e;
     }
 
-    public static TagScopeEntity fromAddScopeRequest(String tagId, org.xhy.community.interfaces.tag.request.AddScopeRequest req) {
+    public static TagScopeEntity fromAddScopeRequest(String tagId, AddScopeRequest req) {
         if (req == null) return null;
         TagScopeEntity s = new TagScopeEntity();
         s.setTagId(tagId);
         // 仅支持课程范围绑定，强制设置为 COURSE
-        s.setTargetType(org.xhy.community.domain.tag.valueobject.TagTargetType.COURSE);
+        s.setTargetType(TagTargetType.COURSE);
         s.setTargetId(req.getTargetId());
         return s;
     }
 
-    public static org.xhy.community.domain.tag.query.TagQuery fromTagQueryRequest(org.xhy.community.interfaces.tag.request.TagQueryRequest req) {
-        org.xhy.community.domain.tag.query.TagQuery q = new org.xhy.community.domain.tag.query.TagQuery();
+    public static TagQuery fromTagQueryRequest(TagQueryRequest req) {
+        TagQuery q = new TagQuery();
         if (req != null) {
             q.setName(req.getName());
             q.setCategory(req.getCategory());

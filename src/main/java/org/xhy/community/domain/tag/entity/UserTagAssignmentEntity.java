@@ -7,6 +7,7 @@ import org.xhy.community.domain.tag.valueobject.TagAssignmentStatus;
 import org.xhy.community.domain.tag.valueobject.TagSourceType;
 import org.xhy.community.infrastructure.converter.TagAssignmentStatusConverter;
 import org.xhy.community.infrastructure.converter.TagSourceTypeConverter;
+import org.xhy.community.infrastructure.converter.MapJsonTypeHandler;
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -27,7 +28,7 @@ public class UserTagAssignmentEntity extends BaseEntity {
     private TagSourceType sourceType;
     private String sourceId;
 
-    @TableField(typeHandler = org.xhy.community.infrastructure.converter.MapJsonTypeHandler.class, value = "meta")
+    @TableField(typeHandler = MapJsonTypeHandler.class, value = "meta")
     private Map<String, Object> meta;
 
     public String getUserId() { return userId; }

@@ -4,8 +4,17 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 import org.xhy.community.application.tag.dto.TagDefinitionDTO;
+import org.xhy.community.application.tag.dto.TagScopeDTO;
 import org.xhy.community.application.tag.service.AdminTagAppService;
 import org.xhy.community.infrastructure.config.ApiResponse;
+import org.xhy.community.interfaces.tag.request.CreateTagRequest;
+import org.xhy.community.interfaces.tag.request.UpdateTagRequest;
+import org.xhy.community.interfaces.tag.request.TagQueryRequest;
+import org.xhy.community.interfaces.tag.request.AddScopeRequest;
+import org.xhy.community.interfaces.tag.request.ManualAssignRequest;
+import org.xhy.community.interfaces.tag.request.ManualRevokeRequest;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin/tags")
@@ -18,30 +27,30 @@ public class AdminTagController {
     }
 
     @PostMapping
-    public ApiResponse<TagDefinitionDTO> createTag(@Valid @RequestBody org.xhy.community.interfaces.tag.request.CreateTagRequest req) {
+    public ApiResponse<TagDefinitionDTO> createTag(@Valid @RequestBody CreateTagRequest req) {
         return ApiResponse.success("创建成功",adminTagAppService.createTag(req));
     }
 
     @PutMapping("/{id}")
     public ApiResponse<TagDefinitionDTO> updateTag(@PathVariable String id,
-                                                   @Valid @RequestBody org.xhy.community.interfaces.tag.request.UpdateTagRequest req) {
+                                                   @Valid @RequestBody UpdateTagRequest req) {
         return ApiResponse.success("修改成功",adminTagAppService.updateTag(id, req));
     }
 
     @GetMapping
-    public ApiResponse<IPage<TagDefinitionDTO>> listTags(@Valid org.xhy.community.interfaces.tag.request.TagQueryRequest req) {
+    public ApiResponse<IPage<TagDefinitionDTO>> listTags(@Valid TagQueryRequest req) {
         return ApiResponse.success(adminTagAppService.listTags(req));
     }
 
     @PostMapping("/{id}/scopes")
     public ApiResponse<Void> addScope(@PathVariable String id,
-                                      @Valid @RequestBody org.xhy.community.interfaces.tag.request.AddScopeRequest req) {
+                                      @Valid @RequestBody AddScopeRequest req) {
         adminTagAppService.addScope(id, req);
         return ApiResponse.success("添加成功");
     }
 
     @GetMapping("/{id}/scopes")
-    public ApiResponse<java.util.List<org.xhy.community.application.tag.dto.TagScopeDTO>> listScopes(@PathVariable String id) {
+    public ApiResponse<List<TagScopeDTO>> listScopes(@PathVariable String id) {
         return ApiResponse.success(adminTagAppService.listScopes(id));
     }
 
@@ -52,13 +61,13 @@ public class AdminTagController {
     }
 
     @PostMapping("/assign")
-    public ApiResponse<Void> assign(@Valid @RequestBody org.xhy.community.interfaces.tag.request.ManualAssignRequest req) {
+    public ApiResponse<Void> assign(@Valid @RequestBody ManualAssignRequest req) {
         adminTagAppService.assignTagToUser(req);
         return ApiResponse.success("分配成功");
     }
 
     @PostMapping("/revoke")
-    public ApiResponse<Void> revoke(@Valid @RequestBody org.xhy.community.interfaces.tag.request.ManualRevokeRequest req) {
+    public ApiResponse<Void> revoke(@Valid @RequestBody ManualRevokeRequest req) {
         adminTagAppService.revokeUserTag(req);
         return ApiResponse.success("移除成功");
     }

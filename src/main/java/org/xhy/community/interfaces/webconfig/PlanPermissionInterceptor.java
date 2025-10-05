@@ -9,6 +9,7 @@ import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.xhy.community.application.permission.service.UserPermissionAppService;
 import org.xhy.community.infrastructure.annotation.RequiresPlanPermissions;
+import org.xhy.community.infrastructure.config.UserContext;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -44,7 +45,7 @@ public class PlanPermissionInterceptor implements HandlerInterceptor {
             return true; // 未要求功能权限，直接放行
         }
 
-        String userId = org.xhy.community.infrastructure.config.UserContext.getCurrentUserId();
+        String userId = UserContext.getCurrentUserId();
         if (userId == null || userId.isBlank()) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return false;

@@ -6,6 +6,9 @@ import org.xhy.community.domain.common.entity.BaseEntity;
 import org.xhy.community.domain.notification.valueobject.ChannelType;
 import org.xhy.community.domain.notification.valueobject.NotificationStatus;
 import org.xhy.community.domain.notification.valueobject.NotificationType;
+import org.xhy.community.infrastructure.converter.NotificationTypeConverter;
+import org.xhy.community.infrastructure.converter.ChannelTypeConverter;
+import org.xhy.community.infrastructure.converter.NotificationStatusConverter;
 
 /**
  * 通知实体
@@ -17,11 +20,11 @@ public class NotificationEntity extends BaseEntity {
     private String recipientId;
     
     /** 通知类型 */
-    @TableField(typeHandler = org.xhy.community.infrastructure.converter.NotificationTypeConverter.class)
+    @TableField(typeHandler = NotificationTypeConverter.class)
     private NotificationType type;
     
     /** 渠道类型 */
-    @TableField(typeHandler = org.xhy.community.infrastructure.converter.ChannelTypeConverter.class)
+    @TableField(typeHandler = ChannelTypeConverter.class)
     private ChannelType channelType;
     
     /** 通知标题 */
@@ -31,7 +34,7 @@ public class NotificationEntity extends BaseEntity {
     private String content;
     
     /** 通知状态 */
-    @TableField(typeHandler = org.xhy.community.infrastructure.converter.NotificationStatusConverter.class)
+    @TableField(typeHandler = NotificationStatusConverter.class)
     private NotificationStatus status;
     
     // Getters and Setters

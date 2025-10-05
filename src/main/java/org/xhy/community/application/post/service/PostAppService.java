@@ -21,10 +21,12 @@ import org.xhy.community.domain.post.query.PostQuery;
 import org.xhy.community.domain.post.service.CategoryDomainService;
 import org.xhy.community.domain.post.service.PostDomainService;
 import org.xhy.community.domain.post.valueobject.PostStatus;
+import org.xhy.community.domain.post.valueobject.CategoryType;
 import org.xhy.community.domain.user.entity.UserEntity;
 import org.xhy.community.domain.user.service.UserDomainService;
 import org.xhy.community.domain.comment.service.CommentDomainService;
 import org.xhy.community.domain.comment.valueobject.BusinessType;
+import org.xhy.community.domain.log.service.UserActivityLogDomainService;
 import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.infrastructure.config.ValidationErrorCode;
 import org.xhy.community.interfaces.post.request.CreatePostRequest;
@@ -45,17 +47,20 @@ public class PostAppService {
     private final CategoryDomainService categoryDomainService;
     private final LikeDomainService likeDomainService;
     private final CommentDomainService commentDomainService;
+    private final UserActivityLogDomainService userActivityLogDomainService;
     
     public PostAppService(PostDomainService postDomainService, 
                          UserDomainService userDomainService,
                          CategoryDomainService categoryDomainService,
                          LikeDomainService likeDomainService,
-                         CommentDomainService commentDomainService) {
+                         CommentDomainService commentDomainService,
+                         UserActivityLogDomainService userActivityLogDomainService) {
         this.postDomainService = postDomainService;
         this.userDomainService = userDomainService;
         this.categoryDomainService = categoryDomainService;
         this.likeDomainService = likeDomainService;
         this.commentDomainService = commentDomainService;
+        this.userActivityLogDomainService = userActivityLogDomainService;
     }
     
     public PostDTO createPost(CreatePostRequest request, String authorId) {
@@ -97,6 +102,8 @@ public class PostAppService {
         }
         // 填充点赞数
         dto.setLikeCount(LikeCountHelper.getLikeCount(postId, LikeTargetType.POST, likeDomainService));
+        // 按用户去重的浏览数（来自操作日志）
+        dto.setViewCount(userActivityLogDomainService.getDistinctViewerCountByPostId(postId).intValue());
         return dto;
     }
     
@@ -111,7 +118,7 @@ public class PostAppService {
         if (!records.isEmpty()) {
             java.util.Set<String> categoryIds = records.stream().map(PostEntity::getCategoryId).collect(java.util.stream.Collectors.toSet());
             List<CategoryEntity> categories = categoryDomainService.getCategoriesByIds(categoryIds);
-            java.util.Map<String, org.xhy.community.domain.post.valueobject.CategoryType> typeMap = categories.stream()
+            java.util.Map<String, CategoryType> typeMap = categories.stream()
                     .collect(java.util.stream.Collectors.toMap(CategoryEntity::getId, CategoryEntity::getType));
             for (int i = 0; i < records.size(); i++) {
                 PostEntity pe = records.get(i);
@@ -122,6 +129,10 @@ public class PostAppService {
         dtoPage.setRecords(dtoList);
         
         LikeCountHelper.fillLikeCount(dtoList, PostDTO::getId, LikeTargetType.POST, PostDTO::setLikeCount, likeDomainService);
+        // 批量填充按用户去重的浏览数
+        java.util.Set<String> postIdsForUser = records.stream().map(PostEntity::getId).collect(java.util.stream.Collectors.toSet());
+        java.util.Map<String, Long> viewCountMapForUser = userActivityLogDomainService.getDistinctViewerCountMapByPostIds(postIdsForUser);
+        dtoList.forEach(dto -> dto.setViewCount(viewCountMapForUser.getOrDefault(dto.getId(), 0L).intValue()));
         dtoPage.setRecords(dtoList);
         return dtoPage;
     }
@@ -177,7 +188,7 @@ public class PostAppService {
                     CategoryEntity::getId,
                     CategoryEntity::getName
                 ));
-        java.util.Map<String, org.xhy.community.domain.post.valueobject.CategoryType> categoryTypes = categories.stream()
+        java.util.Map<String, CategoryType> categoryTypes = categories.stream()
                 .collect(java.util.stream.Collectors.toMap(
                     CategoryEntity::getId,
                     CategoryEntity::getType
@@ -198,6 +209,9 @@ public class PostAppService {
                 .toList();
 
         LikeCountHelper.fillLikeCount(dtoList, FrontPostDTO::getId, LikeTargetType.POST, FrontPostDTO::setLikeCount, likeDomainService);
+        // 批量填充按用户去重的浏览数
+        java.util.Map<String, Long> viewCountMap = userActivityLogDomainService.getDistinctViewerCountMapByPostIds(postIds);
+        dtoList.forEach(dto -> dto.setViewCount(viewCountMap.getOrDefault(dto.getId(), 0L).intValue()));
 
         Page<FrontPostDTO> dtoPage = new Page<>(entityPage.getCurrent(), entityPage.getSize(), entityPage.getTotal());
         dtoPage.setRecords(dtoList);
@@ -236,7 +250,7 @@ public class PostAppService {
                     CategoryEntity::getId,
                     CategoryEntity::getName
                 ));
-        java.util.Map<String, org.xhy.community.domain.post.valueobject.CategoryType> categoryTypes = categories.stream()
+        java.util.Map<String, CategoryType> categoryTypes = categories.stream()
                 .collect(java.util.stream.Collectors.toMap(
                     CategoryEntity::getId,
                     CategoryEntity::getType
@@ -256,6 +270,9 @@ public class PostAppService {
                 .toList();
 
         LikeCountHelper.fillLikeCount(dtoList, FrontPostDTO::getId, LikeTargetType.POST, FrontPostDTO::setLikeCount, likeDomainService);
+        // 批量填充按用户去重的浏览数
+        java.util.Map<String, Long> viewCountMap2 = userActivityLogDomainService.getDistinctViewerCountMapByPostIds(postIds);
+        dtoList.forEach(dto -> dto.setViewCount(viewCountMap2.getOrDefault(dto.getId(), 0L).intValue()));
 
         Page<FrontPostDTO> dtoPage = new Page<>(entityPage.getCurrent(), entityPage.getSize(), entityPage.getTotal());
         dtoPage.setRecords(dtoList);
@@ -289,8 +306,10 @@ public class PostAppService {
         }
         // 填充点赞数
         dto.setLikeCount(LikeCountHelper.getLikeCount(postId, LikeTargetType.POST, likeDomainService));
+        // 按用户去重的浏览数（来自操作日志）
+        dto.setViewCount(userActivityLogDomainService.getDistinctViewerCountByPostId(postId).intValue());
         // 问答帖子返回采纳评论ID集合，供前台渲染
-        if (category != null && category.getType() == org.xhy.community.domain.post.valueobject.CategoryType.QA) {
+        if (category != null && category.getType() == CategoryType.QA) {
             java.util.Set<String> ids = postDomainService.getAcceptedCommentIds(post.getId());
             dto.setAcceptedCommentIds(new java.util.ArrayList<>(ids));
         }

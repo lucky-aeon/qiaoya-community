@@ -18,6 +18,7 @@ import org.xhy.community.domain.log.service.UserActivityLogDomainService;
 import org.xhy.community.domain.common.valueobject.ActivityType;
 import org.xhy.community.infrastructure.util.HttpRequestInfoExtractor;
 import org.xhy.community.infrastructure.context.UserActivityContext;
+import org.xhy.community.infrastructure.lock.DistributedLock;
 
 import java.util.Random;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -30,13 +31,13 @@ public class AuthDomainService {
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
     private final UserActivityLogDomainService userActivityLogDomainService;
-    private final org.xhy.community.infrastructure.lock.DistributedLock distributedLock;
+    private final DistributedLock distributedLock;
 
     public AuthDomainService(UserSocialAccountRepository userSocialAccountRepository,
                              UserRepository userRepository,
                              BCryptPasswordEncoder passwordEncoder,
                              UserActivityLogDomainService userActivityLogDomainService,
-                             org.xhy.community.infrastructure.lock.DistributedLock distributedLock) {
+                             DistributedLock distributedLock) {
         this.userSocialAccountRepository = userSocialAccountRepository;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;

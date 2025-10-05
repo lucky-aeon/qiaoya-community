@@ -16,6 +16,7 @@ import org.xhy.community.domain.user.service.UserDomainService;
 import org.xhy.community.domain.post.service.PostDomainService;
 import org.xhy.community.domain.course.service.CourseDomainService;
 import org.xhy.community.domain.course.service.ChapterDomainService;
+import org.xhy.community.domain.user.entity.UserEntity;
 
 import java.util.HashMap;
 import java.util.List;
@@ -107,7 +108,7 @@ public class FollowAppService {
         java.util.Map<String, String> nameMap = new java.util.HashMap<>();
         if (!userIds.isEmpty()) {
             // userDomainService返回实体，再取name
-            java.util.Map<String, org.xhy.community.domain.user.entity.UserEntity> users =
+            java.util.Map<String, UserEntity> users =
                 userDomainService.getUserEntityMapByIds(userIds);
             for (var entry : users.entrySet()) {
                 nameMap.put(entry.getKey(), entry.getValue() != null ? entry.getValue().getName() : null);

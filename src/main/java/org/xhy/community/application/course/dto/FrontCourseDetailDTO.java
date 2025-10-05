@@ -135,8 +135,8 @@ public class FrontCourseDetailDTO {
     public Boolean getUnlocked() { return unlocked; }
     public void setUnlocked(Boolean unlocked) { this.unlocked = unlocked; }
 
-    public java.util.List<org.xhy.community.application.subscription.dto.AppSubscriptionPlanDTO> getUnlockPlans() { return unlockPlans; }
-    public void setUnlockPlans(java.util.List<org.xhy.community.application.subscription.dto.AppSubscriptionPlanDTO> unlockPlans) { this.unlockPlans = unlockPlans; }
+    public java.util.List<AppSubscriptionPlanDTO> getUnlockPlans() { return unlockPlans; }
+    public void setUnlockPlans(java.util.List<AppSubscriptionPlanDTO> unlockPlans) { this.unlockPlans = unlockPlans; }
 
     public Integer getLikeCount() { return likeCount; }
     public void setLikeCount(Integer likeCount) { this.likeCount = likeCount; }

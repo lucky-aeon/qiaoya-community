@@ -30,12 +30,15 @@ import org.xhy.community.infrastructure.email.EmailService;
 import org.xhy.community.infrastructure.exception.AuthErrorCode;
 import org.xhy.community.domain.user.event.UserLoginEvent;
 import org.xhy.community.domain.user.valueobject.UserStatus;
+import org.xhy.community.domain.tag.service.TagDomainService;
+import org.xhy.community.domain.tag.entity.UserTagAssignmentEntity;
+import org.xhy.community.domain.tag.entity.TagDefinitionEntity;
 
 @Service
 public class UserAppService {
     
     private final UserDomainService userDomainService;
-    private final org.xhy.community.domain.tag.service.TagDomainService tagDomainService;
+    private final TagDomainService tagDomainService;
     private final JwtUtil jwtUtil;
     private final DeviceSessionDomainService deviceSessionDomainService;
     private final UserSessionConfigService userSessionConfigService;
@@ -49,7 +52,7 @@ public class UserAppService {
     private final ApplicationEventPublisher eventPublisher;
 
     public UserAppService(UserDomainService userDomainService,
-                          org.xhy.community.domain.tag.service.TagDomainService tagDomainService,
+                          TagDomainService tagDomainService,
                           JwtUtil jwtUtil,
                           DeviceSessionDomainService deviceSessionDomainService,
                           UserSessionConfigService userSessionConfigService,
@@ -243,18 +246,18 @@ public class UserAppService {
         }
         // 聚合标签名称（授予即默认公开）
         {
-            java.util.List<org.xhy.community.domain.tag.entity.UserTagAssignmentEntity> assigns =
+            java.util.List<UserTagAssignmentEntity> assigns =
                     tagDomainService.listIssuedAssignmentsByUser(userId);
             if (assigns != null && !assigns.isEmpty()) {
                 java.util.List<String> tagIds = assigns.stream()
-                        .map(org.xhy.community.domain.tag.entity.UserTagAssignmentEntity::getTagId)
+                        .map(UserTagAssignmentEntity::getTagId)
                         .toList();
-                java.util.Map<String, org.xhy.community.domain.tag.entity.TagDefinitionEntity> defMap =
+                java.util.Map<String, TagDefinitionEntity> defMap =
                         tagDomainService.getTagDefinitionMapByIds(java.util.Set.copyOf(tagIds));
                 java.util.List<String> tagNames = assigns.stream()
                         .map(a -> defMap.get(a.getTagId()))
                         .filter(java.util.Objects::nonNull)
-                        .map(org.xhy.community.domain.tag.entity.TagDefinitionEntity::getName)
+                        .map(TagDefinitionEntity::getName)
                         .filter(java.util.Objects::nonNull)
                         .distinct()
                         .toList();
@@ -270,18 +273,18 @@ public class UserAppService {
         UserEntity user = userDomainService.getUserById(userId);
         UserPublicProfileDTO dto = UserAssembler.toPublicProfileDTO(user);
         // 聚合标签名称（公开展示：授予即公开）
-        java.util.List<org.xhy.community.domain.tag.entity.UserTagAssignmentEntity> assigns =
+        java.util.List<UserTagAssignmentEntity> assigns =
                 tagDomainService.listIssuedAssignmentsByUser(userId);
         if (assigns != null && !assigns.isEmpty()) {
             java.util.List<String> tagIds = assigns.stream()
-                    .map(org.xhy.community.domain.tag.entity.UserTagAssignmentEntity::getTagId)
+                    .map(UserTagAssignmentEntity::getTagId)
                     .toList();
-            java.util.Map<String, org.xhy.community.domain.tag.entity.TagDefinitionEntity> defMap =
+            java.util.Map<String, TagDefinitionEntity> defMap =
                     tagDomainService.getTagDefinitionMapByIds(java.util.Set.copyOf(tagIds));
             java.util.List<String> tagNames = assigns.stream()
                     .map(a -> defMap.get(a.getTagId()))
                     .filter(java.util.Objects::nonNull)
-                    .map(org.xhy.community.domain.tag.entity.TagDefinitionEntity::getName)
+                    .map(TagDefinitionEntity::getName)
                     .filter(java.util.Objects::nonNull)
                     .distinct()
                     .toList();
