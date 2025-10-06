@@ -356,6 +356,51 @@ public class DeviceSessionDomainService {
     }
 
     /**
+     * 获取用户活跃IP列表（按设备集合聚合），用于兼容仅维护“设备->IP”集合的登录路径。
+     * 说明：
+     * - 当使用 createOrReuseByDevice 登录时，不会写入全局的 active_ips；
+     * - 为了兼容现有展示活跃设备IP的接口，这里按设备集合聚合出所有活跃IP；
+     * - lastSeen 取该IP在设备IP ZSET中的score；
+     * - 不做TTL校验，保持与 getActiveIpsWithLastSeen 一致的“惰性清理”策略。
+     */
+    public List<ActiveIpInfo> getActiveIpsFromDevicesWithLastSeen(String userId, String currentIp) {
+        List<ActiveIpInfo> result = new ArrayList<>();
+        java.util.HashSet<String> seenIps = new java.util.HashSet<>();
+
+        // 读取用户的活跃设备集合
+        String devicesKey = keyDevices(userId);
+        Set<ZSetOperations.TypedTuple<String>> devices = redis.opsForZSet().rangeWithScores(devicesKey, 0, -1);
+        if (devices == null || devices.isEmpty()) {
+            return result;
+        }
+
+        for (ZSetOperations.TypedTuple<String> dev : devices) {
+            String deviceId = dev.getValue();
+            if (deviceId == null) {
+                continue;
+            }
+            String devIpsKey = keyDeviceIps(userId, deviceId);
+            Set<ZSetOperations.TypedTuple<String>> ipsWithScores =
+                redis.opsForZSet().rangeWithScores(devIpsKey, 0, -1);
+            if (ipsWithScores == null || ipsWithScores.isEmpty()) {
+                continue;
+            }
+            for (ZSetOperations.TypedTuple<String> tuple : ipsWithScores) {
+                String ip = tuple.getValue();
+                if (ip != null && tuple.getScore() != null && seenIps.add(ip)) {
+                    LocalDateTime lastSeenTime = LocalDateTime.ofInstant(
+                        Instant.ofEpochMilli(tuple.getScore().longValue()),
+                        ZoneId.systemDefault()
+                    );
+                    boolean isCurrent = ip.equals(currentIp);
+                    result.add(new ActiveIpInfo(ip, lastSeenTime, isCurrent));
+                }
+            }
+        }
+        return result;
+    }
+
+    /**
      * 强制下线指定IP（管理员操作）。
      */
     public void forceRemoveActiveIp(String userId, String ip) {

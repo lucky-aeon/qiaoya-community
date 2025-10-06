@@ -30,7 +30,14 @@ public class DeviceSessionAppService {
      * 获取用户活跃会话列表
      */
     public List<ActiveSessionDTO> getUserActiveSessions(String userId, String currentIp) {
+        // 优先读取旧的全局 active_ips 集合
         List<ActiveIpInfo> activeIps = deviceSessionDomainService.getActiveIpsWithLastSeen(userId, currentIp);
+
+        // 兼容：若使用基于设备的登录路径，active_ips 可能为空，则从“设备->IP”集合聚合
+        if (activeIps == null || activeIps.isEmpty()) {
+            activeIps = deviceSessionDomainService.getActiveIpsFromDevicesWithLastSeen(userId, currentIp);
+        }
+
         return DeviceSessionAssembler.toActiveSessionDTOList(activeIps);
     }
 
@@ -40,6 +47,9 @@ public class DeviceSessionAppService {
     public void removeUserActiveSession(String userId, String ip) {
         // 校验IP是否属于该用户的活跃会话
         List<ActiveIpInfo> activeIps = deviceSessionDomainService.getActiveIpsWithLastSeen(userId);
+        if (activeIps == null || activeIps.isEmpty()) {
+            activeIps = deviceSessionDomainService.getActiveIpsFromDevicesWithLastSeen(userId, null);
+        }
         boolean ipExists = activeIps.stream()
                 .anyMatch(activeIp -> ip.equals(activeIp.getIp()));
 
