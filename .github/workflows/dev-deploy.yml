@@ -26,6 +26,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Validate CN registry config (domestic-only)
+        run: |
+          if [ -z "${{ env.CN_IMAGE }}" ] || [ -z "${{ env.CN_REGISTRY }}" ]; then
+            echo "CN_IMAGE/CN_REGISTRY must be set for dev (domestic-only mode)." >&2
+            exit 1
+          fi
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -127,18 +134,14 @@ jobs:
           done
           PGPASSWORD=postgres psql -h 127.0.0.1 -U postgres -p 5432 -c "CREATE DATABASE qiaoya_community;" || true
 
-      - name: Resolve image tag and pull
+      - name: Resolve image tag and pull (CN only)
         env:
           IMAGE_FROM_BUILD: ${{ needs.build-and-push.outputs.image }}
         run: |
           set -e
           IMAGE="$IMAGE_FROM_BUILD"
           if [ -z "$IMAGE" ]; then
-            if [ -n "$CN_IMAGE" ]; then
-              IMAGE="$CN_IMAGE:$TAG_SHA"
-            else
-              IMAGE="$REGISTRY/$IMAGE_NAME:$TAG_SHA"
-            fi
+            IMAGE="$CN_IMAGE:$TAG_SHA"
           fi
           echo "Using image: $IMAGE"
           docker pull "$IMAGE"
@@ -187,18 +190,14 @@ jobs:
       IMAGE_NAME: ${{ github.repository }}
       TAG_SHA: dev-${{ github.sha }}
     steps:
-      - name: Resolve image tag for deploy
+      - name: Resolve image tag for deploy (CN only)
         env:
           IMAGE_FROM_BUILD: ${{ needs.build-and-push.outputs.image }}
         run: |
           set -e
           IMAGE="$IMAGE_FROM_BUILD"
           if [ -z "$IMAGE" ]; then
-            if [ -n "$CN_IMAGE" ]; then
-              IMAGE="$CN_IMAGE:$TAG_SHA"
-            else
-              IMAGE="$REGISTRY/$IMAGE_NAME:$TAG_SHA"
-            fi
+            IMAGE="$CN_IMAGE:$TAG_SHA"
           fi
           echo "Using deploy image: $IMAGE"
           echo "IMAGE_RESOLVED=$IMAGE" >> $GITHUB_ENV

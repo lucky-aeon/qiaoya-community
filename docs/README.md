@@ -73,6 +73,12 @@
   - 文件：docs/deployment/发布可靠性与回滚策略-蓝绿-金丝雀-候选容器预检.md
  - Nginx/Traefik 蓝绿切流运维操作手册
   - 文件：docs/deployment/Nginx-Traefik-蓝绿切流-运维操作手册.md
+ - 蓝绿部署脚本与服务器准备（一步步上手）
+  - 文件：docs/deployment/蓝绿部署脚本与服务器准备.md
+ - PostgreSQL 备份与恢复实践指南（生产可落地）
+  - 文件：docs/deployment/PostgreSQL备份与恢复实践.md
+ - 生产环境部署准备与上线手册（可落地）
+  - 文件：docs/deployment/生产环境部署准备与上线手册.md
  - CI 容器级冒烟测试：复用步骤与示例
   - 文件：docs/deployment/CI-容器级冒烟测试-复用步骤与示例.md
  - CI 构建提速方案（国内仓库 + 缓存 + 自托管 Runner）
