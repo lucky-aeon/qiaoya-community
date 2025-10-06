@@ -4,21 +4,23 @@ import org.xhy.community.domain.post.valueobject.CategoryType;
 import org.xhy.community.interfaces.common.request.PageRequest;
 
 public class AppPostQueryRequest extends PageRequest {
-    
+
     private CategoryType categoryType;
     private String categoryId;
-    
+    private String title;
+    private Boolean isTop;
+
     public AppPostQueryRequest() {}
-    
+
     public AppPostQueryRequest(Integer pageNum, Integer pageSize, CategoryType categoryType) {
         super(pageNum, pageSize);
         this.categoryType = categoryType;
     }
-    
+
     public CategoryType getCategoryType() {
         return categoryType;
     }
-    
+
     public void setCategoryType(CategoryType categoryType) {
         this.categoryType = categoryType;
     }
@@ -29,5 +31,21 @@ public class AppPostQueryRequest extends PageRequest {
 
     public void setCategoryId(String categoryId) {
         this.categoryId = categoryId;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public Boolean getIsTop() {
+        return isTop;
+    }
+
+    public void setIsTop(Boolean isTop) {
+        this.isTop = isTop;
     }
 }

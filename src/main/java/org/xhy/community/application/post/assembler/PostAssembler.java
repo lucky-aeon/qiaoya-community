@@ -28,13 +28,17 @@ public class PostAssembler {
         PostQuery query = new PostQuery(request.getPageNum(), request.getPageSize());
         query.setCategoryType(request.getCategoryType());
         query.setCategoryId(request.getCategoryId());
+        query.setTitle(request.getTitle());
+        query.setIsTop(request.getIsTop());
         return query;
     }
-    
+
     public static PostQuery fromAppRequest(AppPostQueryRequest request, String authorId) {
         PostQuery query = new PostQuery(request.getPageNum(), request.getPageSize());
         query.setCategoryType(request.getCategoryType());
         query.setCategoryId(request.getCategoryId());
+        query.setTitle(request.getTitle());
+        query.setIsTop(request.getIsTop());
         query.setAuthorId(authorId);
         return query;
     }

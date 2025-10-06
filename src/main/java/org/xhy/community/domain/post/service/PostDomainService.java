@@ -505,34 +505,36 @@ public class PostDomainService {
     
     public IPage<PostEntity> queryAppPosts(PostQuery query) {
         Page<PostEntity> pageQuery = new Page<>(query.getPageNum(), query.getPageSize());
-        
+
         LambdaQueryWrapper<PostEntity> queryWrapper = new LambdaQueryWrapper<PostEntity>()
                 .eq(PostEntity::getStatus, PostStatus.PUBLISHED)
                 .eq(org.springframework.util.StringUtils.hasText(query.getAuthorId()), PostEntity::getAuthorId, query.getAuthorId())
                 .eq(org.springframework.util.StringUtils.hasText(query.getCategoryId()), PostEntity::getCategoryId, query.getCategoryId())
+                .eq(query.getIsTop() != null, PostEntity::getIsTop, query.getIsTop())
+                .like(org.springframework.util.StringUtils.hasText(query.getTitle()), PostEntity::getTitle, query.getTitle())
                 .orderByDesc(PostEntity::getCreateTime);
-        
-        // 如果指定了分类类型，需要关联查询分类表
+
+        // 如果指定了分类类型,需要关联查询分类表
         if (query.getCategoryType() != null) {
             // 先查询符合条件的分类ID列表
             LambdaQueryWrapper<CategoryEntity> categoryWrapper = new LambdaQueryWrapper<CategoryEntity>()
                     .eq(CategoryEntity::getType, query.getCategoryType())
                     .eq(CategoryEntity::getIsActive, true)
                     .select(CategoryEntity::getId);
-            
+
             java.util.List<CategoryEntity> categories = categoryRepository.selectList(categoryWrapper);
             if (categories.isEmpty()) {
                 // 如果没有找到符合条件的分类，返回空结果
                 return new Page<>(query.getPageNum(), query.getPageSize(), 0);
             }
-            
+
             java.util.List<String> categoryIds = categories.stream()
                     .map(CategoryEntity::getId)
                     .toList();
-            
+
             queryWrapper.in(PostEntity::getCategoryId, categoryIds);
         }
-        
+
         return postRepository.selectPage(pageQuery, queryWrapper);
     }
     
