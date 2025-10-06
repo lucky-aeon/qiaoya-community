@@ -29,7 +29,8 @@
       "mcp__chrome-devtools__wait_for",
       "mcp__chrome-devtools__click",
       "mcp__chrome-devtools__take_screenshot",
-      "mcp__chrome-devtools__navigate_page_history"
+      "mcp__chrome-devtools__navigate_page_history",
+      "Read(//Users/xhy/IdeaProjects/qiaoya-community/qiaoya-community-frontend/.github/workflows/**)"
     ],
     "deny": [],
     "ask": []

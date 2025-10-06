@@ -82,12 +82,15 @@ jobs:
       - name: Deploy via SSH (prod)
         uses: appleboy/ssh-action@v1.0.3
         env:
-          SCRIPT_PATH: ${{ secrets.DEPLOY_SCRIPT_PATH }}
+          SCRIPT_PATH: ${{ vars.DEPLOY_SCRIPT_PATH }}
           IMAGE: ${{ env.IMAGE_RESOLVED }}
           PROFILE: prod
           PORT: 8520
           CONTAINER_NAME: qiaoya-community-backend
-          ENV_FILE: /etc/qiaoya.backend.prod.env
+          ENV_FILE: ${{ vars.ENV_FILE }}
+          UPSTREAM_SWITCH: ${{ vars.UPSTREAM_SWITCH }}
+          NGINX_CONF: ${{ vars.NGINX_CONF }}
+          TARGET_SIDE: ${{ vars.TARGET_SIDE }}
           CN_REGISTRY: ${{ env.CN_REGISTRY }}
           CN_USERNAME: ${{ secrets.CN_USERNAME }}
           CN_PASSWORD: ${{ secrets.CN_PASSWORD }}
@@ -96,7 +99,7 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script_stop: true
-          envs: SCRIPT_PATH,IMAGE,PROFILE,PORT,CONTAINER_NAME,ENV_FILE,CN_REGISTRY,CN_USERNAME,CN_PASSWORD
+          envs: SCRIPT_PATH,IMAGE,PROFILE,PORT,CONTAINER_NAME,ENV_FILE,UPSTREAM_SWITCH,NGINX_CONF,TARGET_SIDE,CN_REGISTRY,CN_USERNAME,CN_PASSWORD
           script: |
             set -e
             SCRIPT_PATH="${SCRIPT_PATH:-/www/project/qiaoya/deploy-qiaoya.sh}"
