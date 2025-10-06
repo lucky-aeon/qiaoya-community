@@ -28,8 +28,8 @@ GREEN_NAME=${GREEN_NAME:-${BASE_NAME}-green}
 BLUE_PORT=${BLUE_PORT:-8520}
 GREEN_PORT=${GREEN_PORT:-8521}
 
-# Health check
-HEALTH_PATH=${HEALTH_PATH:-/actuator/health}
+# Health check (hardcoded to public health endpoint)
+HEALTH_PATH=${HEALTH_PATH:-/api/public/health}
 HEALTH_TIMEOUT=${HEALTH_TIMEOUT:-120}
 
 # Switch method: manual | nginx

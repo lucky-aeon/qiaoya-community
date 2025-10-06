@@ -79,6 +79,53 @@ jobs:
           echo "Using deploy image: $IMAGE"
           echo "IMAGE_RESOLVED=$IMAGE" >> $GITHUB_ENV
 
+      # --- Smoke test (like dev) ---
+      - name: Prepare DB and tools (smoke)
+        run: |
+          sudo apt-get update && sudo apt-get install -y postgresql-client curl jq
+          docker rm -f pg redis app || true
+          docker run -d --name pg -e POSTGRES_PASSWORD=postgres -p 5432:5432 postgres:16-alpine \
+            --health-cmd='pg_isready -U postgres' --health-interval=5s --health-timeout=5s --health-retries=20 || true
+          docker run -d --name redis -p 6379:6379 redis:7-alpine \
+            --health-cmd='redis-cli ping || exit 1' --health-interval=5s --health-timeout=5s --health-retries=20 || true
+          for i in $(seq 1 60); do
+            pg_isready -h 127.0.0.1 -p 5432 -U postgres && break || sleep 2
+          done
+
+      - name: Run app container (smoke)
+        run: |
+          docker pull "$IMAGE_RESOLVED"
+          docker run -d --name app -p 18520:8520 \
+            --add-host=host.docker.internal:host-gateway \
+            -e SPRING_PROFILES_ACTIVE=dev \
+            -e DB_HOST=host.docker.internal -e DB_PORT=5432 -e DB_USERNAME=postgres -e DB_PASSWORD=postgres \
+            -e REDIS_HOST=host.docker.internal -e REDIS_PORT=6379 -e REDIS_DATABASE=0 \
+            "$IMAGE_RESOLVED"
+
+      - name: Wait health up (smoke)
+        run: |
+          set -e
+          for i in $(seq 1 120); do
+            resp=$(curl -fsS http://127.0.0.1:18520/api/public/health || true)
+            status=$(echo "$resp" | jq -r '.data.status // .status // empty')
+            if [ "$status" = "UP" ]; then echo "Health UP"; exit 0; fi
+            sleep 2
+          done
+          echo "Health timeout" >&2
+          docker logs --tail=200 app || true
+          exit 1
+
+      - name: Public endpoints smoke
+        run: |
+          set -e
+          curl -fsS http://127.0.0.1:18520/api/public/stats/users | jq . >/dev/null
+          curl -fsS http://127.0.0.1:18520/api/public/testimonials | jq . >/dev/null
+          curl -fsS http://127.0.0.1:18520/api/public/subscription-plans | jq . >/dev/null
+
+      - name: Cleanup smoke resources
+        if: always()
+        run: docker rm -f app pg redis || true
+
       - name: Deploy via SSH (prod)
         uses: appleboy/ssh-action@v1.0.3
         env:
