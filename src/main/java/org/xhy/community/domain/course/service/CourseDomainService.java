@@ -64,6 +64,7 @@ public class CourseDomainService {
         
         LambdaQueryWrapper<CourseEntity> queryWrapper = new LambdaQueryWrapper<CourseEntity>()
                 .like(StringUtils.hasText(query.getTitle()), CourseEntity::getTitle, query.getTitle())
+                .orderByDesc(CourseEntity::getSortOrder)
                 .orderByDesc(CourseEntity::getCreateTime);
         
         return courseRepository.selectPage(page, queryWrapper);
@@ -82,6 +83,7 @@ public class CourseDomainService {
         LambdaQueryWrapper<CourseEntity> queryWrapper = new LambdaQueryWrapper<CourseEntity>()
                 .eq(CourseEntity::getStatus, CourseStatus.COMPLETED)
                 .like(StringUtils.hasText(query.getTitle()), CourseEntity::getTitle, query.getTitle())
+                .orderByDesc(CourseEntity::getSortOrder)
                 .orderByDesc(CourseEntity::getCreateTime);
         
         return courseRepository.selectPage(page, queryWrapper);
@@ -94,6 +96,7 @@ public class CourseDomainService {
     public List<CourseEntity> getAllCourses() {
         return courseRepository.selectList(
             new LambdaQueryWrapper<CourseEntity>()
+                .orderByDesc(CourseEntity::getSortOrder)
                 .orderByDesc(CourseEntity::getCreateTime)
         );
     }

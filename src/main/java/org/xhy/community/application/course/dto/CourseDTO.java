@@ -27,6 +27,7 @@ public class CourseDTO {
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
     private Integer likeCount;
+    private Integer sortOrder;
     
     public CourseDTO() {
     }
@@ -85,4 +86,7 @@ public class CourseDTO {
 
     public Integer getLikeCount() { return likeCount; }
     public void setLikeCount(Integer likeCount) { this.likeCount = likeCount; }
+
+    public Integer getSortOrder() { return sortOrder; }
+    public void setSortOrder(Integer sortOrder) { this.sortOrder = sortOrder; }
 }

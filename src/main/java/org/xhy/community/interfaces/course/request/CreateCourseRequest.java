@@ -37,6 +37,9 @@ public class CreateCourseRequest {
     private List<CourseResource> resources;
 
     private CourseStatus status;
+
+    // 排序序号（列表倒序显示，值越大越靠前）
+    private Integer sortOrder;
     
     public CreateCourseRequest() {
     }
@@ -77,4 +80,7 @@ public class CreateCourseRequest {
 
     public CourseStatus getStatus() { return status; }
     public void setStatus(CourseStatus status) { this.status = status; }
+
+    public Integer getSortOrder() { return sortOrder; }
+    public void setSortOrder(Integer sortOrder) { this.sortOrder = sortOrder; }
 }

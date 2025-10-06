@@ -59,6 +59,9 @@ public class CourseEntity extends BaseEntity {
     /** 课程资源列表，JSON格式存储 */
     @TableField(typeHandler = UniversalListConverter.class)
     private List<CourseResource> resources;
+
+    /** 排序序号（列表倒序显示，值越大越靠前） */
+    private Integer sortOrder;
     
     public CourseEntity() {
     }
@@ -116,4 +119,7 @@ public class CourseEntity extends BaseEntity {
 
     public List<CourseResource> getResources() { return resources; }
     public void setResources(List<CourseResource> resources) { this.resources = resources; }
+
+    public Integer getSortOrder() { return sortOrder; }
+    public void setSortOrder(Integer sortOrder) { this.sortOrder = sortOrder; }
 }
