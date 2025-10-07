@@ -152,6 +152,9 @@ public class UserAppService {
      * 发送密码重置验证码
      */
     public void sendPasswordResetCode(String email, String ip) {
+        if (appEnvironment.getEnv() == DeploymentEnv.DEV) {
+            throw new BusinessException(AuthErrorCode.PASSWORD_RESET_DISABLED);
+        }
         UserEntity user = userDomainService.getUserByEmail(email);
         if (user.getStatus() == UserStatus.BANNED) {
             throw new BusinessException(UserErrorCode.USER_BANNED);
@@ -175,6 +178,9 @@ public class UserAppService {
      * 使用邮箱验证码重置密码
      */
     public void resetPassword(String email, String verificationCode, String newPassword) {
+        if (appEnvironment.getEnv() == DeploymentEnv.DEV) {
+            throw new BusinessException(AuthErrorCode.PASSWORD_RESET_DISABLED);
+        }
         passwordResetDomainService.verifyAndConsume(email, verificationCode);
 
         UserEntity user = userDomainService.getUserByEmail(email);
@@ -192,6 +198,9 @@ public class UserAppService {
      * 发送注册邮箱邀请码（带IP频控与封禁）。
      */
     public void sendRegisterEmailCode(String email, String ip) {
+        if (appEnvironment.getEnv() == DeploymentEnv.DEV) {
+            throw new BusinessException(AuthErrorCode.REGISTER_CODE_DISABLED);
+        }
         // 如果邮箱已存在，直接报错（避免骚扰）
         if (userDomainService.isEmailExists(email, null)) {
             throw new BusinessException(UserErrorCode.EMAIL_EXISTS);

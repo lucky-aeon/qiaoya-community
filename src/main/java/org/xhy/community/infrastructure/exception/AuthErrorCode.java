@@ -17,7 +17,13 @@ public enum AuthErrorCode implements ErrorCode {
     PASSWORD_RESET_CODE_MISMATCH(3213, "密码重置验证码不正确"),
     PASSWORD_RESET_RATE_LIMIT(3214, "密码重置请求过于频繁，请稍后再试"),
     PASSWORD_RESET_PARAM_INVALID(3215, "密码重置参数无效"),
-    REGISTER_DISABLED(3216, "当前环境不允许注册");
+    REGISTER_DISABLED(3216, "当前环境不允许注册"),
+    REGISTER_CODE_DISABLED(3217, "当前环境不允许发送注册验证码"),
+    PASSWORD_RESET_DISABLED(3218, "当前环境不允许找回密码");
+    // 扩展：环境限制相关
+    // 3217 发送注册验证码限制
+    // 3218 找回密码功能限制
+    // 为保证兼容性，不改变已存在常量的序号，仅补充说明
 
     private final int code;
     private final String message;
