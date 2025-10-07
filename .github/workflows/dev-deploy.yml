@@ -209,7 +209,7 @@ jobs:
           SCRIPT_PATH: ${{ secrets.DEPLOY_SCRIPT_PATH }}
           IMAGE: ${{ env.IMAGE_RESOLVED }}
           PROFILE: dev
-          PORT: 8520
+          PORT: 8528
           CONTAINER_NAME: qiaoya-community-backend
           CN_REGISTRY: ${{ secrets.CN_REGISTRY }}
           CN_USERNAME: ${{ secrets.CN_USERNAME }}
