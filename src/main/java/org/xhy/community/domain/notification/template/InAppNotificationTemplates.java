@@ -155,4 +155,28 @@ public class InAppNotificationTemplates {
             return ChapterCommentNotificationData.class;
         }
     }
+
+    /**
+     * 更新日志发布 - 站内消息模板
+     */
+    public static class UpdateLogPublishedTemplate implements NotificationTemplate<UpdateLogPublishedNotificationData> {
+
+        @Override
+        public String renderTitle(UpdateLogPublishedNotificationData data) {
+            return "系统更新发布";
+        }
+
+        @Override
+        public String renderContent(UpdateLogPublishedNotificationData data) {
+            String version = data.getVersion() == null ? "" : ("v" + data.getVersion());
+            String title = data.getTitle() == null ? "" : data.getTitle();
+            String base = (version + " 发布：" + title).trim();
+            return base.isBlank() ? "更新日志发布" : base;
+        }
+
+        @Override
+        public Class<UpdateLogPublishedNotificationData> getSupportedDataType() {
+            return UpdateLogPublishedNotificationData.class;
+        }
+    }
 }

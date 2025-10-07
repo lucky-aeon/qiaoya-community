@@ -4,6 +4,8 @@ server:
 spring:
   application:
     name: qiaoya-community
+  profiles:
+    active: ${ENVIRONMENT:DEV}
 
   # 数据库配置
   datasource:

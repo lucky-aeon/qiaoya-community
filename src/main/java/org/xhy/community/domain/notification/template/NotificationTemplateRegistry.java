@@ -60,6 +60,7 @@ public class NotificationTemplateRegistry {
         registerInAppTemplate(new InAppNotificationTemplates.CommentTemplate());
         registerInAppTemplate(new InAppNotificationTemplates.ChapterUpdatedTemplate());
         registerInAppTemplate(new InAppNotificationTemplates.ChapterCommentTemplate());
+        registerInAppTemplate(new InAppNotificationTemplates.UpdateLogPublishedTemplate());
 
         // 注册站外消息模板
         registerFileBasedOutAppTemplates();
@@ -199,6 +200,25 @@ public class NotificationTemplateRegistry {
                 m.put("CHAPTER_TITLE", data.getChapterTitle());
                 m.put("TRUNCATED_COMMENT", data.getTruncatedCommentContent());
                 m.put("CHAPTER_URL", resolveUrl(data.getChapterPath()));
+                return m;
+            },
+            webUrlConfig
+        ));
+
+        // 更新日志发布
+        registerOutAppTemplate(new FileBasedNotificationTemplate<>(
+            UpdateLogPublishedNotificationData.class,
+            "敲鸭社区 - 更新日志发布",
+            "update-log-published.html",
+            templateLoader,
+            templateRenderer,
+            brandingConfig,
+            data -> {
+                java.util.Map<String, String> m = new java.util.HashMap<>();
+                m.put("RECIPIENT_NAME", data.getRecipientName());
+                m.put("VERSION", data.getVersion() == null ? "" : data.getVersion());
+                m.put("TITLE", data.getTitle() == null ? "" : data.getTitle());
+                m.put("CHANGELOG_URL", resolveUrl(data.getChangelogPath() == null ? "/dashboard/changelog" : data.getChangelogPath()));
                 return m;
             },
             webUrlConfig

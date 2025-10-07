@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>敲鸭社区 - 更新日志发布</title>
+  <style>
+    /* 仅做最低限度的行内样式，保证大多数客户端一致性 */
+  </style>
+  </head>
+<body style="margin:0;padding:0;background-color:#f6f7f9;">
+  <div style="display:none!important;visibility:hidden;opacity:0;height:0;width:0;overflow:hidden;">新版本发布通知</div>
+
+  <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color:#f6f7f9;">
+    <tr>
+      <td align="center" style="padding:24px 12px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width:620px;background-color:#ffffff;border-radius:12px;border:1px solid #e5e7eb;">
+          <tr>
+            <td style="padding:20px 24px;border-bottom:1px solid #e5e7eb;">
+              <img src="{{LOGO_SRC}}" alt="敲鸭社区" height="32" style="display:block;height:32px;">
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:24px 24px 0 24px;">
+              <div style="font-size:20px;line-height:28px;color:#1f2937;font-weight:600;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'WenQuanYi Micro Hei', 'Noto Sans CJK SC', 'Source Han Sans SC', sans-serif;">新版本发布：v{{VERSION}}</div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:12px 24px 24px 24px;font-size:14px;line-height:22px;color:#1f2937;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'WenQuanYi Micro Hei', 'Noto Sans CJK SC', 'Source Han Sans SC', sans-serif;">
+              <p style="margin:0 0 12px 0;">Hi {{RECIPIENT_NAME}}，</p>
+              <p style="margin:0 0 12px 0;">我们发布了新版本 <strong>v{{VERSION}}</strong>：</p>
+              <p style="margin:0 0 12px 0;font-weight:600;">{{TITLE}}</p>
+
+              <table role="presentation" cellspacing="0" cellpadding="0" style="margin:16px 0;">
+                <tr>
+                  <td>
+                    <a href="{{CHANGELOG_URL}}" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;padding:10px 16px;border-radius:8px;font-weight:600;">查看更新日志</a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:0 0 12px 0;">感谢持续关注与支持！</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:16px 24px;border-top:1px solid #e5e7eb;font-size:12px;line-height:18px;color:#6b7280;">
+              你收到这封邮件是因为你在敲鸭社区开启了相关通知。可在
+              <a href="{{MANAGE_NOTIFICATIONS_URL}}" style="color:#2563eb;text-decoration:none;">通知设置</a>
+              中关闭邮件通知。
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+

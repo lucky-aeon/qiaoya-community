@@ -12,7 +12,8 @@ public enum NotificationType {
     POST_COMMENT("文章被评论"),
     COURSE_COMMENT("课程被评论"),
     CHAPTER_UPDATED("章节被更新"),
-    CHAPTER_COMMENT("章节被评论");
+    CHAPTER_COMMENT("章节被评论"),
+    UPDATE_LOG_PUBLISHED("更新日志发布");
     
     private final String description;
     

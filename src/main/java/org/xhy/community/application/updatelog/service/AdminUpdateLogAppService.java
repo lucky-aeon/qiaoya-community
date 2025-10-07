@@ -5,6 +5,8 @@ import org.springframework.stereotype.Service;
 import org.xhy.community.application.updatelog.assembler.UpdateLogAssembler;
 import org.springframework.transaction.annotation.Transactional;
 import org.xhy.community.application.updatelog.dto.UpdateLogDTO;
+import org.xhy.community.domain.notification.context.UpdateLogPublishedNotificationData;
+import org.xhy.community.domain.notification.valueobject.BatchSendConfig;
 import org.xhy.community.domain.updatelog.entity.UpdateLogEntity;
 import org.xhy.community.domain.updatelog.entity.UpdateLogChangeEntity;
 import org.xhy.community.domain.updatelog.service.UpdateLogDomainService;
@@ -14,10 +16,7 @@ import org.xhy.community.interfaces.updatelog.request.CreateUpdateLogRequest;
 import org.xhy.community.interfaces.updatelog.request.UpdateUpdateLogRequest;
 import org.xhy.community.interfaces.updatelog.request.AdminUpdateLogQueryRequest;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -25,11 +24,14 @@ public class AdminUpdateLogAppService {
 
     private final UpdateLogDomainService updateLogDomainService;
     private final UserDomainService userDomainService;
+    private final org.xhy.community.domain.notification.service.NotificationDomainService notificationDomainService;
 
     public AdminUpdateLogAppService(UpdateLogDomainService updateLogDomainService,
-                                   UserDomainService userDomainService) {
+                                   UserDomainService userDomainService,
+                                   org.xhy.community.domain.notification.service.NotificationDomainService notificationDomainService) {
         this.updateLogDomainService = updateLogDomainService;
         this.userDomainService = userDomainService;
+        this.notificationDomainService = notificationDomainService;
     }
 
     /**
@@ -144,6 +146,62 @@ public class AdminUpdateLogAppService {
      */
     public UpdateLogDTO toggleUpdateLogStatus(String updateLogId) {
         UpdateLogEntity updatedUpdateLog = updateLogDomainService.toggleUpdateLogStatus(updateLogId);
+
+        // 若切换后为 PUBLISHED，则进行全员通知（站内必发，邮件尊重用户偏好）
+        if (updatedUpdateLog != null && updatedUpdateLog.isPublished()) {
+            broadcastUpdateLogPublished(updatedUpdateLog);
+        }
+
         return UpdateLogAssembler.toDTO(updatedUpdateLog);
+    }
+
+    /**
+     * 全员广播：更新日志发布
+     * Application层负责编排：分页获取活跃用户 -> 组装通知数据 -> 批量发送
+     */
+    private void broadcastUpdateLogPublished(UpdateLogEntity updateLog) {
+        // 分页遍历活跃用户
+        final int pageSize = 500;
+        int pageNum = 1;
+
+        while (true) {
+            var query = new org.xhy.community.domain.user.query.UserQuery(pageNum, pageSize);
+            query.setStatus(org.xhy.community.domain.user.valueobject.UserStatus.ACTIVE);
+
+            com.baomidou.mybatisplus.core.metadata.IPage<org.xhy.community.domain.user.entity.UserEntity> page =
+                    userDomainService.queryUsers(query);
+
+            java.util.List<org.xhy.community.domain.user.entity.UserEntity> users = page.getRecords();
+            if (users == null || users.isEmpty()) break;
+
+            // 构建通知数据
+            List<UpdateLogPublishedNotificationData> notifications =
+                    new ArrayList<>(users.size());
+            for (var user : users) {
+                notifications.add(new UpdateLogPublishedNotificationData(
+                        user.getId(),
+                        user.getName(),
+                        user.getEmail(),
+                        user.getEmailNotificationEnabled() != null ? user.getEmailNotificationEnabled() : Boolean.FALSE,
+                        updateLog.getVersion(),
+                        updateLog.getTitle(),
+                        "/dashboard/changelog"
+                ));
+            }
+
+            // 批量发送（站内 + 邮件），邮件尊重用户开关
+            var config = new BatchSendConfig()
+                    .withBatchSize(200)
+                    .withDelayBetweenBatches(0)
+                    .withSkipOnError(true)
+                    .withLogDetail(false);
+
+            notificationDomainService.sendBatchNotifications(notifications, config);
+
+            if (page.getCurrent() >= page.getPages()) {
+                break;
+            }
+            pageNum++;
+        }
     }
 }
