@@ -79,11 +79,97 @@ jobs:
           echo "Using deploy image: $IMAGE"
           echo "IMAGE_RESOLVED=$IMAGE" >> $GITHUB_ENV
 
+  smoke-test:
+    name: Smoke Test (prod image)
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    env:
+      CN_REGISTRY: ${{ secrets.CN_REGISTRY }}
+      CN_IMAGE: ${{ secrets.CN_IMAGE }}
+      CN_USERNAME: ${{ secrets.CN_USERNAME }}
+      CN_PASSWORD: ${{ secrets.CN_PASSWORD }}
+      TAG: ${{ github.ref_name }}
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres" --health-interval=5s --health-timeout=5s --health-retries=20
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping || exit 1" --health-interval=5s --health-timeout=5s --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to CN Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.CN_REGISTRY }}
+          username: ${{ secrets.CN_USERNAME }}
+          password: ${{ secrets.CN_PASSWORD }}
+
+      - name: Prepare DB client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client curl jq
+
+      - name: Create database for smoke
+        run: |
+          for i in $(seq 1 60); do
+            pg_isready -h 127.0.0.1 -p 5432 -U postgres && break || sleep 2
+          done
+          PGPASSWORD=postgres psql -h 127.0.0.1 -U postgres -p 5432 -c "CREATE DATABASE qiaoya_community;" || true
+
+      - name: Run app container
+        run: |
+          IMAGE="${CN_IMAGE}:${TAG}"
+          echo "Pulling $IMAGE"
+          docker pull "$IMAGE"
+          docker run -d --name app -p 18520:8520 \
+            --add-host=host.docker.internal:host-gateway \
+            -e SPRING_PROFILES_ACTIVE=dev \
+            -e DB_HOST=host.docker.internal -e DB_PORT=5432 -e DB_USERNAME=postgres -e DB_PASSWORD=postgres \
+            -e REDIS_HOST=host.docker.internal -e REDIS_PORT=6379 -e REDIS_DATABASE=0 \
+            "$IMAGE"
+
+      - name: Wait health up
+        run: |
+          set -e
+          for i in $(seq 1 120); do
+            resp=$(curl -fsS http://127.0.0.1:18520/api/public/health || true)
+            status=$(echo "$resp" | jq -r '.data.status // .status // empty')
+            if [ "$status" = "UP" ]; then echo "Health UP"; exit 0; fi
+            sleep 2
+          done
+          echo "Health timeout" >&2
+          docker logs --tail=200 app || true
+          exit 1
+
+      - name: Public endpoints smoke
+        run: |
+          set -e
+          curl -fsS http://127.0.0.1:18520/api/public/stats/users | jq . >/dev/null
+          curl -fsS http://127.0.0.1:18520/api/public/testimonials | jq . >/dev/null
+          curl -fsS http://127.0.0.1:18520/api/public/subscription-plans | jq . >/dev/null
+
+      - name: Cleanup
+        if: always()
+        run: docker rm -f app || true
+
+  deploy:
+    name: Deploy (prod)
+    runs-on: ubuntu-latest
+    needs: [ build-and-push, smoke-test ]
+    steps:
       - name: Deploy via SSH (prod)
         uses: appleboy/ssh-action@v1.0.3
         env:
           SCRIPT_PATH: ${{ vars.DEPLOY_SCRIPT_PATH }}
-          IMAGE: ${{ env.IMAGE_RESOLVED }}
+          IMAGE: ${{ secrets.CN_IMAGE }}:${{ github.ref_name }}
           PROFILE: prod
           PORT: 8520
           CONTAINER_NAME: qiaoya-community-backend
@@ -91,7 +177,7 @@ jobs:
           UPSTREAM_SWITCH: ${{ vars.UPSTREAM_SWITCH }}
           NGINX_CONF: ${{ vars.NGINX_CONF }}
           TARGET_SIDE: ${{ vars.TARGET_SIDE }}
-          CN_REGISTRY: ${{ env.CN_REGISTRY }}
+          CN_REGISTRY: ${{ secrets.CN_REGISTRY }}
           CN_USERNAME: ${{ secrets.CN_USERNAME }}
           CN_PASSWORD: ${{ secrets.CN_PASSWORD }}
         with:
@@ -109,3 +195,5 @@ jobs:
             fi
             chmod +x "$SCRIPT_PATH" || true
             "$SCRIPT_PATH"
+
+      # image resolved and exported for downstream jobs
