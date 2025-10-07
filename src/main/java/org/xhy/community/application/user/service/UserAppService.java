@@ -13,6 +13,8 @@ import org.xhy.community.domain.user.entity.UserEntity;
 import org.xhy.community.infrastructure.exception.UserErrorCode;
 import org.xhy.community.domain.user.service.UserDomainService;
 import org.xhy.community.infrastructure.config.JwtUtil;
+import org.xhy.community.infrastructure.config.AppEnvironment;
+import org.xhy.community.infrastructure.config.DeploymentEnv;
 import org.xhy.community.domain.session.service.DeviceSessionDomainService;
 import org.xhy.community.domain.session.service.TokenIpMappingDomainService;
 import org.xhy.community.domain.session.service.TokenBlacklistDomainService;
@@ -50,6 +52,7 @@ public class UserAppService {
     private final PasswordResetDomainService passwordResetDomainService;
     private final EmailService emailService;
     private final ApplicationEventPublisher eventPublisher;
+    private final AppEnvironment appEnvironment;
 
     public UserAppService(UserDomainService userDomainService,
                           TagDomainService tagDomainService,
@@ -63,7 +66,8 @@ public class UserAppService {
                           EmailVerificationDomainService emailVerificationDomainService,
                           PasswordResetDomainService passwordResetDomainService,
                           EmailService emailService,
-                          ApplicationEventPublisher eventPublisher) {
+                          ApplicationEventPublisher eventPublisher,
+                          AppEnvironment appEnvironment) {
         this.userDomainService = userDomainService;
         this.tagDomainService = tagDomainService;
         this.jwtUtil = jwtUtil;
@@ -77,6 +81,7 @@ public class UserAppService {
         this.passwordResetDomainService = passwordResetDomainService;
         this.emailService = emailService;
         this.eventPublisher = eventPublisher;
+        this.appEnvironment = appEnvironment;
     }
     
     public LoginResponseDTO login(String email, String password, String ip, String deviceId) {
@@ -129,6 +134,10 @@ public class UserAppService {
     }
     
     public UserDTO register(String email, String emailVerificationCode, String password) {
+        // DEV 环境禁用注册
+        if (appEnvironment.getEnv() == DeploymentEnv.DEV) {
+            throw new BusinessException(AuthErrorCode.REGISTER_DISABLED);
+        }
         if (userDomainService.isEmailExists(email, null)) {
             throw new BusinessException(UserErrorCode.EMAIL_EXISTS);
         }
