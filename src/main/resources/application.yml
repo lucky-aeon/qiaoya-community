@@ -5,7 +5,7 @@ spring:
   application:
     name: qiaoya-community
   profiles:
-    active: ${ENVIRONMENT:DEV}
+    active: ${ENVIRONMENT:PROD}
 
   # 数据库配置
   datasource:
@@ -109,4 +109,4 @@ community:
       manageNotificationsUrl: /dashboard/user-backend/profile
   # 站点基础域名（用于将相对路径解析为绝对 URL）
   web:
-    base-url: ${COMMUNITY_WEB_BASE_URL:http://localhost:5173/}
+    base-url: ${COMMUNITY_WEB_BASE_URL:http://code.dev.xhyovo.cn/}

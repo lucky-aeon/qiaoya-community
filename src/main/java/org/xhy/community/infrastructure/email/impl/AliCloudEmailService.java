@@ -12,9 +12,8 @@ import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 import java.io.UnsupportedEncodingException;
-import java.util.Date;
-import java.util.Properties;
-import java.util.UUID;
+import java.util.*;
+
 import org.xhy.community.infrastructure.exception.ValidationException;
 import org.xhy.community.infrastructure.config.ValidationErrorCode;
 
@@ -72,16 +71,21 @@ public class AliCloudEmailService implements EmailService {
                 smtp.getHost(), smtp.getPort(), smtp.getUsername());
     }
 
+
     @Override
-    public boolean sendEmail(String to, String subject, String content) {
+    public boolean sendEmail(List<String> to, String subject, String content) {
         return sendEmail(to, subject, content, emailConfig.getSmtp().getSenderName());
     }
 
     @Override
-    public boolean sendEmail(String to, String subject, String content, String senderName) {
+    public boolean sendEmail(List<String> to, String subject, String content, String senderName) {
         if (!isEnabled()) {
             log.warn("邮件服务未启用，跳过发送");
             return false;
+        }
+
+        if (to.isEmpty()){
+            return true;
         }
 
         try {
@@ -102,8 +106,12 @@ public class AliCloudEmailService implements EmailService {
             );
             message.setFrom(from);
 
+            InternetAddress[] addresses = new InternetAddress[to.size()];
+            for (int h = 0; h < to.size(); h++) {
+                addresses[h] = new InternetAddress(to.get(h));
+            }
             // 设置收件人
-            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(to));
+            message.setRecipients(Message.RecipientType.TO,addresses);
 
             // 设置邮件主题
             message.setSubject(subject);

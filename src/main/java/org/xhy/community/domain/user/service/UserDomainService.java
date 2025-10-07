@@ -63,6 +63,8 @@ public class UserDomainService {
     public UserEntity createUser(String name, String email, String password, String avatar) {
         String encryptedPassword = encryptPassword(password);
         UserEntity user = new UserEntity(name, email.trim().toLowerCase(), encryptedPassword, avatar);
+        // 新用户默认开启
+        user.setEmailNotificationEnabled(true);
         try {
             userRepository.insert(user);
             return user;

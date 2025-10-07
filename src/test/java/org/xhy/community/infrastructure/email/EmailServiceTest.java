@@ -5,6 +5,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -32,7 +34,7 @@ class EmailServiceTest {
         // 当邮件服务禁用时，应该返回false而不是抛出异常
         if (!emailService.isEnabled()) {
             boolean result = emailService.sendEmail(
-                "test@example.com",
+                    List.of("test@example.com"),
                 "测试邮件",
                 "<h1>这是一个测试邮件</h1><p>用于验证邮件服务功能</p>"
             );
@@ -52,7 +54,7 @@ class EmailServiceTest {
             String testEmail = "your-test-email@example.com"; // 请修改为实际邮箱
 
             boolean result = emailService.sendEmail(
-                testEmail,
+                List.of(testEmail),
                 "敲鸭社区邮件服务测试",
                 generateTestEmailContent()
             );

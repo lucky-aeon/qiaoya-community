@@ -1,7 +1,10 @@
 package org.xhy.community.domain.notification.context;
 
+import org.xhy.community.domain.common.valueobject.ContentType;
 import org.xhy.community.domain.follow.valueobject.FollowTargetType;
 import org.xhy.community.domain.notification.valueobject.NotificationType;
+
+import java.util.List;
 
 /**
  * 评论通知数据
@@ -14,12 +17,8 @@ public class CommentNotificationData extends NotificationData {
     private final String commentContent;     // 评论内容
     private final String targetId;           // 被评论内容ID
 
-    public CommentNotificationData(String recipientId, String recipientName, String recipientEmail,
-                                   Boolean emailNotificationEnabled, String commenterName, String targetTitle, FollowTargetType targetType,
-                                   String commentContent, String targetId) {
-        super(recipientId, recipientName, recipientEmail, emailNotificationEnabled,
-              targetType == FollowTargetType.POST ? NotificationType.POST_COMMENT :
-              (targetType == FollowTargetType.COURSE ? NotificationType.COURSE_COMMENT : NotificationType.CHAPTER_COMMENT));
+    public CommentNotificationData(List<Recipient> recipients, NotificationType type, ContentType contentType, String commenterName, String targetTitle, FollowTargetType targetType, String commentContent, String targetId) {
+        super(recipients, type, contentType);
         this.commenterName = commenterName;
         this.targetTitle = targetTitle;
         this.targetType = targetType;

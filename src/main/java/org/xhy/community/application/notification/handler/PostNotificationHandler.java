@@ -4,12 +4,15 @@ import org.springframework.stereotype.Component;
 import org.xhy.community.application.notification.service.ContentNotificationService;
 import org.xhy.community.domain.common.valueobject.ContentType;
 import org.xhy.community.domain.notification.context.ContentUpdateNotificationData;
+import org.xhy.community.domain.notification.context.NotificationData;
 import org.xhy.community.domain.notification.service.NotificationDomainService;
+import org.xhy.community.domain.notification.valueobject.NotificationType;
 import org.xhy.community.domain.post.service.PostDomainService;
 import org.xhy.community.domain.post.entity.PostEntity;
 import org.xhy.community.domain.user.service.UserDomainService;
 import org.xhy.community.domain.user.entity.UserEntity;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -44,21 +47,20 @@ public class PostNotificationHandler implements NotificationHandler {
             PostEntity post = postDomainService.getPostById(contentId);
             UserEntity author = userDomainService.getUserById(authorId);
 
+            List<NotificationData.Recipient> recipients2 = new ArrayList<>();
             // 为每个接收者发送通知
             for (ContentNotificationService.NotificationRecipient recipient : recipients) {
-                ContentUpdateNotificationData notificationData = new ContentUpdateNotificationData(
-                        recipient.getUserId(),
-                        recipient.getUserName(),
-                        recipient.getUserEmail(),
-                        recipient.getEmailNotificationEnabled(),
-                        author.getName(),
-                        post.getTitle(),
-                        ContentType.POST,
-                        post.getId()
-                );
-
-                notificationDomainService.sendNotification(notificationData);
+                recipients2.add(new NotificationData.Recipient(recipient.getUserId(),recipient.getUserEmail(),recipient.getEmailNotificationEnabled()));
             }
+            ContentUpdateNotificationData contentUpdateNotificationData = new ContentUpdateNotificationData(
+                    recipients2,
+                    NotificationType.FOLLOWED_USER_POST,
+                    ContentType.CHAPTER,
+                    author.getName(),
+                    post.getTitle(),
+                    post.getId()
+            );
+            notificationDomainService.send(contentUpdateNotificationData);
         } catch (Exception e) {
             // 记录错误日志，但不影响主流程
             // 可以考虑使用日志记录或监控系统

@@ -9,7 +9,10 @@ public enum ContentType {
     POST("文章"),
     COURSE("课程"),
     CHAPTER("章节"),
-    COMMENT("评论");
+    COMMENT("评论"),
+    UPDATE_LOG("更新日志"),
+    PUBLISH_CONTENT("关注内容");
+
 
     private final String description;
 

@@ -6,16 +6,21 @@ import org.xhy.community.domain.comment.entity.CommentEntity;
 import org.xhy.community.domain.comment.service.CommentDomainService;
 import org.xhy.community.domain.comment.valueobject.BusinessType;
 import org.xhy.community.domain.common.valueobject.ContentType;
+import org.xhy.community.domain.course.entity.ChapterEntity;
 import org.xhy.community.domain.course.entity.CourseEntity;
+import org.xhy.community.domain.course.service.ChapterDomainService;
 import org.xhy.community.domain.course.service.CourseDomainService;
 import org.xhy.community.domain.notification.context.CommentNotificationData;
+import org.xhy.community.domain.notification.context.NotificationData;
 import org.xhy.community.domain.notification.service.NotificationDomainService;
+import org.xhy.community.domain.notification.valueobject.NotificationType;
 import org.xhy.community.domain.post.entity.PostEntity;
 import org.xhy.community.domain.post.service.PostDomainService;
 import org.xhy.community.domain.user.entity.UserEntity;
 import org.xhy.community.domain.user.service.UserDomainService;
 import org.xhy.community.domain.follow.valueobject.FollowTargetType;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -31,17 +36,19 @@ public class CommentNotificationHandler implements NotificationHandler {
     private final CourseDomainService courseDomainService;
     private final UserDomainService userDomainService;
     private final NotificationDomainService notificationDomainService;
+    private final ChapterDomainService chapterDomainService;
 
     public CommentNotificationHandler(CommentDomainService commentDomainService,
-                                    PostDomainService postDomainService,
-                                    CourseDomainService courseDomainService,
-                                    UserDomainService userDomainService,
-                                    NotificationDomainService notificationDomainService) {
+                                      PostDomainService postDomainService,
+                                      CourseDomainService courseDomainService,
+                                      UserDomainService userDomainService,
+                                      NotificationDomainService notificationDomainService, ChapterDomainService chapterDomainService) {
         this.commentDomainService = commentDomainService;
         this.postDomainService = postDomainService;
         this.courseDomainService = courseDomainService;
         this.userDomainService = userDomainService;
         this.notificationDomainService = notificationDomainService;
+        this.chapterDomainService = chapterDomainService;
     }
 
     @Override
@@ -65,7 +72,7 @@ public class CommentNotificationHandler implements NotificationHandler {
             String targetAuthorName = "";
             String targetAuthorEmail = "";
             FollowTargetType targetType = null;
-
+            NotificationType notificationType = null;
             // 根据业务类型获取被评论内容信息
             if (comment.getBusinessType() == BusinessType.POST) {
                 PostEntity post = postDomainService.getPostById(comment.getBusinessId());
@@ -76,6 +83,7 @@ public class CommentNotificationHandler implements NotificationHandler {
                 targetAuthorName = postAuthor.getName();
                 targetAuthorEmail = postAuthor.getEmail();
                 targetType = FollowTargetType.POST;
+                notificationType = NotificationType.POST_COMMENT;
             } else if (comment.getBusinessType() == BusinessType.COURSE) {
                 CourseEntity course = courseDomainService.getCourseById(comment.getBusinessId());
                 UserEntity courseAuthor = userDomainService.getUserById(course.getAuthorId());
@@ -85,6 +93,17 @@ public class CommentNotificationHandler implements NotificationHandler {
                 targetAuthorName = courseAuthor.getName();
                 targetAuthorEmail = courseAuthor.getEmail();
                 targetType = FollowTargetType.COURSE;
+                notificationType = NotificationType.COURSE_COMMENT;
+            }else if (comment.getBusinessType() == BusinessType.CHAPTER){
+                ChapterEntity chapter = chapterDomainService.getChapterById(comment.getBusinessId());
+                UserEntity courseAuthor = userDomainService.getUserById(chapter.getAuthorId());
+
+                targetTitle = chapter.getTitle();
+                targetAuthorId = chapter.getAuthorId();
+                targetAuthorName = courseAuthor.getName();
+                targetAuthorEmail = courseAuthor.getEmail();
+                targetType = FollowTargetType.CHAPTER;
+                notificationType = NotificationType.CHAPTER_UPDATED;
             }
 
             // 只有当评论者不是内容作者时才发送通知（避免自己评论自己的内容收到通知）
@@ -92,19 +111,21 @@ public class CommentNotificationHandler implements NotificationHandler {
                 // 查询目标作者的邮件通知设置
                 UserEntity targetAuthor = userDomainService.getUserById(targetAuthorId);
 
+                NotificationData.Recipient recipient = new NotificationData.Recipient(targetAuthor.getId(),targetAuthor.getEmail(), targetAuthor.getEmailNotificationEnabled());
+
                 CommentNotificationData notificationData = new CommentNotificationData(
-                        targetAuthorId,
+                        Arrays.asList(recipient),
+                        notificationType,
+                        ContentType.COMMENT,
                         targetAuthorName,
-                        targetAuthorEmail,
-                        targetAuthor.getEmailNotificationEnabled(),
-                        commenter.getName(),
                         targetTitle,
                         targetType,
                         comment.getContent(),
                         comment.getBusinessId()
                 );
 
-                notificationDomainService.sendNotification(notificationData);
+                notificationDomainService.send(notificationData);
+
             }
         } catch (Exception e) {
             // 记录错误日志，但不影响主流程

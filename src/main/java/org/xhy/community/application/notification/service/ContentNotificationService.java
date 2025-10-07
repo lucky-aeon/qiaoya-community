@@ -118,6 +118,8 @@ public class ContentNotificationService {
             case COURSE -> FollowTargetType.COURSE;
             case CHAPTER -> FollowTargetType.CHAPTER;
             case COMMENT -> null; // 评论本身不支持关注
+            case UPDATE_LOG -> null;
+            case PUBLISH_CONTENT -> null;
         };
     }
 

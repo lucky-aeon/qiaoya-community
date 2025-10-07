@@ -5,15 +5,18 @@ import org.xhy.community.application.notification.service.ContentNotificationSer
 import org.xhy.community.domain.common.valueobject.ContentType;
 import org.xhy.community.domain.notification.context.ContentUpdateNotificationData;
 import org.xhy.community.domain.notification.context.ChapterUpdatedNotificationData;
+import org.xhy.community.domain.notification.context.NotificationData;
 import org.xhy.community.domain.notification.service.NotificationDomainService;
 import org.xhy.community.domain.course.service.ChapterDomainService;
 import org.xhy.community.domain.course.service.CourseDomainService;
 import org.xhy.community.domain.course.entity.ChapterEntity;
 import org.xhy.community.domain.course.entity.CourseEntity;
+import org.xhy.community.domain.notification.valueobject.NotificationType;
 import org.xhy.community.domain.user.service.UserDomainService;
 import org.xhy.community.domain.user.entity.UserEntity;
 import org.xhy.community.domain.follow.valueobject.FollowTargetType;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -62,22 +65,13 @@ public class ChapterNotificationHandler implements NotificationHandler {
                 contentNotificationService.getSpecificContentFollowers(course.getId(), FollowTargetType.COURSE, authorId);
 
             // 为所有关注者发送课程更新通知
-            String notificationTitle = "课程《" + course.getTitle() + "》新增章节：" + chapter.getTitle();
 
+            ArrayList<NotificationData.Recipient> recipients1 = new ArrayList<>();
             for (ContentNotificationService.NotificationRecipient recipient : courseFollowers) {
-                ChapterUpdatedNotificationData notificationData = new ChapterUpdatedNotificationData(
-                        recipient.getUserId(),
-                        recipient.getUserName(),
-                        recipient.getUserEmail(),
-                        recipient.getEmailNotificationEnabled(),
-                        course.getId(),
-                        course.getTitle(),
-                        chapter.getId(),
-                        chapter.getTitle()
-                );
-
-                notificationDomainService.sendNotification(notificationData);
+                recipients1.add(new NotificationData.Recipient(recipient.getUserId(),recipient.getUserEmail(),recipient.getEmailNotificationEnabled()));
             }
+            notificationDomainService.send(new ChapterUpdatedNotificationData(recipients1, NotificationType.CHAPTER_UPDATED,ContentType.CHAPTER,course.getId(),course.getTitle(),chapter.getId(),chapter.getTitle()));
+
         } catch (Exception e) {
             // 记录错误日志，但不影响主流程
         }

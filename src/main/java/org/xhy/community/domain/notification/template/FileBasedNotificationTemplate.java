@@ -1,5 +1,6 @@
 package org.xhy.community.domain.notification.template;
 
+import org.xhy.community.domain.common.valueobject.ContentType;
 import org.xhy.community.domain.notification.context.NotificationData;
 import org.xhy.community.infrastructure.config.EmailBrandingConfig;
 import org.xhy.community.infrastructure.template.ClasspathTemplateLoader;
@@ -66,5 +67,10 @@ public class FileBasedNotificationTemplate<T extends NotificationData> implement
     @Override
     public Class<T> getSupportedDataType() {
         return dataType;
+    }
+
+    @Override
+    public ContentType getContentType() {
+        return null;
     }
 }

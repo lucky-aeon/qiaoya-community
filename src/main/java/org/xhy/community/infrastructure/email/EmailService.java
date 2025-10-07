@@ -1,5 +1,7 @@
 package org.xhy.community.infrastructure.email;
 
+import java.util.List;
+
 /**
  * 邮件发送服务接口
  */
@@ -13,7 +15,8 @@ public interface EmailService {
      * @param content 邮件内容（支持HTML）
      * @return 是否发送成功
      */
-    boolean sendEmail(String to, String subject, String content);
+
+    boolean sendEmail(List<String> to, String subject, String content);
 
     /**
      * 发送邮件（带发件人名称）
@@ -24,7 +27,7 @@ public interface EmailService {
      * @param senderName 发件人名称
      * @return 是否发送成功
      */
-    boolean sendEmail(String to, String subject, String content, String senderName);
+    boolean sendEmail(List<String> to, String subject, String content, String senderName);
 
     /**
      * 检查邮件服务是否可用

@@ -15,6 +15,8 @@ import org.xhy.community.domain.common.valueobject.ContentType;
 import org.xhy.community.domain.follow.valueobject.FollowTargetType;
 
 import jakarta.annotation.PostConstruct;
+
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -27,10 +29,10 @@ public class NotificationTemplateRegistry {
     private static final Logger log = LoggerFactory.getLogger(NotificationTemplateRegistry.class);
     
     // 站内消息模板
-    private final Map<Class<? extends NotificationData>, NotificationTemplate> inAppTemplates = new HashMap<>();
+    private final Map<ContentType, NotificationTemplate> inAppTemplates = new HashMap<>();
     
     // 站外消息模板
-    private final Map<Class<? extends NotificationData>, NotificationTemplate> outAppTemplates = new HashMap<>();
+    private final Map<ContentType, NotificationTemplate> outAppTemplates = new HashMap<>();
     
     private final ClasspathTemplateLoader templateLoader;
     private final SimpleTemplateRenderer templateRenderer;
@@ -53,13 +55,9 @@ public class NotificationTemplateRegistry {
     @PostConstruct
     public void initTemplates() {
         // 注册站内消息模板
-        registerInAppTemplate(new InAppNotificationTemplates.NewFollowerTemplate());
         registerInAppTemplate(new InAppNotificationTemplates.ContentUpdateTemplate());
-        registerInAppTemplate(new InAppNotificationTemplates.CDKActivatedTemplate());
-        registerInAppTemplate(new InAppNotificationTemplates.SubscriptionExpiredTemplate());
         registerInAppTemplate(new InAppNotificationTemplates.CommentTemplate());
         registerInAppTemplate(new InAppNotificationTemplates.ChapterUpdatedTemplate());
-        registerInAppTemplate(new InAppNotificationTemplates.ChapterCommentTemplate());
         registerInAppTemplate(new InAppNotificationTemplates.UpdateLogPublishedTemplate());
 
         // 注册站外消息模板
@@ -70,26 +68,10 @@ public class NotificationTemplateRegistry {
     }
 
     private void registerFileBasedOutAppTemplates() {
-        // 新关注者
-        registerOutAppTemplate(new FileBasedNotificationTemplate<>(
-            NewFollowerNotificationData.class,
-            "敲鸭社区 - 新的关注者",
-            "new-follower.html",
-            templateLoader,
-            templateRenderer,
-            brandingConfig,
-            data -> {
-                java.util.Map<String, String> m = new java.util.HashMap<>();
-                m.put("RECIPIENT_NAME", data.getRecipientName());
-                m.put("FOLLOWER_NAME", data.getFollowerName());
-                m.put("FOLLOWER_PROFILE_URL", resolveUrl(data.getFollowerProfileUrl()));
-                return m;
-            },
-            webUrlConfig
-        ));
+
 
         // 关注内容更新
-        registerOutAppTemplate(new FileBasedNotificationTemplate<>(
+        registerOutAppTemplate(ContentType.PUBLISH_CONTENT,new FileBasedNotificationTemplate<>(
             ContentUpdateNotificationData.class,
             "敲鸭社区 - 关注内容更新",
             "content-update.html",
@@ -98,7 +80,6 @@ public class NotificationTemplateRegistry {
             brandingConfig,
             data -> {
                 java.util.Map<String, String> m = new java.util.HashMap<>();
-                m.put("RECIPIENT_NAME", data.getRecipientName());
                 m.put("AUTHOR_NAME", data.getAuthorName());
                 m.put("CONTENT_TYPE", data.getContentType() == null ? "" : data.getContentType().getDescription());
                 m.put("CONTENT_TITLE", data.getContentTitle());
@@ -108,44 +89,8 @@ public class NotificationTemplateRegistry {
             webUrlConfig
         ));
 
-        // CDK 激活
-        registerOutAppTemplate(new FileBasedNotificationTemplate<>(
-            CDKActivatedNotificationData.class,
-            "敲鸭社区 - CDK激活成功",
-            "cdk-activated.html",
-            templateLoader,
-            templateRenderer,
-            brandingConfig,
-            data -> {
-                java.util.Map<String, String> m = new java.util.HashMap<>();
-                m.put("RECIPIENT_NAME", data.getRecipientName());
-                m.put("CDK_CODE", data.getCdkCode());
-                m.put("ACTIVATION_TIME", data.getActivationTime());
-                return m;
-            },
-            webUrlConfig
-        ));
-
-        // 订阅即将过期
-        registerOutAppTemplate(new FileBasedNotificationTemplate<>(
-            SubscriptionExpiredNotificationData.class,
-            "敲鸭社区 - 订阅即将过期",
-            "subscription-expiring.html",
-            templateLoader,
-            templateRenderer,
-            brandingConfig,
-            data -> {
-                java.util.Map<String, String> m = new java.util.HashMap<>();
-                m.put("RECIPIENT_NAME", data.getRecipientName());
-                m.put("DAYS_REMAINING", String.valueOf(data.getDaysRemaining()));
-                m.put("RENEWAL_URL", resolveUrl(data.getRenewalUrl()));
-                return m;
-            },
-            webUrlConfig
-        ));
-
         // 评论
-        registerOutAppTemplate(new FileBasedNotificationTemplate<>(
+        registerOutAppTemplate(ContentType.COMMENT,new FileBasedNotificationTemplate<>(
             CommentNotificationData.class,
             "敲鸭社区 - 新的评论",
             "comment.html",
@@ -154,7 +99,6 @@ public class NotificationTemplateRegistry {
             brandingConfig,
             data -> {
                 java.util.Map<String, String> m = new java.util.HashMap<>();
-                m.put("RECIPIENT_NAME", data.getRecipientName());
                 m.put("COMMENTER_NAME", data.getCommenterName());
                 m.put("TARGET_TYPE", data.getTargetType() == null ? "" : data.getTargetType().getDescription());
                 m.put("TARGET_TITLE", data.getTargetTitle());
@@ -166,7 +110,7 @@ public class NotificationTemplateRegistry {
         ));
 
         // 章节更新
-        registerOutAppTemplate(new FileBasedNotificationTemplate<>(
+        registerOutAppTemplate(ContentType.CHAPTER,new FileBasedNotificationTemplate<>(
             ChapterUpdatedNotificationData.class,
             "敲鸭社区 - 章节更新",
             "chapter-updated.html",
@@ -175,7 +119,6 @@ public class NotificationTemplateRegistry {
             brandingConfig,
             data -> {
                 java.util.Map<String, String> m = new java.util.HashMap<>();
-                m.put("RECIPIENT_NAME", data.getRecipientName());
                 m.put("COURSE_TITLE", data.getCourseTitle());
                 m.put("CHAPTER_TITLE", data.getChapterTitle());
                 m.put("CHAPTER_URL", resolveUrl(data.getChapterPath()));
@@ -184,29 +127,9 @@ public class NotificationTemplateRegistry {
             webUrlConfig
         ));
 
-        // 章节评论
-        registerOutAppTemplate(new FileBasedNotificationTemplate<>(
-            ChapterCommentNotificationData.class,
-            "敲鸭社区 - 章节新评论",
-            "chapter-comment.html",
-            templateLoader,
-            templateRenderer,
-            brandingConfig,
-            data -> {
-                java.util.Map<String, String> m = new java.util.HashMap<>();
-                m.put("RECIPIENT_NAME", data.getRecipientName());
-                m.put("COMMENTER_NAME", data.getCommenterName());
-                m.put("COURSE_TITLE", data.getCourseTitle());
-                m.put("CHAPTER_TITLE", data.getChapterTitle());
-                m.put("TRUNCATED_COMMENT", data.getTruncatedCommentContent());
-                m.put("CHAPTER_URL", resolveUrl(data.getChapterPath()));
-                return m;
-            },
-            webUrlConfig
-        ));
 
         // 更新日志发布
-        registerOutAppTemplate(new FileBasedNotificationTemplate<>(
+        registerOutAppTemplate(ContentType.UPDATE_LOG,new FileBasedNotificationTemplate<>(
             UpdateLogPublishedNotificationData.class,
             "敲鸭社区 - 更新日志发布",
             "update-log-published.html",
@@ -215,10 +138,7 @@ public class NotificationTemplateRegistry {
             brandingConfig,
             data -> {
                 java.util.Map<String, String> m = new java.util.HashMap<>();
-                m.put("RECIPIENT_NAME", data.getRecipientName());
-                m.put("VERSION", data.getVersion() == null ? "" : data.getVersion());
                 m.put("TITLE", data.getTitle() == null ? "" : data.getTitle());
-                m.put("CHANGELOG_URL", resolveUrl(data.getChangelogPath() == null ? "/dashboard/changelog" : data.getChangelogPath()));
                 return m;
             },
             webUrlConfig
@@ -247,48 +167,48 @@ public class NotificationTemplateRegistry {
      * 注册站内消息模板
      */
     private void registerInAppTemplate(NotificationTemplate template) {
-        inAppTemplates.put(template.getSupportedDataType(), template);
+        inAppTemplates.put(template.getContentType(), template);
     }
     
     /**
      * 注册站外消息模板
      */
-    private void registerOutAppTemplate(NotificationTemplate template) {
-        outAppTemplates.put(template.getSupportedDataType(), template);
+    private void registerOutAppTemplate(ContentType contentType,NotificationTemplate template) {
+        outAppTemplates.put(contentType, template);
     }
     
     /**
      * 获取站内消息模板
      */
     @SuppressWarnings("unchecked")
-    public <T extends NotificationData> NotificationTemplate<T> getInAppTemplate(Class<T> dataType) {
-        return inAppTemplates.get(dataType);
+    public <T extends NotificationData> NotificationTemplate<T> getInAppTemplate(ContentType contentType) {
+        return inAppTemplates.get(contentType);
     }
     
     /**
      * 获取站外消息模板
      */
     @SuppressWarnings("unchecked")
-    public <T extends NotificationData> NotificationTemplate<T> getOutAppTemplate(Class<T> dataType) {
-        return outAppTemplates.get(dataType);
+    public <T extends NotificationData> NotificationTemplate<T> getOutAppTemplate(ContentType contentType) {
+        return outAppTemplates.get(contentType);
     }
     
     /**
      * 获取模板（根据渠道类型）
      */
     @SuppressWarnings("unchecked")
-    public <T extends NotificationData> NotificationTemplate<T> getTemplate(Class<T> dataType, ChannelType channelType) {
+    public <T extends NotificationData> NotificationTemplate<T> getTemplate(ContentType contentType, ChannelType channelType) {
         if (channelType == ChannelType.IN_APP) {
-            return getInAppTemplate(dataType);
+            return getInAppTemplate(contentType);
         } else {
-            return getOutAppTemplate(dataType);
+            return getOutAppTemplate(contentType);
         }
     }
     
     /**
      * 检查是否支持指定类型和渠道的模板
      */
-    public boolean hasTemplate(Class<? extends NotificationData> dataType, ChannelType channelType) {
-        return getTemplate(dataType, channelType) != null;
+    public boolean hasTemplate(ContentType contentType, ChannelType channelType) {
+        return getTemplate(contentType, channelType) != null;
     }
 }

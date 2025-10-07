@@ -4,12 +4,15 @@ import org.springframework.stereotype.Component;
 import org.xhy.community.application.notification.service.ContentNotificationService;
 import org.xhy.community.domain.common.valueobject.ContentType;
 import org.xhy.community.domain.notification.context.ContentUpdateNotificationData;
+import org.xhy.community.domain.notification.context.NotificationData;
 import org.xhy.community.domain.notification.service.NotificationDomainService;
 import org.xhy.community.domain.course.service.CourseDomainService;
 import org.xhy.community.domain.course.entity.CourseEntity;
+import org.xhy.community.domain.notification.valueobject.NotificationType;
 import org.xhy.community.domain.user.service.UserDomainService;
 import org.xhy.community.domain.user.entity.UserEntity;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -44,21 +47,24 @@ public class CourseNotificationHandler implements NotificationHandler {
             CourseEntity course = courseDomainService.getCourseById(contentId);
             UserEntity author = userDomainService.getUserById(authorId);
 
+            List<NotificationData.Recipient> recipients2 = new ArrayList<>();
+
+
             // 为每个接收者发送通知
             for (ContentNotificationService.NotificationRecipient recipient : recipients) {
-                ContentUpdateNotificationData notificationData = new ContentUpdateNotificationData(
-                        recipient.getUserId(),
-                        recipient.getUserName(),
-                        recipient.getUserEmail(),
-                        recipient.getEmailNotificationEnabled(),
-                        author.getName(),
-                        course.getTitle(),
-                        ContentType.COURSE,
-                        course.getId()
-                );
-
-                notificationDomainService.sendNotification(notificationData);
+                recipients2.add(new NotificationData.Recipient(recipient.getUserId(),recipient.getUserEmail(),recipient.getEmailNotificationEnabled()));
             }
+
+            ContentUpdateNotificationData notificationData = new ContentUpdateNotificationData(
+                    recipients2,
+                    NotificationType.CHAPTER_UPDATED,
+                    ContentType.COURSE,
+                    author.getName(),
+                    course.getTitle(),
+                    course.getId()
+            );
+
+            notificationDomainService.send(notificationData);
         } catch (Exception e) {
             // 记录错误日志，但不影响主流程
         }

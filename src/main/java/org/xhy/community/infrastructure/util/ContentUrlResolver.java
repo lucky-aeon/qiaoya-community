@@ -21,6 +21,8 @@ public class ContentUrlResolver {
             case COURSE -> "/dashboard/courses/" + id;
             case CHAPTER -> null; // 章节需要courseId与chapterId，请使用 chapterPath()
             case COMMENT -> "/dashboard/discussions/" + id; // 评论通常跳转到所在页面，兜底
+            case UPDATE_LOG -> null;
+            case PUBLISH_CONTENT -> null;
         };
     }
 

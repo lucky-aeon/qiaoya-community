@@ -8,7 +8,6 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.xhy.community.domain.follow.entity.FollowEntity;
 import org.xhy.community.domain.follow.query.FollowQuery;
-import org.xhy.community.domain.follow.event.UserFollowedEvent;
 import org.xhy.community.domain.follow.repository.FollowRepository;
 import org.xhy.community.domain.follow.valueobject.FollowStatus;
 import org.xhy.community.domain.follow.valueobject.FollowTargetType;
@@ -31,7 +30,7 @@ public class FollowDomainService {
         this.followRepository = followRepository;
         this.eventPublisher = eventPublisher;
     }
-    
+
     /**
      * 创建关注
      */
@@ -40,7 +39,7 @@ public class FollowDomainService {
         if (targetType == FollowTargetType.USER && followerId.equals(targetId)) {
             throw new BusinessException(FollowErrorCode.CANNOT_FOLLOW_SELF);
         }
-        
+
         // 2. 检查是否已经关注
         FollowEntity existingFollow = getFollowRelation(followerId, targetId, targetType);
         if (existingFollow != null) {
@@ -50,27 +49,23 @@ public class FollowDomainService {
                 // 重新关注
                 existingFollow.refollow();
                 followRepository.updateById(existingFollow);
-                
-                // 发布关注事件
-                eventPublisher.publishEvent(new UserFollowedEvent(followerId, targetId, targetType));
-                
+
+
                 return existingFollow;
             }
         }
-        
+
         // 3. 创建新的关注关系（并发兜底：唯一约束冲突视为已关注）
         try {
             FollowEntity follow = new FollowEntity(followerId, targetId, targetType);
             followRepository.insert(follow);
-            // 4. 发布关注事件
-            eventPublisher.publishEvent(new UserFollowedEvent(followerId, targetId, targetType));
             return follow;
         } catch (DataIntegrityViolationException e) {
             // 并发情况下可能出现唯一约束冲突，转化为业务语义：已关注
             throw new BusinessException(FollowErrorCode.ALREADY_FOLLOWED);
         }
     }
-    
+
     /**
      * 取消关注
      */
@@ -79,11 +74,11 @@ public class FollowDomainService {
         if (follow == null || follow.isCancelled()) {
             throw new BusinessException(FollowErrorCode.NOT_FOLLOWED);
         }
-        
+
         follow.unfollow();
         followRepository.updateById(follow);
     }
-    
+
     /**
      * 检查是否已关注
      */

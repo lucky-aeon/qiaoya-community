@@ -2,16 +2,22 @@ package org.xhy.community.application.updatelog.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import org.springframework.stereotype.Service;
+import org.xhy.community.application.notification.service.ContentNotificationService;
 import org.xhy.community.application.updatelog.assembler.UpdateLogAssembler;
 import org.springframework.transaction.annotation.Transactional;
 import org.xhy.community.application.updatelog.dto.UpdateLogDTO;
+import org.xhy.community.domain.common.valueobject.ContentType;
+import org.xhy.community.domain.notification.context.NotificationData;
 import org.xhy.community.domain.notification.context.UpdateLogPublishedNotificationData;
 import org.xhy.community.domain.notification.valueobject.BatchSendConfig;
+import org.xhy.community.domain.notification.valueobject.NotificationType;
 import org.xhy.community.domain.updatelog.entity.UpdateLogEntity;
 import org.xhy.community.domain.updatelog.entity.UpdateLogChangeEntity;
 import org.xhy.community.domain.updatelog.service.UpdateLogDomainService;
 import org.xhy.community.domain.user.entity.UserEntity;
+import org.xhy.community.domain.user.query.UserQuery;
 import org.xhy.community.domain.user.service.UserDomainService;
+import org.xhy.community.domain.user.valueobject.UserStatus;
 import org.xhy.community.interfaces.updatelog.request.CreateUpdateLogRequest;
 import org.xhy.community.interfaces.updatelog.request.UpdateUpdateLogRequest;
 import org.xhy.community.interfaces.updatelog.request.AdminUpdateLogQueryRequest;
@@ -161,47 +167,22 @@ public class AdminUpdateLogAppService {
      */
     private void broadcastUpdateLogPublished(UpdateLogEntity updateLog) {
         // 分页遍历活跃用户
-        final int pageSize = 500;
+        final int pageSize = Integer.MAX_VALUE;
         int pageNum = 1;
+        var query = new UserQuery(pageNum, pageSize);
+        query.setStatus(UserStatus.ACTIVE);
 
-        while (true) {
-            var query = new org.xhy.community.domain.user.query.UserQuery(pageNum, pageSize);
-            query.setStatus(org.xhy.community.domain.user.valueobject.UserStatus.ACTIVE);
+        IPage<UserEntity> page = userDomainService.queryUsers(query);
 
-            com.baomidou.mybatisplus.core.metadata.IPage<org.xhy.community.domain.user.entity.UserEntity> page =
-                    userDomainService.queryUsers(query);
+        List<UserEntity> users = page.getRecords();
 
-            java.util.List<org.xhy.community.domain.user.entity.UserEntity> users = page.getRecords();
-            if (users == null || users.isEmpty()) break;
-
-            // 构建通知数据
-            List<UpdateLogPublishedNotificationData> notifications =
-                    new ArrayList<>(users.size());
-            for (var user : users) {
-                notifications.add(new UpdateLogPublishedNotificationData(
-                        user.getId(),
-                        user.getName(),
-                        user.getEmail(),
-                        user.getEmailNotificationEnabled() != null ? user.getEmailNotificationEnabled() : Boolean.FALSE,
-                        updateLog.getVersion(),
-                        updateLog.getTitle(),
-                        "/dashboard/changelog"
-                ));
-            }
-
-            // 批量发送（站内 + 邮件），邮件尊重用户开关
-            var config = new BatchSendConfig()
-                    .withBatchSize(200)
-                    .withDelayBetweenBatches(0)
-                    .withSkipOnError(true)
-                    .withLogDetail(false);
-
-            notificationDomainService.sendBatchNotifications(notifications, config);
-
-            if (page.getCurrent() >= page.getPages()) {
-                break;
-            }
-            pageNum++;
+        ArrayList<NotificationData.Recipient> recipients = new ArrayList<>();
+        for (var user : users) {
+            recipients.add(new NotificationData.Recipient(user.getId(),user.getEmail(),user.getEmailNotificationEnabled()));
         }
+
+        NotificationData notificationData = new UpdateLogPublishedNotificationData(recipients, NotificationType.UPDATE_LOG_PUBLISHED, ContentType.UPDATE_LOG,updateLog.getTitle());
+        notificationDomainService.send(notificationData);
+
     }
 }

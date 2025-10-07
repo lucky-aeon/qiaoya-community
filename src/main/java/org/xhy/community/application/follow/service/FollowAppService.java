@@ -5,7 +5,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.xhy.community.application.follow.assembler.FollowAssembler;
 import org.xhy.community.application.follow.dto.FollowDTO;
-import org.xhy.community.application.follow.dto.FollowStatisticsDTO;
 import org.xhy.community.domain.follow.entity.FollowEntity;
 import org.xhy.community.domain.follow.service.FollowDomainService;
 import org.xhy.community.domain.follow.valueobject.FollowTargetType;
@@ -18,9 +17,7 @@ import org.xhy.community.domain.course.service.CourseDomainService;
 import org.xhy.community.domain.course.service.ChapterDomainService;
 import org.xhy.community.domain.user.entity.UserEntity;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * 关注应用服务

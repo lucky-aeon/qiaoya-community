@@ -36,6 +36,8 @@ import org.xhy.community.domain.tag.service.TagDomainService;
 import org.xhy.community.domain.tag.entity.UserTagAssignmentEntity;
 import org.xhy.community.domain.tag.entity.TagDefinitionEntity;
 
+import java.util.List;
+
 @Service
 public class UserAppService {
     
@@ -168,7 +170,7 @@ public class UserAppService {
         String subject = "【敲鸭社区】密码重置验证码";
         String content = "<p>您的密码重置验证码为：<b>" + code + "</b></p>" +
                 "<p>验证码有效期10分钟，请勿泄露。如非本人操作，可忽略此邮件。</p>";
-        boolean sent = emailService.sendEmail(email, subject, content);
+        boolean sent = emailService.sendEmail(List.of(email), subject, content);
         if (!sent) {
             throw new BusinessException(AuthErrorCode.EMAIL_SEND_FAILED, "邮件发送失败，请稍后再试");
         }
@@ -213,7 +215,7 @@ public class UserAppService {
         String subject = "【敲鸭社区】注册邀请码";
         String content = "<p>您的注册邀请码为：<b>" + code + "</b></p>" +
                 "<p>有效期5分钟，请勿泄露。</p>";
-        boolean sent = emailService.sendEmail(email, subject, content);
+        boolean sent = emailService.sendEmail(List.of(email), subject, content);
         if (!sent) {
             throw new BusinessException(AuthErrorCode.EMAIL_SEND_FAILED, "邮件发送失败，请稍后再试");
         }

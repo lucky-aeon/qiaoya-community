@@ -58,25 +58,8 @@ public class ContentEventDispatcher {
                 return;
             }
 
-            // 查询关注者信息
-            List<ContentNotificationService.NotificationRecipient> recipients =
-                contentNotificationService.getContentFollowers(
-                    event.getContentType(),
-                    event.getContentId(),
-                    event.getAuthorId()
-                );
-
-            if (recipients.isEmpty()) {
-                log.debug("No followers found for content {} of type {}",
-                         event.getContentId(), event.getContentType());
-                return;
-            }
-
-            log.debug("Found {} recipients for content {} of type {}",
-                     recipients.size(), event.getContentId(), event.getContentType());
-
             // 委托给具体的处理器处理通知
-            handler.handleNotification(event.getContentId(), event.getAuthorId(), recipients);
+            handler.handleNotification(event.getContentId(), event.getAuthorId(), List.of());
 
             log.debug("Successfully processed ContentPublishedEvent for content {} of type {}",
                      event.getContentId(), event.getContentType());
