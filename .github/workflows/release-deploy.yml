@@ -168,12 +168,13 @@ jobs:
       - name: Deploy via SSH (prod)
         uses: appleboy/ssh-action@v1.0.3
         env:
-          SCRIPT_PATH: ${{ vars.DEPLOY_SCRIPT_PATH }}
+          # Map environment-specific keys to generic names expected by the script
+          SCRIPT_PATH: ${{ vars.PROD_SCRIPT_PATH }}
           IMAGE: ${{ secrets.CN_IMAGE }}:${{ github.ref_name }}
           PROFILE: prod
           PORT: 8520
           CONTAINER_NAME: qiaoya-community-backend
-          ENV_FILE: ${{ vars.ENV_FILE }}
+          ENV_FILE: ${{ vars.PROD_ENV_FILE }}
           UPSTREAM_SWITCH: ${{ vars.UPSTREAM_SWITCH }}
           NGINX_CONF: ${{ vars.NGINX_CONF }}
           TARGET_SIDE: ${{ vars.TARGET_SIDE }}

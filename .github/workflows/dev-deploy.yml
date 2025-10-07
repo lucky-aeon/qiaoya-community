@@ -206,11 +206,13 @@ jobs:
         env:
           GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
           GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
-          SCRIPT_PATH: ${{ secrets.DEPLOY_SCRIPT_PATH }}
+          # Map environment-specific keys to generic names expected by the script
+          SCRIPT_PATH: ${{ vars.DEV_SCRIPT_PATH }}
           IMAGE: ${{ env.IMAGE_RESOLVED }}
           PROFILE: dev
           PORT: 8528
           CONTAINER_NAME: qiaoya-community-backend
+          ENV_FILE: ${{ vars.DEV_ENV_FILE }}
           CN_REGISTRY: ${{ secrets.CN_REGISTRY }}
           CN_USERNAME: ${{ secrets.CN_USERNAME }}
           CN_PASSWORD: ${{ secrets.CN_PASSWORD }}
@@ -219,7 +221,7 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script_stop: true
-          envs: GHCR_USERNAME,GHCR_TOKEN,SCRIPT_PATH,IMAGE,PROFILE,PORT,CONTAINER_NAME,CN_REGISTRY,CN_USERNAME,CN_PASSWORD
+          envs: GHCR_USERNAME,GHCR_TOKEN,SCRIPT_PATH,IMAGE,PROFILE,PORT,CONTAINER_NAME,ENV_FILE,CN_REGISTRY,CN_USERNAME,CN_PASSWORD
           script: |
             set -e
             SCRIPT_PATH="${SCRIPT_PATH:-/www/project/qiaoya/deploy-qiaoya.sh}"

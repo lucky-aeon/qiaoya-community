@@ -7,7 +7,7 @@ spring:
 
   # 数据库配置
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/qiaoya_community
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/q_community_dev
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:password}
     driver-class-name: org.postgresql.Driver
