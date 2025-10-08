@@ -18,7 +18,7 @@ spring:
       connection-init-sql: "SET TIME ZONE 'Asia/Shanghai'"
 
   jackson:
-    # Ensure JSON serialization/deserialization uses Asia/Shanghai
+    # Ensure JSON serialization/deserialization uses Asia/Shanghai 1
     time-zone: Asia/Shanghai
 
   # Redis配置
