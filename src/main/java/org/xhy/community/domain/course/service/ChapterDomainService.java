@@ -75,7 +75,8 @@ public class ChapterDomainService {
     public List<ChapterEntity> getChaptersByCourseId(String courseId) {
         LambdaQueryWrapper<ChapterEntity> queryWrapper = new LambdaQueryWrapper<ChapterEntity>()
             .eq(ChapterEntity::getCourseId, courseId)
-            .orderByAsc(ChapterEntity::getSortOrder);
+            // 统一倒序展示：值越大越靠前
+            .orderByDesc(ChapterEntity::getSortOrder);
         
         return chapterRepository.selectList(queryWrapper);
     }
@@ -99,7 +100,8 @@ public class ChapterDomainService {
         LambdaQueryWrapper<ChapterEntity> queryWrapper = new LambdaQueryWrapper<ChapterEntity>()
             .eq(StringUtils.hasText(query.getCourseId()), ChapterEntity::getCourseId, query.getCourseId())
             .like(StringUtils.hasText(query.getTitle()), ChapterEntity::getTitle, query.getTitle())
-            .orderByAsc(ChapterEntity::getSortOrder)
+            // 统一倒序：值越大越靠前
+            .orderByDesc(ChapterEntity::getSortOrder)
             .orderByDesc(ChapterEntity::getCreateTime);
         
         return chapterRepository.selectPage(page, queryWrapper);
@@ -109,7 +111,7 @@ public class ChapterDomainService {
         int totalCount = chapterIds.size();
         for (int i = 0; i < chapterIds.size(); i++) {
             String chapterId = chapterIds.get(i);
-            int sortOrder = totalCount - i;
+            int sortOrder = totalCount - i; // 按从大到小存储，值越大越靠前
 
             ChapterEntity chapter = new ChapterEntity();
             chapter.setId(chapterId);

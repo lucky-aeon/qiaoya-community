@@ -124,7 +124,7 @@ public class AdminChapterController {
     /**
      * 批量更新章节顺序
      * 管理员通过拖拽调整章节顺序，前端传递排好序的章节ID列表
-     * 后端根据数组顺序设置sortOrder，按从大到小存储
+     * 后端根据数组顺序设置 sortOrder，按从大到小存储（值越大越靠前）
      * 需要管理员权限认证
      * 
      * @param request 批量更新章节顺序请求参数，包含排好序的章节ID列表
