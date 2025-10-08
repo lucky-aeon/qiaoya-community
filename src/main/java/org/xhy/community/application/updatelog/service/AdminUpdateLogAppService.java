@@ -166,23 +166,24 @@ public class AdminUpdateLogAppService {
      * Application层负责编排：分页获取活跃用户 -> 组装通知数据 -> 批量发送
      */
     private void broadcastUpdateLogPublished(UpdateLogEntity updateLog) {
-        // 分页遍历活跃用户
-        final int pageSize = Integer.MAX_VALUE;
-        int pageNum = 1;
-        var query = new UserQuery(pageNum, pageSize);
-        query.setStatus(UserStatus.ACTIVE);
+        new Thread(()->{
+            // 分页遍历活跃用户
+            final int pageSize = Integer.MAX_VALUE;
+            int pageNum = 1;
+            var query = new UserQuery(pageNum, pageSize);
+            query.setStatus(UserStatus.ACTIVE);
 
-        IPage<UserEntity> page = userDomainService.queryUsers(query);
+            IPage<UserEntity> page = userDomainService.queryUsers(query);
 
-        List<UserEntity> users = page.getRecords();
+            List<UserEntity> users = page.getRecords();
 
-        ArrayList<NotificationData.Recipient> recipients = new ArrayList<>();
-        for (var user : users) {
-            recipients.add(new NotificationData.Recipient(user.getId(),user.getEmail(),user.getEmailNotificationEnabled()));
-        }
+            ArrayList<NotificationData.Recipient> recipients = new ArrayList<>();
+            for (var user : users) {
+                recipients.add(new NotificationData.Recipient(user.getId(),user.getEmail(),user.getEmailNotificationEnabled()));
+            }
 
-        NotificationData notificationData = new UpdateLogPublishedNotificationData(recipients, NotificationType.UPDATE_LOG_PUBLISHED, ContentType.UPDATE_LOG,updateLog.getTitle());
-        notificationDomainService.send(notificationData);
-
+            NotificationData notificationData = new UpdateLogPublishedNotificationData(recipients, NotificationType.UPDATE_LOG_PUBLISHED, ContentType.UPDATE_LOG,updateLog.getTitle());
+            notificationDomainService.send(notificationData);
+        });
     }
 }
