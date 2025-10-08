@@ -184,6 +184,6 @@ public class AdminUpdateLogAppService {
 
             NotificationData notificationData = new UpdateLogPublishedNotificationData(recipients, NotificationType.UPDATE_LOG_PUBLISHED, ContentType.UPDATE_LOG,updateLog.getTitle());
             notificationDomainService.send(notificationData);
-        });
+        }).start();
     }
 }
