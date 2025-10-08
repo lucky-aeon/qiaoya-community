@@ -47,7 +47,7 @@ public class UserLearningController {
 
     /** 学习记录分页：全部课程的进度与最近学习位置 */
     @GetMapping("/records")
-    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "LEARNING_PROGRESS_VIEW", name = "查看学习进度")})
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "LEARNING_PROGRESS_LIST", name = "查看学习记录")})
     public ApiResponse<IPage<LearningRecordItemDTO>> listMyLearningRecords(@Valid LearningRecordQueryRequest request) {
         String userId = UserContext.getCurrentUserId();
         IPage<LearningRecordItemDTO> page = courseProgressAppService.listMyLearningRecords(userId, request.getPageNum(), request.getPageSize());
