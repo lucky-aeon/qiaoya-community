@@ -3,6 +3,7 @@ package org.xhy.community.application.course.assembler;
 import org.springframework.beans.BeanUtils;
 import org.xhy.community.application.course.dto.PublicCourseDTO;
 import org.xhy.community.application.course.dto.PublicCourseDetailDTO;
+import org.xhy.community.application.subscription.dto.AppSubscriptionPlanDTO;
 import org.xhy.community.domain.course.entity.ChapterEntity;
 import org.xhy.community.domain.course.entity.CourseEntity;
 
@@ -36,6 +37,26 @@ public class PublicCourseAssembler {
                 .collect(Collectors.toList());
     }
 
+    public static List<PublicCourseDTO> toPublicDTOListWithUnlockPlans(List<CourseEntity> entities,
+                                                        Map<String, Integer> chapterCountMap,
+                                                        Map<String, Integer> totalReadingTimeMap,
+                                                        Map<String, List<AppSubscriptionPlanDTO>> unlockPlansMap) {
+        if (entities == null || entities.isEmpty()) {
+            return List.of();
+        }
+        return entities.stream()
+                .map(entity -> {
+                    PublicCourseDTO dto = toPublicDTO(entity,
+                            chapterCountMap.getOrDefault(entity.getId(), 0),
+                            totalReadingTimeMap.getOrDefault(entity.getId(), 0));
+                    if (unlockPlansMap != null) {
+                        dto.setUnlockPlans(unlockPlansMap.getOrDefault(entity.getId(), List.of()));
+                    }
+                    return dto;
+                })
+                .collect(Collectors.toList());
+    }
+
     public static PublicCourseDetailDTO toPublicDetailDTO(CourseEntity entity,
                                                           List<ChapterEntity> chapters) {
         if (entity == null) {
@@ -55,6 +76,16 @@ public class PublicCourseAssembler {
                     .mapToInt(Integer::intValue)
                     .sum();
             dto.setTotalReadingTime(totalReadingTime);
+        }
+        return dto;
+    }
+
+    public static PublicCourseDetailDTO toPublicDetailDTOWithUnlockPlans(CourseEntity entity,
+                                                          List<ChapterEntity> chapters,
+                                                          List<AppSubscriptionPlanDTO> unlockPlans) {
+        PublicCourseDetailDTO dto = toPublicDetailDTO(entity, chapters);
+        if (dto != null && unlockPlans != null) {
+            dto.setUnlockPlans(unlockPlans);
         }
         return dto;
     }

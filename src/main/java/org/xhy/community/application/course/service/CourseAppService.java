@@ -17,6 +17,7 @@ import org.xhy.community.domain.course.service.ChapterDomainService;
 import org.xhy.community.domain.user.entity.UserEntity;
 import org.xhy.community.domain.user.service.UserDomainService;
 import org.xhy.community.domain.subscription.entity.UserSubscriptionEntity;
+import org.xhy.community.domain.subscription.entity.SubscriptionPlanEntity;
 import org.xhy.community.domain.subscription.service.SubscriptionDomainService;
 import org.xhy.community.domain.subscription.service.SubscriptionPlanDomainService;
 import org.xhy.community.domain.course.query.CourseQuery;
@@ -134,8 +135,16 @@ public class CourseAppService {
                 .collect(java.util.stream.Collectors.toSet());
         ChapterAggregates aggregates = getChapterAggregates(courseIds);
 
-        List<PublicCourseDTO> dtos = PublicCourseAssembler.toPublicDTOList(
-                coursePage.getRecords(), aggregates.chapterCountMap, aggregates.totalReadingTimeMap
+        // 批量查询每个课程的解锁套餐
+        Map<String, List<SubscriptionPlanEntity>> plansByCourseMap = subscriptionPlanDomainService.getPlansByCourseIds(courseIds);
+        Map<String, List<AppSubscriptionPlanDTO>> unlockPlansMap = plansByCourseMap.entrySet().stream()
+                .collect(java.util.stream.Collectors.toMap(
+                    Map.Entry::getKey,
+                    entry -> SubscriptionPlanAssembler.toAppDTOList(entry.getValue())
+                ));
+
+        List<PublicCourseDTO> dtos = PublicCourseAssembler.toPublicDTOListWithUnlockPlans(
+                coursePage.getRecords(), aggregates.chapterCountMap, aggregates.totalReadingTimeMap, unlockPlansMap
         );
 
         LikeCountHelper.fillLikeCount(dtos, PublicCourseDTO::getId, LikeTargetType.COURSE, PublicCourseDTO::setLikeCount, likeDomainService);
@@ -152,7 +161,13 @@ public class CourseAppService {
         CourseEntity course = courseDomainService.getCourseById(courseId);
 
         List<ChapterEntity> chapters = chapterDomainService.getChaptersByCourseId(courseId);
-        PublicCourseDetailDTO dto = PublicCourseAssembler.toPublicDetailDTO(course, chapters);
+
+        // 查询解锁该课程的套餐列表
+        List<AppSubscriptionPlanDTO> unlockPlans = SubscriptionPlanAssembler.toAppDTOList(
+            subscriptionPlanDomainService.getPlansByCourseId(courseId)
+        );
+
+        PublicCourseDetailDTO dto = PublicCourseAssembler.toPublicDetailDTOWithUnlockPlans(course, chapters, unlockPlans);
         dto.setLikeCount(LikeCountHelper.getLikeCount(courseId, LikeTargetType.COURSE, likeDomainService));
         LikeCountHelper.fillLikeCount(dto.getChapters(), PublicCourseDetailDTO.FrontChapterDTO::getId, LikeTargetType.CHAPTER, PublicCourseDetailDTO.FrontChapterDTO::setLikeCount, likeDomainService);
         return dto;

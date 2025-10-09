@@ -1,10 +1,12 @@
 package org.xhy.community.application.course.dto;
 
+import org.xhy.community.application.subscription.dto.AppSubscriptionPlanDTO;
 import org.xhy.community.domain.course.valueobject.CourseResource;
 import org.xhy.community.domain.course.valueobject.CourseStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -27,6 +29,7 @@ public class PublicCourseDTO {
     private List<CourseResource> resources;
     private LocalDateTime createTime;
     private Integer likeCount;
+    private List<AppSubscriptionPlanDTO> unlockPlans = new ArrayList<>();
 
     public PublicCourseDTO() {}
 
@@ -76,4 +79,7 @@ public class PublicCourseDTO {
 
     public Integer getLikeCount() { return likeCount; }
     public void setLikeCount(Integer likeCount) { this.likeCount = likeCount; }
+
+    public List<AppSubscriptionPlanDTO> getUnlockPlans() { return unlockPlans; }
+    public void setUnlockPlans(List<AppSubscriptionPlanDTO> unlockPlans) { this.unlockPlans = unlockPlans; }
 }
