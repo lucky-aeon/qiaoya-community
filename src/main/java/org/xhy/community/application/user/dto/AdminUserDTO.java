@@ -18,6 +18,7 @@ public class AdminUserDTO {
     private UserStatus status;
     private Boolean emailNotificationEnabled;
     private Integer maxConcurrentDevices;
+    private String currentPlanName;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
     
@@ -81,16 +82,24 @@ public class AdminUserDTO {
         this.emailNotificationEnabled = emailNotificationEnabled; 
     }
     
-    public Integer getMaxConcurrentDevices() { 
-        return maxConcurrentDevices; 
+    public Integer getMaxConcurrentDevices() {
+        return maxConcurrentDevices;
     }
-    
-    public void setMaxConcurrentDevices(Integer maxConcurrentDevices) { 
-        this.maxConcurrentDevices = maxConcurrentDevices; 
+
+    public void setMaxConcurrentDevices(Integer maxConcurrentDevices) {
+        this.maxConcurrentDevices = maxConcurrentDevices;
     }
-    
-    public LocalDateTime getCreateTime() { 
-        return createTime; 
+
+    public String getCurrentPlanName() {
+        return currentPlanName;
+    }
+
+    public void setCurrentPlanName(String currentPlanName) {
+        this.currentPlanName = currentPlanName;
+    }
+
+    public LocalDateTime getCreateTime() {
+        return createTime;
     }
     
     public void setCreateTime(LocalDateTime createTime) { 

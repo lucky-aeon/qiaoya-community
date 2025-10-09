@@ -9,6 +9,7 @@ import org.xhy.community.domain.user.query.UserQuery;
 import org.xhy.community.interfaces.user.request.AdminUserQueryRequest;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 管理员用户转换器
@@ -59,14 +60,33 @@ public class AdminUserAssembler {
      * 将用户实体分页结果转换为管理员用户DTO分页结果
      */
     public static IPage<AdminUserDTO> toDTOPage(IPage<UserEntity> entityPage) {
+        return toDTOPage(entityPage, null);
+    }
+
+    /**
+     * 将用户实体分页结果转换为管理员用户DTO分页结果（带套餐名称）
+     *
+     * @param entityPage 用户实体分页结果
+     * @param userPlanNameMap 用户ID到套餐名称的映射
+     * @return 管理员用户DTO分页结果
+     */
+    public static IPage<AdminUserDTO> toDTOPage(IPage<UserEntity> entityPage, Map<String, String> userPlanNameMap) {
         if (entityPage == null) {
             return null;
         }
-        
+
         Page<AdminUserDTO> dtoPage = new Page<>(entityPage.getCurrent(), entityPage.getSize(), entityPage.getTotal());
-        List<AdminUserDTO> dtoList = toDTOList(entityPage.getRecords());
+        List<AdminUserDTO> dtoList = entityPage.getRecords().stream()
+                .map(entity -> {
+                    AdminUserDTO dto = toDTO(entity);
+                    if (userPlanNameMap != null && dto != null) {
+                        dto.setCurrentPlanName(userPlanNameMap.get(entity.getId()));
+                    }
+                    return dto;
+                })
+                .toList();
         dtoPage.setRecords(dtoList);
-        
+
         return dtoPage;
     }
 }

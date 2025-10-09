@@ -64,7 +64,20 @@ public class SubscriptionPlanDomainService {
         }
         return plan;
     }
-    
+
+    /**
+     * 批量查询订阅套餐
+     *
+     * @param ids 套餐ID集合
+     * @return 订阅套餐列表
+     */
+    public List<SubscriptionPlanEntity> getSubscriptionPlansByIds(Collection<String> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+        return subscriptionPlanRepository.selectBatchIds(ids);
+    }
+
     public void deleteSubscriptionPlan(String id) {
         subscriptionPlanRepository.deleteById(id);
     }
@@ -167,6 +180,49 @@ public class SubscriptionPlanDomainService {
                 .in(SubscriptionPlanEntity::getId, planIds)
                 .eq(SubscriptionPlanEntity::getStatus, SubscriptionPlanStatus.ACTIVE)
         );
+    }
+
+    /**
+     * 批量查询：根据多个课程ID获取各课程对应的订阅计划
+     * @return Map<课程ID, 订阅计划列表>
+     */
+    public Map<String, List<SubscriptionPlanEntity>> getPlansByCourseIds(Collection<String> courseIds) {
+        if (courseIds == null || courseIds.isEmpty()) {
+            return java.util.Collections.emptyMap();
+        }
+
+        // 批量查询所有课程的绑定关系
+        LambdaQueryWrapper<SubscriptionPlanCourseEntity> queryWrapper =
+            new LambdaQueryWrapper<SubscriptionPlanCourseEntity>()
+                .in(SubscriptionPlanCourseEntity::getCourseId, courseIds);
+        List<SubscriptionPlanCourseEntity> bindings = subscriptionPlanCourseRepository.selectList(queryWrapper);
+
+        if (bindings == null || bindings.isEmpty()) {
+            return java.util.Collections.emptyMap();
+        }
+
+        // 提取所有套餐ID
+        Set<String> planIds = bindings.stream()
+                .map(SubscriptionPlanCourseEntity::getSubscriptionPlanId)
+                .collect(java.util.stream.Collectors.toSet());
+
+        // 批量查询所有有效的套餐
+        Map<String, SubscriptionPlanEntity> planMap = subscriptionPlanRepository.selectList(
+            new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<SubscriptionPlanEntity>()
+                .in(SubscriptionPlanEntity::getId, planIds)
+                .eq(SubscriptionPlanEntity::getStatus, SubscriptionPlanStatus.ACTIVE)
+        ).stream().collect(java.util.stream.Collectors.toMap(SubscriptionPlanEntity::getId, p -> p));
+
+        // 按课程ID分组
+        return bindings.stream()
+                .filter(b -> planMap.containsKey(b.getSubscriptionPlanId()))
+                .collect(java.util.stream.Collectors.groupingBy(
+                    SubscriptionPlanCourseEntity::getCourseId,
+                    java.util.stream.Collectors.mapping(
+                        b -> planMap.get(b.getSubscriptionPlanId()),
+                        java.util.stream.Collectors.toList()
+                    )
+                ));
     }
 
     // ==================== 菜单绑定 ====================

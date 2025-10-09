@@ -215,6 +215,37 @@ public class SubscriptionDomainService {
         return userSubscriptionRepository.selectList(queryWrapper);
     }
 
+    /**
+     * 批量查询多个用户的当前有效订阅
+     * 每个用户只返回最新的一个有效订阅
+     *
+     * @param userIds 用户ID集合
+     * @return Map<userId, 最新有效订阅>
+     */
+    public java.util.Map<String, UserSubscriptionEntity> getUsersActiveSubscriptions(java.util.Collection<String> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return java.util.Collections.emptyMap();
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        LambdaQueryWrapper<UserSubscriptionEntity> queryWrapper =
+            new LambdaQueryWrapper<UserSubscriptionEntity>()
+                .in(UserSubscriptionEntity::getUserId, userIds)
+                .le(UserSubscriptionEntity::getStartTime, now)
+                .gt(UserSubscriptionEntity::getEndTime, now)
+                .orderByDesc(UserSubscriptionEntity::getCreateTime);
+
+        List<UserSubscriptionEntity> subscriptions = userSubscriptionRepository.selectList(queryWrapper);
+
+        // 每个用户只保留最新的一个订阅
+        return subscriptions.stream()
+                .collect(java.util.stream.Collectors.toMap(
+                    UserSubscriptionEntity::getUserId,
+                    sub -> sub,
+                    (existing, replacement) -> existing.getCreateTime().isAfter(replacement.getCreateTime()) ? existing : replacement
+                ));
+    }
+
     public boolean hasAnyActiveSubscription(String userId) {
         LocalDateTime now = LocalDateTime.now();
         LambdaQueryWrapper<UserSubscriptionEntity> queryWrapper =
