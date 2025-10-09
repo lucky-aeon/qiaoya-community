@@ -136,4 +136,21 @@ public class CourseDomainService {
             // 事件发布失败不应影响主业务流程
         }
     }
+
+    // ==================== 统计方法 ====================
+
+    /**
+     * 获取课程列表（用于统计）
+     * @param startTime 开始时间
+     * @param endTime 结束时间
+     * @return 课程列表
+     */
+    public List<CourseEntity> getCourses(java.time.LocalDateTime startTime, java.time.LocalDateTime endTime) {
+        LambdaQueryWrapper<CourseEntity> queryWrapper = new LambdaQueryWrapper<CourseEntity>()
+                .ge(startTime != null, CourseEntity::getCreateTime, startTime)
+                .le(endTime != null, CourseEntity::getCreateTime, endTime)
+                .orderByAsc(CourseEntity::getCreateTime);
+
+        return courseRepository.selectList(queryWrapper);
+    }
 }

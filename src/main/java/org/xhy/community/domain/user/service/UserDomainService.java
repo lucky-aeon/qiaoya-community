@@ -373,4 +373,21 @@ public class UserDomainService {
     public long getTotalUserCount() {
         return userRepository.selectCount(null);
     }
+
+    // ==================== 统计方法 ====================
+
+    /**
+     * 获取注册用户趋势
+     * @param startTime 开始时间
+     * @param endTime 结束时间
+     * @return 用户列表
+     */
+    public List<UserEntity> getRegisteredUsers(java.time.LocalDateTime startTime, java.time.LocalDateTime endTime) {
+        LambdaQueryWrapper<UserEntity> queryWrapper = new LambdaQueryWrapper<UserEntity>()
+                .ge(startTime != null, UserEntity::getCreateTime, startTime)
+                .le(endTime != null, UserEntity::getCreateTime, endTime)
+                .orderByAsc(UserEntity::getCreateTime);
+
+        return userRepository.selectList(queryWrapper);
+    }
 }

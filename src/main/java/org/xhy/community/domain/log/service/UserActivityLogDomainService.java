@@ -308,4 +308,22 @@ public class UserActivityLogDomainService {
             return fallbackMap;
         }
     }
+
+    // ==================== 统计方法 ====================
+
+    /**
+     * 获取活跃用户日志
+     * @param startTime 开始时间
+     * @param endTime 结束时间
+     * @return 活动日志列表
+     */
+    public List<UserActivityLogEntity> getActiveUserLogs(LocalDateTime startTime, LocalDateTime endTime) {
+        LambdaQueryWrapper<UserActivityLogEntity> queryWrapper = new LambdaQueryWrapper<UserActivityLogEntity>()
+                .ge(startTime != null, UserActivityLogEntity::getCreateTime, startTime)
+                .le(endTime != null, UserActivityLogEntity::getCreateTime, endTime)
+                .isNotNull(UserActivityLogEntity::getUserId)
+                .orderByAsc(UserActivityLogEntity::getCreateTime);
+
+        return userActivityLogRepository.selectList(queryWrapper);
+    }
 }

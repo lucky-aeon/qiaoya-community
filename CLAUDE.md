@@ -342,6 +342,7 @@ id VARCHAR(36) PRIMARY KEY,
 
 
 ### 10. 开发规范
+- app层不可引入 repo，而是引入 domain
 - 依赖注入使用构造函数的方式
 - assembler 使用 BeanUtils.copy 的方式
 - 如果要使用到分页查询，则 request 对象继承 org/xhy/community/interfaces/common/request/PageRequest.java

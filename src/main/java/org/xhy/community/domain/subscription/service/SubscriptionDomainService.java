@@ -260,11 +260,35 @@ public class SubscriptionDomainService {
     
     public IPage<UserSubscriptionEntity> getPagedUserSubscriptions(SubscriptionQuery query) {
         Page<UserSubscriptionEntity> page = new Page<>(query.getPageNum(), query.getPageSize());
-        LambdaQueryWrapper<UserSubscriptionEntity> queryWrapper = 
+        LambdaQueryWrapper<UserSubscriptionEntity> queryWrapper =
             new LambdaQueryWrapper<UserSubscriptionEntity>()
                 .eq(StringUtils.hasText(query.getUserId()), UserSubscriptionEntity::getUserId, query.getUserId())
                 .orderByDesc(UserSubscriptionEntity::getCreateTime);
-        
+
         return userSubscriptionRepository.selectPage(page, queryWrapper);
+    }
+
+    // ==================== 统计方法 ====================
+
+    /**
+     * 查询用户订阅列表（用于统计）
+     * @param userIds 用户ID集合
+     * @param startTime 开始时间
+     * @param endTime 结束时间
+     * @return 用户订阅列表
+     */
+    public List<UserSubscriptionEntity> getUserSubscriptions(java.util.Collection<String> userIds,
+                                                             LocalDateTime startTime,
+                                                             LocalDateTime endTime) {
+        if (userIds == null || userIds.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+
+        LambdaQueryWrapper<UserSubscriptionEntity> queryWrapper = new LambdaQueryWrapper<UserSubscriptionEntity>()
+                .in(UserSubscriptionEntity::getUserId, userIds)
+                .le(UserSubscriptionEntity::getStartTime, endTime)
+                .ge(UserSubscriptionEntity::getEndTime, startTime);
+
+        return userSubscriptionRepository.selectList(queryWrapper);
     }
 }

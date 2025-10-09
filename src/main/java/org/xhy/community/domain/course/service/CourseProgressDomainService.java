@@ -166,6 +166,19 @@ public class CourseProgressDomainService {
     }
 
     /**
+     * 按访问时间范围查询课程聚合进度记录（用于统计学习过课程的人数）
+     * 返回满足条件的所有用户-课程聚合记录
+     */
+    public java.util.List<UserCourseProgressEntity> listAggregatesByAccessTime(java.time.LocalDateTime startTime,
+                                                                               java.time.LocalDateTime endTime) {
+        return userCourseProgressRepository.selectList(
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<UserCourseProgressEntity>()
+                        .ge(startTime != null, UserCourseProgressEntity::getLastAccessTime, startTime)
+                        .le(endTime != null, UserCourseProgressEntity::getLastAccessTime, endTime)
+        );
+    }
+
+    /**
      * 批量获取用户在若干章节的 last_position_sec
      */
     public java.util.Map<String, Integer> getChapterPositionsForUser(String userId, java.util.Set<String> chapterIds) {

@@ -85,4 +85,21 @@ public class OrderDomainService {
         String rand = java.util.UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase();
         return "ORD" + timestamp + rand;
     }
+
+    // ==================== 统计方法 ====================
+
+    /**
+     * 获取订单列表（用于统计）
+     * @param startTime 开始时间
+     * @param endTime 结束时间
+     * @return 订单列表
+     */
+    public java.util.List<OrderEntity> getOrders(LocalDateTime startTime, LocalDateTime endTime) {
+        LambdaQueryWrapper<OrderEntity> queryWrapper = new LambdaQueryWrapper<OrderEntity>()
+                .ge(startTime != null, OrderEntity::getActivatedTime, startTime)
+                .le(endTime != null, OrderEntity::getActivatedTime, endTime)
+                .orderByAsc(OrderEntity::getActivatedTime);
+
+        return orderRepository.selectList(queryWrapper);
+    }
 }
