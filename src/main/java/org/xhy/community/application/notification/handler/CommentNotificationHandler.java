@@ -117,7 +117,7 @@ public class CommentNotificationHandler implements NotificationHandler {
                         Arrays.asList(recipient),
                         notificationType,
                         ContentType.COMMENT,
-                        targetAuthorName,
+                        commenter.getName(),
                         targetTitle,
                         targetType,
                         comment.getContent(),
