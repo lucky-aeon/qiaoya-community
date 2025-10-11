@@ -27,6 +27,9 @@ import org.xhy.community.domain.user.service.UserDomainService;
 import org.xhy.community.domain.comment.service.CommentDomainService;
 import org.xhy.community.domain.comment.valueobject.BusinessType;
 import org.xhy.community.domain.log.service.UserActivityLogDomainService;
+import org.xhy.community.domain.summary.service.DiscussionSummaryDomainService;
+import org.xhy.community.domain.summary.entity.DiscussionSummaryEntity;
+import org.xhy.community.domain.summary.valueobject.SummaryTargetType;
 import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.infrastructure.config.ValidationErrorCode;
 import org.xhy.community.interfaces.post.request.CreatePostRequest;
@@ -48,19 +51,22 @@ public class PostAppService {
     private final LikeDomainService likeDomainService;
     private final CommentDomainService commentDomainService;
     private final UserActivityLogDomainService userActivityLogDomainService;
+    private final DiscussionSummaryDomainService discussionSummaryDomainService;
     
     public PostAppService(PostDomainService postDomainService, 
                          UserDomainService userDomainService,
                          CategoryDomainService categoryDomainService,
                          LikeDomainService likeDomainService,
                          CommentDomainService commentDomainService,
-                         UserActivityLogDomainService userActivityLogDomainService) {
+                         UserActivityLogDomainService userActivityLogDomainService,
+                         DiscussionSummaryDomainService discussionSummaryDomainService) {
         this.postDomainService = postDomainService;
         this.userDomainService = userDomainService;
         this.categoryDomainService = categoryDomainService;
         this.likeDomainService = likeDomainService;
         this.commentDomainService = commentDomainService;
         this.userActivityLogDomainService = userActivityLogDomainService;
+        this.discussionSummaryDomainService = discussionSummaryDomainService;
     }
     
     public PostDTO createPost(CreatePostRequest request, String authorId) {
@@ -313,6 +319,9 @@ public class PostAppService {
             java.util.Set<String> ids = postDomainService.getAcceptedCommentIds(post.getId());
             dto.setAcceptedCommentIds(new java.util.ArrayList<>(ids));
         }
+        // 组装AI摘要（通用讨论摘要-文章）
+        DiscussionSummaryEntity ds = discussionSummaryDomainService.getByTarget(SummaryTargetType.POST, postId);
+        if (ds != null) dto.setAiSummary(ds.getSummary());
         return dto;
     }
 

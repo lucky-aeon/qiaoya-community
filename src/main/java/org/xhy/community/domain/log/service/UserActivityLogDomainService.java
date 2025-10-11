@@ -156,21 +156,16 @@ public class UserActivityLogDomainService {
      * 记录业务活动日志
      * 用于记录用户的业务操作行为，如查看文章、发表内容等
      *
-     * @param userId 用户ID
-     * @param activityType 活动类型
-     * @param targetType 目标类型（如POST、COURSE、USER等）
-     * @param targetId 目标对象ID
-     * @param requestMethod HTTP请求方法
-     * @param requestPath 请求路径
-     * @param executionTimeMs 执行时间（毫秒）
-     * @param ipAddress IP地址
-     * @param userAgent User-Agent信息
-     * @param sessionId 会话ID
-     * @param requestBody 请求体内容（JSON格式）
-     * @param errorMessage 错误信息，成功时为null
-     * @param browser 浏览器信息
-     * @param equipment 设备信息
      */
+    public void recordBusinessActivity(UserActivityLogEntity activityLog) {
+        // createTime/updateTime 统一由 MetaObjectHandler 填充
+        userActivityLogRepository.insert(activityLog);
+    }
+
+    /**
+     * 为兼容旧调用，保留多入参版本，内部装配实体后复用新方法
+     */
+    @Deprecated
     public void recordBusinessActivity(String userId, ActivityType activityType,
                                      String targetType, String targetId,
                                      String requestMethod, String requestPath,
@@ -178,14 +173,9 @@ public class UserActivityLogDomainService {
                                      String userAgent, String sessionId,
                                      String requestBody, String errorMessage,
                                      String browser, String equipment) {
-        
         UserActivityLogEntity activityLog = new UserActivityLogEntity();
-        
-        // 设置基础字段
         activityLog.setUserId(userId);
         activityLog.setActivityType(activityType);
-        
-        // 设置业务扩展字段
         activityLog.setTargetType(targetType);
         activityLog.setTargetId(targetId);
         activityLog.setRequestMethod(requestMethod);
@@ -193,23 +183,13 @@ public class UserActivityLogDomainService {
         activityLog.setExecutionTimeMs(executionTimeMs);
         activityLog.setSessionId(sessionId);
         activityLog.setContextData(parseRequestBodyToMap(requestBody));
-        
-        // 设置网络相关字段
         activityLog.setIp(ipAddress);
         activityLog.setUserAgent(userAgent);
-        
-        // 设置浏览器和设备信息（现在从参数中获取，而不是设为null）
         activityLog.setBrowser(browser);
         activityLog.setEquipment(equipment);
-        
-        // 设置失败信息
         activityLog.setFailureReason(errorMessage);
-        
-        // 设置时间字段
-        activityLog.setCreateTime(LocalDateTime.now());
-        activityLog.setUpdateTime(LocalDateTime.now());
-        
-        userActivityLogRepository.insert(activityLog);
+        // 时间字段由 MetaObjectHandler 填充
+        recordBusinessActivity(activityLog);
     }
 
     // ==================== 浏览统计（按用户去重） ====================

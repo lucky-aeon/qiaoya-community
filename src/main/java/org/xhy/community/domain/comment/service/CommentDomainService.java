@@ -72,6 +72,18 @@ public class CommentDomainService {
                 .orderByDesc(CommentEntity::getCreateTime)
         );
     }
+
+    /**
+     * 获取指定业务对象的全部评论（包含根评论与回复），按时间升序。
+     */
+    public List<CommentEntity> getCommentsByBusiness(String businessId, BusinessType businessType) {
+        return commentRepository.selectList(
+            new LambdaQueryWrapper<CommentEntity>()
+                .eq(CommentEntity::getBusinessId, businessId)
+                .eq(CommentEntity::getBusinessType, businessType)
+                .orderByAsc(CommentEntity::getCreateTime)
+        );
+    }
     
     public IPage<CommentEntity> getRootCommentsByBusinessPage(String businessId, BusinessType businessType, 
                                                             Integer pageNum, Integer pageSize) {

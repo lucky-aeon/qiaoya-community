@@ -17,9 +17,11 @@ import org.xhy.community.infrastructure.annotation.ActivityLog;
 import org.xhy.community.infrastructure.util.activitylog.ActivityContext;
 import org.xhy.community.infrastructure.util.activitylog.TargetInfo;
 import org.xhy.community.infrastructure.util.activitylog.UrlPatternParser;
-import org.xhy.community.infrastructure.config.UserContext;
+import org.xhy.community.infrastructure.config.JwtUtil;
 import org.xhy.community.infrastructure.context.UserActivityContext;
 import org.xhy.community.infrastructure.util.HttpRequestInfoExtractor;
+import org.xhy.community.application.log.assembler.BusinessActivityLogAssembler;
+import org.xhy.community.domain.log.entity.UserActivityLogEntity;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -52,11 +54,14 @@ public class BusinessActivityLogAspect {
     
     private final UserActivityLogDomainService userActivityLogDomainService;
     private final ObjectMapper objectMapper;
+    private final JwtUtil jwtUtil;
     
     public BusinessActivityLogAspect(UserActivityLogDomainService userActivityLogDomainService,
-                                   ObjectMapper objectMapper) {
+                                     ObjectMapper objectMapper,
+                                     JwtUtil jwtUtil) {
         this.userActivityLogDomainService = userActivityLogDomainService;
         this.objectMapper = objectMapper;
+        this.jwtUtil = jwtUtil;
     }
     
     /**
@@ -149,16 +154,19 @@ public class BusinessActivityLogAspect {
      */
     private String getCurrentUserId(HttpServletRequest request) {
         try {
-            // 使用项目统一的UserContext获取当前用户ID
-            return UserContext.getCurrentUserId();
-        } catch (IllegalStateException e) {
-            // 用户未登录或未认证，返回null而不是抛异常
-            logger.debug("Current user not authenticated: {}", e.getMessage());
-            return null;
+            // 优先从 Authorization 头部解析 JWT 获取 userId，避免依赖拦截器设置的 UserContext
+            String authorization = request.getHeader("Authorization");
+            if (authorization != null && authorization.startsWith("Bearer ")) {
+                String token = authorization.substring(7);
+                if (jwtUtil.validateToken(token)) {
+                    return jwtUtil.getUserIdFromToken(token);
+                }
+            }
         } catch (Exception e) {
-            logger.warn("Failed to get current user ID: {}", e.getMessage());
-            return null;
+            logger.warn("Failed to parse userId from Authorization header: {}", e.getMessage());
         }
+        // 未登录或无有效 token，则返回 null
+        return null;
     }
     
     /**
@@ -280,23 +288,16 @@ public class BusinessActivityLogAspect {
         try {
             int executionTime = (int) (System.currentTimeMillis() - startTime);
             
-            // 调用Domain服务记录业务活动，现在包含浏览器和设备信息
-            userActivityLogDomainService.recordBusinessActivity(
-                context.getUserId(),
-                context.getActivityType(),
-                context.getTargetType(),
-                context.getTargetId(),
-                context.getRequestMethod(),
-                context.getRequestPath(),
-                executionTime,
-                context.getIpAddress(),
-                context.getUserAgent(),
-                context.getSessionId(),
-                context.getRequestBody(),
-                errorMessage,
-                userActivityContext.getBrowser(),
-                userActivityContext.getEquipment()
+            // 由装配器在应用层将上下文装配成领域实体
+            UserActivityLogEntity entity = BusinessActivityLogAssembler.fromContext(
+                    context,
+                    userActivityContext,
+                    executionTime,
+                    errorMessage
             );
+            
+            // 调用领域服务（接收实体）持久化
+            userActivityLogDomainService.recordBusinessActivity(entity);
             
             logger.debug("Successfully recorded business activity: userId={}, type={}, target={}:{}, executionTime={}ms", 
                         context.getUserId(), context.getActivityType(), 

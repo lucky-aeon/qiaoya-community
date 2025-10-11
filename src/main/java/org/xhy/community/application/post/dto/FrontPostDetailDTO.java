@@ -31,6 +31,8 @@ public class FrontPostDetailDTO {
     private List<String> tags;
     // 问答帖子：前端用于渲染采纳标记
     private java.util.List<String> acceptedCommentIds;
+    // AI 生成的评论摘要（可为空）
+    private String aiSummary;
     
     public FrontPostDetailDTO() {}
     
@@ -117,5 +119,13 @@ public class FrontPostDetailDTO {
 
     public void setAcceptedCommentIds(java.util.List<String> acceptedCommentIds) {
         this.acceptedCommentIds = acceptedCommentIds;
+    }
+
+    public String getAiSummary() {
+        return aiSummary;
+    }
+
+    public void setAiSummary(String aiSummary) {
+        this.aiSummary = aiSummary;
     }
 }
