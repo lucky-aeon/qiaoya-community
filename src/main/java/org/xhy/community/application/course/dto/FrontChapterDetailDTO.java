@@ -20,6 +20,8 @@ public class FrontChapterDetailDTO {
     private Integer likeCount;
     /** 章节内容类型：VIDEO 或 TEXT（通过 MarkdownParser 解析内容得到） */
     private ChapterContentType contentType;
+    /** AI 生成的评论摘要（可为空） */
+    private String aiSummary;
 
     public FrontChapterDetailDTO() {
     }
@@ -57,4 +59,7 @@ public class FrontChapterDetailDTO {
 
     public ChapterContentType getContentType() { return contentType; }
     public void setContentType(ChapterContentType contentType) { this.contentType = contentType; }
+
+    public String getAiSummary() { return aiSummary; }
+    public void setAiSummary(String aiSummary) { this.aiSummary = aiSummary; }
 }

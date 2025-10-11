@@ -14,6 +14,9 @@ import org.xhy.community.domain.like.valueobject.LikeTargetType;
 import org.xhy.community.application.like.helper.LikeCountHelper;
 import org.xhy.community.application.permission.service.UserPermissionAppService;
 import org.xhy.community.infrastructure.exception.BusinessException;
+import org.xhy.community.domain.summary.service.DiscussionSummaryDomainService;
+import org.xhy.community.domain.summary.entity.DiscussionSummaryEntity;
+import org.xhy.community.domain.summary.valueobject.SummaryTargetType;
 import org.xhy.community.infrastructure.exception.CourseErrorCode;
 import org.xhy.community.infrastructure.markdown.MarkdownParser;
 import org.xhy.community.infrastructure.markdown.model.MarkdownNode;
@@ -36,17 +39,20 @@ public class ChapterAppService {
     private final UserPermissionAppService userPermissionAppService;
     private final LikeDomainService likeDomainService;
     private final MarkdownParser markdownParser;
+    private final DiscussionSummaryDomainService discussionSummaryDomainService;
 
     public ChapterAppService(ChapterDomainService chapterDomainService,
                             CourseDomainService courseDomainService,
                             UserPermissionAppService userPermissionAppService,
                             LikeDomainService likeDomainService,
-                            MarkdownParser markdownParser) {
+                            MarkdownParser markdownParser,
+                            DiscussionSummaryDomainService discussionSummaryDomainService) {
         this.chapterDomainService = chapterDomainService;
         this.courseDomainService = courseDomainService;
         this.userPermissionAppService = userPermissionAppService;
         this.likeDomainService = likeDomainService;
         this.markdownParser = markdownParser;
+        this.discussionSummaryDomainService = discussionSummaryDomainService;
     }
 
     /**
@@ -74,6 +80,9 @@ public class ChapterAppService {
             dto.setContentType(ChapterContentType.TEXT);
         }
         dto.setLikeCount(LikeCountHelper.getLikeCount(chapterId, LikeTargetType.CHAPTER, likeDomainService));
+        // 组装AI摘要（通用讨论摘要-章节）
+        DiscussionSummaryEntity ds = discussionSummaryDomainService.getByTarget(SummaryTargetType.CHAPTER, chapterId);
+        if (ds != null) dto.setAiSummary(ds.getSummary());
         return dto;
     }
 
