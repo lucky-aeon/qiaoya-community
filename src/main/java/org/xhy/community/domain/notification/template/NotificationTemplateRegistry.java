@@ -89,7 +89,7 @@ public class NotificationTemplateRegistry {
             webUrlConfig
         ));
 
-        // 评论
+        // 评论/回复评论（邮件）
         registerOutAppTemplate(ContentType.COMMENT,new FileBasedNotificationTemplate<>(
             CommentNotificationData.class,
             "敲鸭社区 - 新的评论",
@@ -99,9 +99,22 @@ public class NotificationTemplateRegistry {
             brandingConfig,
             data -> {
                 java.util.Map<String, String> m = new java.util.HashMap<>();
-                m.put("COMMENTER_NAME", data.getCommenterName());
-                m.put("TARGET_TYPE", data.getTargetType() == null ? "" : data.getTargetType().getDescription());
-                m.put("TARGET_TITLE", data.getTargetTitle());
+                String commenter = data.getCommenterName() == null ? "" : data.getCommenterName();
+                String targetType = data.getTargetType() == null ? "" : data.getTargetType().getDescription();
+                String targetTitle = data.getTargetTitle() == null ? "" : data.getTargetTitle();
+
+                // 预览行与动作行：根据是否为“回复评论”生成不同文案
+                if (data.isReply()) {
+                    m.put("PREVIEW_LINE", commenter + " 回复了你");
+                    m.put("ACTION_LINE", commenter + " 回复了你的评论：");
+                } else {
+                    m.put("PREVIEW_LINE", commenter + " 评论了你");
+                    m.put("ACTION_LINE", commenter + " 评论了你的 " + targetType + "《" + targetTitle + "》：");
+                }
+
+                m.put("COMMENTER_NAME", commenter);
+                m.put("TARGET_TYPE", targetType);
+                m.put("TARGET_TITLE", targetTitle);
                 m.put("TRUNCATED_COMMENT", data.getTruncatedCommentContent());
                 m.put("TARGET_URL", resolveUrl(contentUrlResolver.targetPath(data.getTargetType(), data.getTargetId())));
                 return m;

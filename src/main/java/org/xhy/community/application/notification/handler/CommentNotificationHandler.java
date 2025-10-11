@@ -106,26 +106,50 @@ public class CommentNotificationHandler implements NotificationHandler {
                 notificationType = NotificationType.CHAPTER_UPDATED;
             }
 
-            // 只有当评论者不是内容作者时才发送通知（避免自己评论自己的内容收到通知）
+            boolean isReply = comment.getReplyUserId() != null;
+
+            // A) 如果是回复，给被回复用户单独发一条“回复评论”的通知
+            if (isReply && !authorId.equals(comment.getReplyUserId())) {
+                UserEntity replyTarget = userDomainService.getUserById(comment.getReplyUserId());
+                if (replyTarget != null) {
+                    java.util.List<NotificationData.Recipient> recipientsA = java.util.List.of(
+                            new NotificationData.Recipient(replyTarget.getId(), replyTarget.getEmail(), replyTarget.getEmailNotificationEnabled())
+                    );
+                    CommentNotificationData dataA = new CommentNotificationData(
+                            recipientsA,
+                            notificationType,
+                            ContentType.COMMENT,
+                            commenter.getName(),
+                            targetTitle,
+                            targetType,
+                            comment.getContent(),
+                            comment.getBusinessId(),
+                            true
+                    );
+                    notificationDomainService.send(dataA);
+                }
+            }
+
+            // B) 通知内容作者（若不是自己），内容仍按“评论了你的文章/课程/章节”展示
             if (!authorId.equals(targetAuthorId)) {
-                // 查询目标作者的邮件通知设置
                 UserEntity targetAuthor = userDomainService.getUserById(targetAuthorId);
-
-                NotificationData.Recipient recipient = new NotificationData.Recipient(targetAuthor.getId(),targetAuthor.getEmail(), targetAuthor.getEmailNotificationEnabled());
-
-                CommentNotificationData notificationData = new CommentNotificationData(
-                        Arrays.asList(recipient),
-                        notificationType,
-                        ContentType.COMMENT,
-                        commenter.getName(),
-                        targetTitle,
-                        targetType,
-                        comment.getContent(),
-                        comment.getBusinessId()
-                );
-
-                notificationDomainService.send(notificationData);
-
+                if (targetAuthor != null && (comment.getReplyUserId() == null || !targetAuthor.getId().equals(comment.getReplyUserId()))) {
+                    java.util.List<NotificationData.Recipient> recipientsB = java.util.List.of(
+                            new NotificationData.Recipient(targetAuthor.getId(), targetAuthor.getEmail(), targetAuthor.getEmailNotificationEnabled())
+                    );
+                    CommentNotificationData dataB = new CommentNotificationData(
+                            recipientsB,
+                            notificationType,
+                            ContentType.COMMENT,
+                            commenter.getName(),
+                            targetTitle,
+                            targetType,
+                            comment.getContent(),
+                            comment.getBusinessId(),
+                            false
+                    );
+                    notificationDomainService.send(dataB);
+                }
             }
         } catch (Exception e) {
             // 记录错误日志，但不影响主流程

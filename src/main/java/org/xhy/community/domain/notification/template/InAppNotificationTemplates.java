@@ -48,8 +48,12 @@ public class InAppNotificationTemplates {
         
         @Override
         public String renderContent(CommentNotificationData data) {
-            String targetLabel = data.getTargetType() == null ? "内容" : data.getTargetType().getDescription();
-            return data.getCommenterName() + " 评论了你的" + targetLabel + "：" + data.getTargetTitle();
+            if (data.isReply()) {
+                return data.getCommenterName() + " 回复了你的评论";
+            } else {
+                String targetLabel = data.getTargetType() == null ? "内容" : data.getTargetType().getDescription();
+                return data.getCommenterName() + " 评论了你的" + targetLabel + "：" + data.getTargetTitle();
+            }
         }
         
         @Override

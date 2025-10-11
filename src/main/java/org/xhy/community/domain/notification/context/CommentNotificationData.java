@@ -16,20 +16,23 @@ public class CommentNotificationData extends NotificationData {
     private final FollowTargetType targetType; // 被评论内容类型（强类型）
     private final String commentContent;     // 评论内容
     private final String targetId;           // 被评论内容ID
+    private final boolean reply;             // 是否为“回复评论”场景
 
-    public CommentNotificationData(List<Recipient> recipients, NotificationType type, ContentType contentType, String commenterName, String targetTitle, FollowTargetType targetType, String commentContent, String targetId) {
+    public CommentNotificationData(List<Recipient> recipients, NotificationType type, ContentType contentType, String commenterName, String targetTitle, FollowTargetType targetType, String commentContent, String targetId, boolean reply) {
         super(recipients, type, contentType);
         this.commenterName = commenterName;
         this.targetTitle = targetTitle;
         this.targetType = targetType;
         this.commentContent = commentContent;
         this.targetId = targetId;
+        this.reply = reply;
     }
 
     public String getCommenterName() { return commenterName; }
     public String getTargetTitle() { return targetTitle; }
     public FollowTargetType getTargetType() { return targetType; }
     public String getTargetId() { return targetId; }
+    public boolean isReply() { return reply; }
 
     /**
      * 兼容旧模板的兜底方法（未被新注册器使用）
