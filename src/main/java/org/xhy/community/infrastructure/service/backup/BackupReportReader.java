@@ -1,17 +1,19 @@
 package org.xhy.community.infrastructure.service.backup;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.xhy.community.infrastructure.config.BackupProperties;
 
 import java.io.IOException;
 import java.nio.file.*;
-import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 public class BackupReportReader {
+    private static final Logger log = LoggerFactory.getLogger(BackupReportReader.class);
     private final BackupProperties properties;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -22,6 +24,7 @@ public class BackupReportReader {
     public List<BackupReport> listAll() {
         Path dir = Paths.get(properties.getReportsDir());
         if (!Files.isDirectory(dir)) {
+            log.warn("[backup-report] 报表目录不存在或不可读: {}", dir);
             return Collections.emptyList();
         }
         try {
@@ -33,7 +36,7 @@ public class BackupReportReader {
                         report.setReportFile(p.toString());
                         list.add(report);
                     } catch (IOException e) {
-                        // skip invalid json
+                        log.warn("[backup-report] 跳过无法解析的报表文件: file={}, error={}", p, e.getMessage());
                     }
                 }
                 // 按 finishedAt 倒序，如果为空则按文件名倒序
@@ -43,6 +46,7 @@ public class BackupReportReader {
                         .collect(Collectors.toList());
             }
         } catch (IOException e) {
+            log.error("[backup-report] 读取报表目录失败: dir={}", dir, e);
             return Collections.emptyList();
         }
     }
@@ -130,4 +134,3 @@ public class BackupReportReader {
         }
     }
 }
-
