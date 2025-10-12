@@ -60,7 +60,8 @@ spring:
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    # 使用 SLF4J 将 MyBatis 日志并入 Logback，保持 JSON 结构化
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
   global-config:
     db-config:
       id-type: auto
@@ -105,10 +106,20 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics
+        include: health,info,metrics,prometheus
   endpoint:
     health:
       show-details: when_authorized
+      probes:
+        enabled: true
+  metrics:
+    tags:
+      service: ${spring.application.name}
+  # Prometheus 导出（存在依赖 micrometer-registry-prometheus 时自动启用）
+  prometheus:
+    metrics:
+      export:
+        enabled: true
 
 # 邮件品牌配置
 community:
@@ -123,3 +134,10 @@ community:
   # 站点基础域名（用于将相对路径解析为绝对 URL）
   web:
     base-url: ${COMMUNITY_WEB_BASE_URL:http://code.dev.xhyovo.cn/}
+
+# 备份报表读取配置（平台查看备份情况）
+backup:
+  enabled: ${BACKUP_ENABLED:true}
+  # 容器内可见的报表目录，建议通过 Docker 将宿主机路径只读挂载到该目录
+  # 宿主机路径：/www/project/qiaoya/backup/reports -> 容器内：/data/db-backups/reports
+  reports-dir: ${BACKUP_REPORTS_DIR:/www/project/qiaoya/backup/reports}
