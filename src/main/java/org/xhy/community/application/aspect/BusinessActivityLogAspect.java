@@ -1,6 +1,7 @@
 package org.xhy.community.application.aspect;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.Cookie;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -156,6 +157,8 @@ public class BusinessActivityLogAspect {
         try {
             // 优先从 Authorization 头部解析 JWT 获取 userId，避免依赖拦截器设置的 UserContext
             String authorization = request.getHeader("Authorization");
+            String authTokenForCookie = getAuthTokenForCookie(request);
+            authorization = authorization!=null ? authorization : authTokenForCookie;
             if (authorization != null && authorization.startsWith("Bearer ")) {
                 String token = authorization.substring(7);
                 if (jwtUtil.validateToken(token)) {
@@ -168,7 +171,19 @@ public class BusinessActivityLogAspect {
         // 未登录或无有效 token，则返回 null
         return null;
     }
-    
+
+
+    private String getAuthTokenForCookie(HttpServletRequest request){
+        Cookie[] cookies = request.getCookies();
+        String cookieAuthTokenKey = "RAUTH";
+        for (Cookie cookie : cookies) {
+            if (cookie.getName().equals(cookieAuthTokenKey)) {
+                // 统一
+                return "Bearer " +cookie.getValue();
+            }
+        }
+        return null;
+    }
     /**
      * 获取请求体内容
      * 简化处理：将@RequestBody参数转为JSON
