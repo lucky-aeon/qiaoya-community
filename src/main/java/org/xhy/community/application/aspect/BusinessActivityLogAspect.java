@@ -299,9 +299,7 @@ public class BusinessActivityLogAspect {
             // 调用领域服务（接收实体）持久化
             userActivityLogDomainService.recordBusinessActivity(entity);
             
-            logger.debug("Successfully recorded business activity: userId={}, type={}, target={}:{}, executionTime={}ms", 
-                        context.getUserId(), context.getActivityType(), 
-                        context.getTargetType(), context.getTargetId(), executionTime);
+            // 成功记录业务活动，无需输出调试日志以免产生噪音
                         
         } catch (Exception e) {
             // 日志记录失败不应该影响主业务，只记录错误日志

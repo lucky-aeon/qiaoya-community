@@ -54,7 +54,7 @@ public class FollowDomainService {
                     // 重新关注
                     existingFollow.refollow();
                     followRepository.updateById(existingFollow);
-                    log.info("【关注】重新关注成功：followerId={}, targetType={}, targetId={}", followerId, targetType, targetId);
+                    // 重新关注为常规操作，省略日志
                     return existingFollow;
                 }
             }
@@ -63,7 +63,7 @@ public class FollowDomainService {
         try {
             FollowEntity follow = new FollowEntity(followerId, targetId, targetType);
             followRepository.insert(follow);
-            log.info("【关注】关注成功：followerId={}, targetType={}, targetId={}", followerId, targetType, targetId);
+            // 关注成功为常规操作，省略日志
             return follow;
         } catch (DataIntegrityViolationException e) {
             // 并发情况下可能出现唯一约束冲突，转化为业务语义：已关注
@@ -84,7 +84,7 @@ public class FollowDomainService {
 
         follow.unfollow();
         followRepository.updateById(follow);
-        log.info("【关注】取消关注成功：followerId={}, targetType={}, targetId={}", followerId, targetType, targetId);
+        // 取消关注为常规操作，省略日志
     }
 
     /**

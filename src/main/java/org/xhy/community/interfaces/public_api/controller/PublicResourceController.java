@@ -65,25 +65,28 @@ public class PublicResourceController {
         // 读取并校验回调token
         String token = callbackRequest.getToken();
         if (!StringUtils.hasText(token)) {
+            log.warn("【OSS回调】未携带token，key={} size={} contentType={}",
+                    callbackRequest.getObjectKey(), callbackRequest.getSize(), callbackRequest.getMimeType());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("Status", "UNAUTHORIZED", "message", "missing token"));
         }
 
         // 黑名单校验
         if (tokenBlacklistAppService.isBlacklisted(token)) {
+            log.warn("【OSS回调】token在黑名单，objectKey={}", callbackRequest.getObjectKey());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("Status", "UNAUTHORIZED", "message", "token blacklisted"));
         }
 
         // JWT 有效性校验
         if (!jwtUtil.validateToken(token)) {
+            log.warn("【OSS回调】token无效，objectKey={}", callbackRequest.getObjectKey());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("Status", "UNAUTHORIZED", "message", "invalid token"));
         }
 
         // 通过鉴权后再处理回调
         ResourceDTO resource = resourceAppService.handleOssCallback(callbackRequest);
-        
         Map<String, Object> response = Map.of("Status", "OK","resource",resource);
         return ResponseEntity.ok(response);
     }
@@ -132,12 +135,7 @@ public class PublicResourceController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
-        try {
-            String ip = request.getRemoteAddr();
-            String ua = request.getHeader("User-Agent");
-            String referer = request.getHeader("Referer");
-            log.info("[resource-access] user={} resource={} ip={} ua={} referer={}", userId, resourceId, ip, ua, referer);
-        } catch (Exception ignore) {}
+        // 资源访问为常规操作，省略日志
 
         // 生成带签名的直链并重定向
         String accessUrl = resourceAppService.getResourceAccessUrl(resourceId, userId);

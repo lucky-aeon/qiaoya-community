@@ -111,7 +111,6 @@ public class DeviceSessionDomainService {
                 String victim = oldest.iterator().next().getValue();
                 if (victim != null) {
                     redis.opsForZSet().remove(activeKey, victim);
-                    log.info("【会话】淘汰最久未活跃IP：userId={}, victimIp={}", userId, victim);
                 }
             }
             redis.opsForZSet().add(activeKey, ip, now);
@@ -180,7 +179,6 @@ public class DeviceSessionDomainService {
                             redis.opsForZSet().remove(devicesKey, victimDevice);
                             // 清理该设备的 IP 集
                             redis.delete(keyDeviceIps(userId, victimDevice));
-                            log.info("【会话】淘汰最久未活跃设备：userId={}, victimDevice={}", userId, victimDevice);
                         }
                     }
                 }

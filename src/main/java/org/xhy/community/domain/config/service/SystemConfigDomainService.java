@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xhy.community.domain.config.entity.SystemConfigEntity;
 import org.xhy.community.domain.config.repository.SystemConfigRepository;
 import org.xhy.community.domain.config.valueobject.DefaultSubscriptionConfig;
@@ -16,6 +18,7 @@ public class SystemConfigDomainService {
 
     private final SystemConfigRepository systemConfigRepository;
     private final ObjectMapper objectMapper;
+    private static final Logger log = LoggerFactory.getLogger(SystemConfigDomainService.class);
 
     public SystemConfigDomainService(SystemConfigRepository systemConfigRepository, ObjectMapper objectMapper) {
         this.systemConfigRepository = systemConfigRepository;
@@ -35,6 +38,7 @@ public class SystemConfigDomainService {
     public void updateDefaultSubscriptionConfig(String subscriptionPlanId) {
         DefaultSubscriptionConfig config = new DefaultSubscriptionConfig(subscriptionPlanId);
         updateConfigData(SystemConfigType.DEFAULT_SUBSCRIPTION_PLAN, config);
+        log.info("【系统配置】默认套餐已更新：planId={}", subscriptionPlanId);
     }
 
     /**
@@ -49,6 +53,7 @@ public class SystemConfigDomainService {
         try {
             return objectMapper.readValue(config.getData(), clazz);
         } catch (JsonProcessingException e) {
+            log.warn("【系统配置】解析失败：type={}", type, e);
             throw new BusinessException(SystemConfigErrorCode.CONFIG_PARSE_ERROR,
                 "解析配置数据失败: " + type.name());
         }
@@ -69,7 +74,9 @@ public class SystemConfigDomainService {
                 SystemConfigEntity newConfig = new SystemConfigEntity(type, jsonData, type.getDescription());
                 systemConfigRepository.insert(newConfig);
             }
+            log.info("【系统配置】已更新：type={}", type);
         } catch (JsonProcessingException e) {
+            log.warn("【系统配置】序列化失败：type={}", type, e);
             throw new BusinessException(SystemConfigErrorCode.CONFIG_SERIALIZE_ERROR,
                 "序列化配置数据失败: " + type.name());
         }

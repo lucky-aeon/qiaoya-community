@@ -124,8 +124,7 @@ public class UserActivityLogAspect {
                 failureReason
             );
             
-            logger.debug("Successfully recorded user activity: userId={}, type={}, ip={}", 
-                        userId, activityType, context.getIp());
+            // 成功记录用户活动，无需输出调试日志以免产生噪音
                         
         } catch (Exception e) {
             // 日志记录失败不应该影响主业务，只记录警告日志

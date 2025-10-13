@@ -47,9 +47,7 @@ public class CommentDomainService {
         
         commentRepository.insert(comment);
 
-        log.info("【评论】已创建：commentId={}, businessType={}, businessId={}, rootId={}, parentId={}",
-                comment.getId(), comment.getBusinessType(), comment.getBusinessId(),
-                comment.getRootCommentId(), comment.getParentCommentId());
+        // 评论创建为常规操作，省略日志
 
         // 发布简化的评论创建事件
         publishContentEvent(comment);
@@ -131,12 +129,12 @@ public class CommentDomainService {
         }
         
         commentRepository.deleteById(commentId);
-        log.info("【评论】已删除：commentId={}, operatorId={}", commentId, userId);
+        // 评论删除为常规操作，省略日志
     }
     
     public CommentEntity updateComment(CommentEntity comment) {
         commentRepository.updateById(comment);
-        log.info("【评论】已更新：commentId={}", comment.getId());
+        // 评论更新为常规操作，省略日志
         return comment;
     }
     

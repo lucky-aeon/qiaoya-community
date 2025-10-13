@@ -2,6 +2,8 @@ package org.xhy.community.domain.resourcebinding.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xhy.community.domain.resourcebinding.entity.ResourceBindingEntity;
 import org.xhy.community.domain.resourcebinding.repository.ResourceBindingRepository;
 import org.xhy.community.domain.resourcebinding.valueobject.ResourceTargetType;
@@ -19,6 +21,7 @@ public class ResourceBindingDomainService {
 
     private final ResourceBindingRepository resourceBindingRepository;
     private final MarkdownParser markdownParser;
+    private static final Logger log = LoggerFactory.getLogger(ResourceBindingDomainService.class);
 
     public ResourceBindingDomainService(ResourceBindingRepository resourceBindingRepository,
                                         MarkdownParser markdownParser) {

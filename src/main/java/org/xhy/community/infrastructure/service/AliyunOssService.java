@@ -99,9 +99,6 @@ public class AliyunOssService {
             result.put("signature", uploadPolicy.get("signature"));
             result.put("key", sanitizedKey);
             result.put("callback", generateCallback());
-            
-            log.info("【OSS】已签发STS凭证：key={}, bucket={}, region={}，expires={}",
-                    sanitizedKey, ossProperties.getBucketName(), ossProperties.getRegion(), credentials.getExpiration());
             return result;
         } catch (Exception e) {
             log.error("【OSS】签发STS凭证失败：key={}", fileKey, e);
@@ -147,8 +144,6 @@ public class AliyunOssService {
             result.put("key", sanitizedKey);
             result.put("callback", generateCallback(token));
 
-            log.info("【OSS】已签发STS凭证：key={}, bucket={}, region={}，expires={}",
-                    sanitizedKey, ossProperties.getBucketName(), ossProperties.getRegion(), credentials.getExpiration());
             return result;
         } catch (Exception e) {
             log.error("【OSS】签发STS凭证失败：key={}（带token）", fileKey, e);
@@ -265,9 +260,7 @@ public class AliyunOssService {
             request.setExpiration(expiration);
             
             URL url = ossClient.generatePresignedUrl(request);
-            String urlStr = url.toString();
-            log.info("【OSS】生成预签名下载URL：key={}, 过期时间={}s", sanitizeKey(fileKey), ossProperties.getPresignedUrlExpiration());
-            return urlStr;
+            return url.toString();
         } finally {
             ossClient.shutdown();
         }
@@ -282,7 +275,6 @@ public class AliyunOssService {
         
         try {
             ossClient.deleteObject(ossProperties.getBucketName(), sanitizeKey(fileKey));
-            log.info("【OSS】已删除对象：key={}", sanitizeKey(fileKey));
         } finally {
             ossClient.shutdown();
         }
@@ -296,9 +288,7 @@ public class AliyunOssService {
         );
         
         try {
-            boolean exists = ossClient.doesObjectExist(ossProperties.getBucketName(), sanitizeKey(fileKey));
-            log.debug("【OSS】对象是否存在：key={} -> {}", sanitizeKey(fileKey), exists);
-            return exists;
+            return ossClient.doesObjectExist(ossProperties.getBucketName(), sanitizeKey(fileKey));
         } finally {
             ossClient.shutdown();
         }

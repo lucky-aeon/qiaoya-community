@@ -3,6 +3,8 @@ package org.xhy.community.domain.auth.service;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 import org.xhy.community.infrastructure.exception.AuthErrorCode;
 import org.xhy.community.infrastructure.exception.BusinessException;
@@ -38,6 +40,7 @@ public class PasswordResetDomainService {
     private static final int IP_DAILY_LIMIT = 2;
 
     private final StringRedisTemplate redisTemplate;
+    private static final Logger log = LoggerFactory.getLogger(PasswordResetDomainService.class);
 
     public PasswordResetDomainService(StringRedisTemplate redisTemplate) {
         this.redisTemplate = redisTemplate;
@@ -59,6 +62,7 @@ public class PasswordResetDomainService {
         String normalizedIp = ip.trim();
 
         if (Boolean.TRUE.equals(redisTemplate.hasKey(keyIpBan(normalizedIp)))) {
+            log.warn("【密码重置】请求被封禁：ip={} email={}", normalizedIp, normalizedEmail);
             throw new BusinessException(AuthErrorCode.IP_BANNED, "当前IP已被封禁");
         }
 
@@ -67,6 +71,7 @@ public class PasswordResetDomainService {
 
         String code = generate6DigitCode();
         redisTemplate.opsForValue().set(buildCodeKey(normalizedEmail), code, CODE_TTL);
+        log.info("【密码重置】验证码已生成：email={} ip={} (不记录验证码值)", normalizedEmail, normalizedIp);
         return code;
     }
 
@@ -86,12 +91,15 @@ public class PasswordResetDomainService {
         String key = buildCodeKey(normalizedEmail);
         String cached = redisTemplate.opsForValue().get(key);
         if (cached == null) {
+            log.warn("【密码重置】验证码无效/过期：email={}", normalizedEmail);
             throw new BusinessException(AuthErrorCode.PASSWORD_RESET_CODE_INVALID);
         }
         if (!Objects.equals(cached, code)) {
+            log.warn("【密码重置】验证码不匹配：email={}", normalizedEmail);
             throw new BusinessException(AuthErrorCode.PASSWORD_RESET_CODE_MISMATCH);
         }
         redisTemplate.delete(key);
+        log.info("【密码重置】验证码校验成功并消费：email={}", normalizedEmail);
     }
 
     private void enforceEmailLimit(String email, String ip) {
@@ -106,6 +114,7 @@ public class PasswordResetDomainService {
         if (count != null && count > EMAIL_DAILY_LIMIT) {
             banIp(ip);
             redisTemplate.delete(key);
+            log.warn("【密码重置】超出邮箱日限并封禁：email={} ip={} count={} limit={}", email, ip, count, EMAIL_DAILY_LIMIT);
             throw new BusinessException(AuthErrorCode.IP_BANNED, "密码重置次数过多，当前IP已被封禁");
         }
     }
@@ -122,6 +131,7 @@ public class PasswordResetDomainService {
         if (count != null && count > IP_DAILY_LIMIT) {
             banIp(ip);
             redisTemplate.delete(key);
+            log.warn("【密码重置】超出IP日限并封禁：ip={} count={} limit={}", ip, count, IP_DAILY_LIMIT);
             throw new BusinessException(AuthErrorCode.IP_BANNED, "密码重置次数过多，当前IP已被封禁");
         }
     }
@@ -190,6 +200,7 @@ public class PasswordResetDomainService {
         redisTemplate.delete(keyIpBan(ip));
         redisTemplate.opsForZSet().remove(KEY_IP_BAN_SET, ip);
         redisTemplate.delete(buildIpCountKey(ip));
+        log.info("【密码重置】已解除封禁：ip={}", ip);
     }
 
     private long millisUntilEndOfDay() {

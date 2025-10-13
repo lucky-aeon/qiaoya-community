@@ -84,8 +84,7 @@ public class PostDomainService {
         if (post.getStatus() == PostStatus.PUBLISHED) {
             publishContentEvent(post);
         }
-        log.info("【文章】已创建：postId={}, authorId={}, categoryId={}, status={}",
-                post.getId(), post.getAuthorId(), post.getCategoryId(), post.getStatus());
+        // 文章创建为常规流程，无需日志
         return post;
     }
 
@@ -134,7 +133,7 @@ public class PostDomainService {
                 .eq(PostAcceptedCommentEntity::getCommentId, commentId)
         );
         if (exists != null && exists > 0) {
-            log.debug("【文章】采纳幂等：已存在采纳关系，postId={}, commentId={}", postId, commentId);
+            // 幂等无须输出日志
             return post;
         }
 
@@ -192,7 +191,7 @@ public class PostDomainService {
 
         // 幂等：如果没有记录，直接返回当前状态
         if (deleted == 0) {
-            log.debug("【文章】撤销采纳幂等：不存在采纳关系，postId={}, commentId={}", postId, commentId);
+            // 幂等无须输出日志
             return post;
         }
 
@@ -210,8 +209,8 @@ public class PostDomainService {
             post.setResolveStatus(QAResolveStatus.UNSOLVED);
             post.setSolvedAt(null);
         }
-        log.info("【文章】已撤销采纳：postId={}, commentId={}, operatorId={}, remainAccepted={}",
-                postId, commentId, operatorId, remain);
+        log.info("【文章】已撤销采纳：postId={}, commentId={}, operatorId={}",
+                postId, commentId, operatorId);
         return post;
     }
 
@@ -241,7 +240,7 @@ public class PostDomainService {
                 .set(PostEntity::getResolveStatus, QAResolveStatus.UNSOLVED)
                 .set(PostEntity::getSolvedAt, null);
         postRepository.update(null, update);
-        log.info("【文章】已清空采纳并标记为未解决：postId={}", postId);
+        // 清空采纳为维护性操作，省略日志
     }
 
     /**
@@ -254,7 +253,7 @@ public class PostDomainService {
                 .eq(PostAcceptedCommentEntity::getCommentId, commentId)
         );
         if (list.isEmpty()) {
-            log.debug("【文章】按评论移除采纳：无关联记录，commentId={}", commentId);
+            // 无关联记录，省略日志
             return;
         }
         java.util.Set<String> postIds = list.stream().map(PostAcceptedCommentEntity::getPostId).collect(java.util.stream.Collectors.toSet());
@@ -277,7 +276,7 @@ public class PostDomainService {
                 postRepository.update(null, update);
             }
         }
-        log.info("【文章】按评论移除采纳：commentId={}, 受影响帖子数={}", commentId, postIds.size());
+        // 按评论移除采纳为维护性操作，省略日志
     }
 
     /**
@@ -455,7 +454,7 @@ public class PostDomainService {
         
         post.setIsTop(isTop);
         postRepository.updateById(post);
-        log.info("【文章】置顶状态已更新：postId={}, isTop={}", postId, isTop);
+        // 置顶状态调整为常规操作，省略日志
     }
     
     public void incrementViewCount(String postId) {
@@ -533,7 +532,7 @@ public class PostDomainService {
             log.warn("【文章】删除失败：不存在或非作者，postId={}, authorId={}", postId, authorId);
             throw new BusinessException(PostErrorCode.POST_NOT_FOUND);
         }
-        log.info("【文章】已删除：postId={}, authorId={}", postId, authorId);
+        // 删除为常规操作，省略日志
     }
     
     public void updatePostFields(PostEntity post) {

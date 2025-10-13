@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -28,6 +30,7 @@ public class UpdateLogDomainService {
 
     private final UpdateLogRepository updateLogRepository;
     private final UpdateLogChangeRepository updateLogChangeRepository;
+    private static final Logger log = LoggerFactory.getLogger(UpdateLogDomainService.class);
 
     public UpdateLogDomainService(UpdateLogRepository updateLogRepository,
                                  UpdateLogChangeRepository updateLogChangeRepository) {
@@ -121,7 +124,7 @@ public class UpdateLogDomainService {
 
         // 创建更新日志主体（并发兜底：版本唯一约束）
         try {
-            updateLogRepository.insert(updateLog);
+        updateLogRepository.insert(updateLog);
         } catch (org.springframework.dao.DataIntegrityViolationException e) {
             throw new BusinessException(ValidationErrorCode.PARAM_INVALID, "版本号已存在");
         }
@@ -154,6 +157,8 @@ public class UpdateLogDomainService {
     public UpdateLogEntity updateUpdateLogAggregate(UpdateLogEntity updateLog, List<UpdateLogChangeEntity> changes) {
         // 校验版本号唯一性（排除当前记录）
         if (isVersionExists(updateLog.getVersion(), updateLog.getId())) {
+            org.slf4j.LoggerFactory.getLogger(UpdateLogDomainService.class)
+                    .warn("【更新日志】版本号已存在：id={}, version={}", updateLog.getId(), updateLog.getVersion());
             throw new BusinessException(ValidationErrorCode.PARAM_INVALID, "版本号已存在");
         }
 
@@ -169,6 +174,7 @@ public class UpdateLogDomainService {
                 change.setUpdateLogId(updateLog.getId());
             }
             this.updateLogChangeRepository.insert(changes);
+            log.info("【更新日志】已更新变更项：logId={}, count={}", updateLog.getId(), changes.size());
         }
 
         return updateLog;
@@ -182,11 +188,15 @@ public class UpdateLogDomainService {
     public void deleteUpdateLogAggregate(String updateLogId) {
         UpdateLogEntity updateLog = getUpdateLogById(updateLogId);
         if (updateLog == null) {
+            org.slf4j.LoggerFactory.getLogger(UpdateLogDomainService.class)
+                    .warn("【更新日志】删除失败：记录不存在，id={}", updateLogId);
             throw new BusinessException(ValidationErrorCode.PARAM_INVALID, "更新日志不存在");
         }
 
         // 校验业务规则：已发布的日志不能删除
         if (UpdateLogStatus.PUBLISHED.equals(updateLog.getStatus())) {
+            org.slf4j.LoggerFactory.getLogger(UpdateLogDomainService.class)
+                    .warn("【更新日志】删除失败：已发布记录不可删除，id={}", updateLogId);
             throw new BusinessException(ValidationErrorCode.PARAM_INVALID, "已发布的更新日志不能删除");
         }
 

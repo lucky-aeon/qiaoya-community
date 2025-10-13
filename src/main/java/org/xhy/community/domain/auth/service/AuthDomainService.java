@@ -19,6 +19,8 @@ import org.xhy.community.domain.common.valueobject.ActivityType;
 import org.xhy.community.infrastructure.util.HttpRequestInfoExtractor;
 import org.xhy.community.infrastructure.context.UserActivityContext;
 import org.xhy.community.infrastructure.lock.DistributedLock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Random;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -32,6 +34,7 @@ public class AuthDomainService {
     private final BCryptPasswordEncoder passwordEncoder;
     private final UserActivityLogDomainService userActivityLogDomainService;
     private final DistributedLock distributedLock;
+    private static final Logger log = LoggerFactory.getLogger(AuthDomainService.class);
 
     public AuthDomainService(UserSocialAccountRepository userSocialAccountRepository,
                              UserRepository userRepository,
@@ -60,6 +63,7 @@ public class AuthDomainService {
                     .eq(UserSocialAccountEntity::getOpenId, openId)
             );
             if (existing != null) {
+                log.info("【OAuth/GitHub】已绑定用户：openId={}, userId={}", openId, existing.getUserId());
                 return userRepository.selectById(existing.getUserId());
             }
 
@@ -80,6 +84,7 @@ public class AuthDomainService {
                             ctx.getBrowser(), ctx.getEquipment(), ctx.getIp(), ctx.getUserAgent(), null
                         );
                     } catch (Exception ignored) {}
+                    log.info("【OAuth/GitHub】按邮箱合并账户：email={}, userId={}", normalizedEmail, byEmail.getId());
                     // 可选：仅当站内为空才补全头像/昵称
                     return byEmail;
                 }
@@ -88,6 +93,7 @@ public class AuthDomainService {
             // 3) 创建新用户并绑定（若邮箱已被占用且不允许合并，则报冲突）
             String email = StringUtils.hasText(profile.getEmail()) ? profile.getEmail().trim().toLowerCase() : null;
             if (email == null) {
+                log.warn("【OAuth/GitHub】创建失败：缺少邮箱 openId={}", openId);
                 // 站内用户表邮箱非空约束，且业务需要邮箱唯一性
                 throw new BusinessException(AuthErrorCode.OAUTH_EMAIL_REQUIRED);
             }
@@ -95,6 +101,7 @@ public class AuthDomainService {
                 new LambdaQueryWrapper<UserEntity>().eq(UserEntity::getEmail, email)
             );
             if (existed != null) {
+                log.warn("【OAuth/GitHub】创建失败：邮箱已存在且不允许合并 email={}", email);
                 throw new BusinessException(AuthErrorCode.OAUTH_BIND_CONFLICT, "邮箱已存在，无法自动合并");
             }
             String nickname = StringUtils.hasText(profile.getName()) ? profile.getName() :
@@ -106,6 +113,7 @@ public class AuthDomainService {
             userRepository.insert(user);
 
             bindInternal(user.getId(), profile);
+            log.info("【OAuth/GitHub】已创建用户并绑定：userId={}, email={}", user.getId(), email);
             return user;
         });
     }
@@ -123,10 +131,12 @@ public class AuthDomainService {
                     .eq(UserSocialAccountEntity::getOpenId, profile.getOpenId())
             );
             if (existing != null && !existing.getUserId().equals(userId)) {
+                log.warn("【OAuth/GitHub】绑定冲突：openId={}, 已绑定用户={}，请求用户={}", profile.getOpenId(), existing.getUserId(), userId);
                 throw new BusinessException(AuthErrorCode.OAUTH_ALREADY_BOUND);
             }
             if (existing == null) {
                 bindInternal(userId, profile);
+                log.info("【OAuth/GitHub】绑定成功：userId={}, openId={}", userId, profile.getOpenId());
             }
         });
     }
@@ -137,10 +147,12 @@ public class AuthDomainService {
             .eq(UserSocialAccountEntity::getUserId, userId)
             .eq(UserSocialAccountEntity::getProvider, AuthProvider.GITHUB)
         );
+        log.info("【OAuth/GitHub】解除绑定：userId={}", userId);
     }
 
     public void unbindById(String bindId) {
         userSocialAccountRepository.deleteById(bindId);
+        log.info("【OAuth】解除绑定记录：bindId={}", bindId);
     }
 
     public UserSocialAccountEntity getBindingById(String id) {

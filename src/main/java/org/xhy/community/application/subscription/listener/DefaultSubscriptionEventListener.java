@@ -39,7 +39,7 @@ public class DefaultSubscriptionEventListener {
     @EventListener
     public void handleUserRegistered(UserRegisteredEvent event) {
         try {
-            log.info("监听到用户注册事件，用户ID: {}, 邮箱: {}", event.getUserId(), event.getEmail());
+            // 注册事件为常规流程，省略日志
 
             String userId = event.getUserId();
             String lockKey = "lock:default_subscription:" + userId;
@@ -54,19 +54,19 @@ public class DefaultSubscriptionEventListener {
 
                 // 已有有效套餐则跳过（避免重复创建）
                 if (subscriptionDomainService.hasAnyActiveSubscription(userId)) {
-                    log.info("[注册] 用户 {} 已有有效套餐，跳过默认套餐分配", userId);
+                    // 已有有效套餐，省略日志
                     return;
                 }
 
                 // 再次兜底校验：相同默认套餐是否已存在（并发边界情况下）
                 if (subscriptionDomainService.checkActiveSubscriptionExists(userId, config.getSubscriptionPlanId())) {
-                    log.info("[注册] 用户 {} 已拥有默认套餐 {}，跳过创建", userId, config.getSubscriptionPlanId());
+                    // 已拥有默认套餐，省略日志
                     return;
                 }
 
                 // 创建系统赠送的免费订阅
                 subscriptionDomainService.createSystemGiftSubscription(userId, config.getSubscriptionPlanId());
-                log.info("成功为新用户 {} 分配默认套餐: {}", userId, config.getSubscriptionPlanId());
+                // 分配默认套餐成功，省略日志
             });
 
         } catch (Exception e) {
@@ -78,25 +78,23 @@ public class DefaultSubscriptionEventListener {
     @EventListener
     public void handleUserLogin(UserLoginEvent event) {
         try {
-            log.info("监听到用户登录事件，用户ID: {}, 邮箱: {}, IP: {}", event.getUserId(), event.getEmail(), event.getIp());
+            // 登录事件为常规流程，省略日志
 
             String userId = event.getUserId();
             String lockKey = "lock:default_subscription:" + userId;
             distributedLock.runWithLock(lockKey, Duration.ofMillis(200), Duration.ofSeconds(3), () -> {
                 DefaultSubscriptionConfig config = systemConfigDomainService.getDefaultSubscriptionConfig();
                 if (config == null || !config.isValid()) {
-                    log.warn("默认套餐配置无效或未启用，跳过为用户 {} 分配默认套餐", userId);
-                    return;
+            log.warn("默认套餐配置无效或未启用，跳过为用户 {} 分配默认套餐", userId);
+            return;
                 }
 
                 // 登录兜底：仅当没有任何有效套餐时才创建默认套餐
                 if (subscriptionDomainService.hasAnyActiveSubscription(userId)) {
-                    log.debug("用户 {} 已有有效套餐，跳过兜底分配", userId);
                     return;
                 }
 
                 if (subscriptionDomainService.checkActiveSubscriptionExists(userId, config.getSubscriptionPlanId())) {
-                    log.debug("用户 {} 已拥有默认套餐 {}，跳过创建", userId, config.getSubscriptionPlanId());
                     return;
                 }
 
@@ -105,11 +103,7 @@ public class DefaultSubscriptionEventListener {
                         config.getSubscriptionPlanId()
                 );
 
-                if (result != null) {
-                    log.info("成功为登录用户 {} 兜底分配默认套餐: {}", userId, config.getSubscriptionPlanId());
-                } else {
-                    log.debug("用户 {} 已有有效套餐或创建被跳过", userId);
-                }
+                // 兜底分配成功或跳过，省略日志
             });
 
         } catch (Exception e) {

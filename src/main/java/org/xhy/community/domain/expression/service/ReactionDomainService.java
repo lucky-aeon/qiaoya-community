@@ -54,13 +54,11 @@ public class ReactionDomainService {
         if (exists) {
             // 逻辑删除
             reactionRepository.delete(existsQ);
-            log.info("【表情】已移除：userId={}, businessType={}, businessId={}, type={}",
-                    reaction.getUserId(), reaction.getBusinessType(), reaction.getBusinessId(), reaction.getReactionType());
+            // 表情移除为常规操作，省略日志
             return false;
         } else {
             reactionRepository.insert(reaction);
-            log.info("【表情】已添加：userId={}, businessType={}, businessId={}, type={}",
-                    reaction.getUserId(), reaction.getBusinessType(), reaction.getBusinessId(), reaction.getReactionType());
+            // 表情添加为常规操作，省略日志
             return true;
         }
     }

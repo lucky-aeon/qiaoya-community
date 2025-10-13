@@ -48,7 +48,7 @@ public class LikeDomainService {
             try {
                 LikeEntity like = new LikeEntity(userId, targetId, targetType);
                 likeRepository.insert(like);
-                log.info("【点赞】成功：userId={}, targetType={}, targetId={}", userId, targetType, targetId);
+                // 点赞成功为常规操作，省略日志
                 return true; // 点赞成功
             } catch (DataIntegrityViolationException e) {
                 // 唯一约束冲突视为已经点赞
@@ -61,7 +61,7 @@ public class LikeDomainService {
                     .eq(LikeEntity::getUserId, userId)
                     .eq(LikeEntity::getTargetId, targetId)
                     .eq(LikeEntity::getTargetType, targetType));
-            log.info("【点赞】已取消：userId={}, targetType={}, targetId={}", userId, targetType, targetId);
+            // 取消点赞为常规操作，省略日志
             return false;
         }
     }

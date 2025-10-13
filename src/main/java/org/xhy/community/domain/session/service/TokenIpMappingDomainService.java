@@ -2,6 +2,8 @@ package org.xhy.community.domain.session.service;
 
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.HashSet;
@@ -15,6 +17,7 @@ import java.util.Set;
 public class TokenIpMappingDomainService {
 
     private final StringRedisTemplate redis;
+    private static final Logger log = LoggerFactory.getLogger(TokenIpMappingDomainService.class);
 
     // Redis Key 模式：ip_tokens:{userId}:{ip} -> Set<token>
     private static final String IP_TOKENS_KEY_PREFIX = "ip_tokens:";
@@ -136,6 +139,7 @@ public class TokenIpMappingDomainService {
 
         String ipTokensKey = IP_TOKENS_KEY_PREFIX + userId + ":" + ip;
         redis.delete(ipTokensKey);
+        log.info("【会话】清理 IP 映射：userId={}, ip={}", userId, ip);
     }
 
     /**
@@ -159,6 +163,8 @@ public class TokenIpMappingDomainService {
         if (devKeys != null && !devKeys.isEmpty()) {
             redis.delete(devKeys);
         }
+        log.info("【会话】清理所有映射：userId={}, ipKeys={}, devKeys={}", userId,
+                (keys != null ? keys.size() : 0), (devKeys != null ? devKeys.size() : 0));
     }
 
     /**
@@ -187,6 +193,7 @@ public class TokenIpMappingDomainService {
                 redis.opsForSet().remove(key, token);
             }
         }
+        log.info("【会话】清理特定 token 映射：userId={}", userId);
     }
 
     /** 移除指定用户某设备的 token 映射 */
@@ -196,5 +203,6 @@ public class TokenIpMappingDomainService {
         }
         String devTokensKey = DEVICE_TOKENS_KEY_PREFIX + userId + ":" + deviceId;
         redis.delete(devTokensKey);
+        log.info("【会话】清理设备映射：userId={}, deviceId={}", userId, deviceId);
     }
 }

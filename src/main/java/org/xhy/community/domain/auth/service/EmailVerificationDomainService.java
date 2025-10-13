@@ -3,6 +3,8 @@ package org.xhy.community.domain.auth.service;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 import org.xhy.community.infrastructure.exception.AuthErrorCode;
 import org.xhy.community.infrastructure.exception.BusinessException;
@@ -25,6 +27,7 @@ import java.util.*;
 public class EmailVerificationDomainService {
 
     private final StringRedisTemplate redis;
+    private static final Logger log = LoggerFactory.getLogger(EmailVerificationDomainService.class);
 
     private static final String KEY_EMAIL_CODE_PREFIX = "auth:email:invite:"; // auth:email:invite:{email}
     private static final String KEY_IP_DAILY_PREFIX = "auth:ip:";             // auth:ip:{ip}:day:{yyyyMMdd}:count
@@ -71,6 +74,7 @@ public class EmailVerificationDomainService {
 
         // 1) IP是否已封禁
         if (Boolean.TRUE.equals(redis.hasKey(keyIpBan(ip)))) {
+            log.warn("【注册验证码】请求被封禁：ip={} email={}", ip, email);
             throw new BusinessException(AuthErrorCode.IP_BANNED, "当前IP已被封禁");
         }
 
@@ -90,12 +94,14 @@ public class EmailVerificationDomainService {
             redis.opsForValue().set(banKey, "1", IP_BAN_TTL);
             long expireAt = System.currentTimeMillis() + IP_BAN_TTL.toMillis();
             redis.opsForZSet().add(KEY_IP_BAN_SET, ip, expireAt);
+            log.warn("【注册验证码】触发封禁：ip={} email={} 次数={} 限制={}", ip, email, newCount, DAILY_LIMIT);
             throw new BusinessException(AuthErrorCode.IP_BANNED, "当前IP请求过多，已封禁7天");
         }
 
         // 3) 生成验证码并缓存（5分钟）
         String code = generate6DigitCode();
         redis.opsForValue().set(keyEmailCode(email), code, EMAIL_CODE_TTL);
+        log.info("【注册验证码】已生成：email={} ip={} (不记录验证码值)", email, ip);
         return code;
     }
 
@@ -106,13 +112,16 @@ public class EmailVerificationDomainService {
         String key = keyEmailCode(email);
         String cached = redis.opsForValue().get(key);
         if (cached == null) {
+            log.warn("【注册验证码】无效/过期：email={}", email);
             throw new BusinessException(AuthErrorCode.EMAIL_CODE_INVALID);
         }
         if (!Objects.equals(cached, code)) {
+            log.warn("【注册验证码】校验失败：email={} 提供的验证码不匹配", email);
             throw new BusinessException(AuthErrorCode.EMAIL_CODE_MISMATCH);
         }
         // 一次性：使用后删除
         redis.delete(key);
+        log.info("【注册验证码】校验成功并消费：email={}", email);
     }
 
     /**
@@ -162,6 +171,7 @@ public class EmailVerificationDomainService {
         redis.opsForZSet().remove(KEY_IP_BAN_SET, ip);
         // 重置当日计数，避免立刻再次封禁
         redis.delete(keyIpDaily(ip));
+        log.info("【注册验证码】已解除封禁：ip={}", ip);
     }
 
     private String generate6DigitCode() {

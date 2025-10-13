@@ -37,8 +37,7 @@ public class ContentEventDispatcher {
                     Function.identity()
                 ));
 
-        log.info("ContentEventDispatcher initialized with {} handlers: {}",
-                handlerMap.size(), handlerMap.keySet());
+        // 初始化完成，无需记录明细日志
     }
 
     /**
@@ -49,7 +48,7 @@ public class ContentEventDispatcher {
     @Async
     public void handleContentPublishedEvent(ContentPublishedEvent event) {
         try {
-            log.debug("Processing ContentPublishedEvent: {}", event);
+            // 略过调试日志，避免噪音
 
             // 根据内容类型获取对应的处理器
             NotificationHandler handler = handlerMap.get(event.getContentType());
@@ -61,8 +60,7 @@ public class ContentEventDispatcher {
             // 委托给具体的处理器处理通知
             handler.handleNotification(event.getContentId(), event.getAuthorId(), List.of());
 
-            log.debug("Successfully processed ContentPublishedEvent for content {} of type {}",
-                     event.getContentId(), event.getContentType());
+            // 处理成功，无需额外日志
 
         } catch (Exception e) {
             // 记录错误但不重新抛出异常，避免影响主业务流程

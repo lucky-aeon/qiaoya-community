@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 import org.xhy.community.domain.subscription.entity.SubscriptionPlanEntity;
 import org.xhy.community.domain.subscription.entity.SubscriptionPlanCourseEntity;
@@ -29,7 +31,8 @@ import org.xhy.community.domain.subscription.valueobject.SubscriptionPlanStatus;
 
 @Service
 public class SubscriptionPlanDomainService {
-    
+    private static final Logger log = LoggerFactory.getLogger(SubscriptionPlanDomainService.class);
+
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final SubscriptionPlanCourseRepository subscriptionPlanCourseRepository;
     private final SubscriptionPlanMenuRepository subscriptionPlanMenuRepository;
@@ -60,6 +63,8 @@ public class SubscriptionPlanDomainService {
     public SubscriptionPlanEntity getSubscriptionPlanById(String id) {
         SubscriptionPlanEntity plan = subscriptionPlanRepository.selectById(id);
         if (plan == null) {
+            org.slf4j.LoggerFactory.getLogger(SubscriptionPlanDomainService.class)
+                    .warn("【套餐】未找到：planId={}", id);
             throw new BusinessException(SubscriptionPlanErrorCode.SUBSCRIPTION_PLAN_NOT_FOUND);
         }
         return plan;

@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 import org.xhy.community.domain.post.query.CategoryQuery;
 import org.xhy.community.infrastructure.exception.BusinessException;
@@ -19,7 +21,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class CategoryDomainService {
-    
+    private static final Logger log = LoggerFactory.getLogger(CategoryDomainService.class);
+
     private final CategoryRepository categoryRepository;
     
     public CategoryDomainService(CategoryRepository categoryRepository) {
@@ -28,6 +31,8 @@ public class CategoryDomainService {
     
     public CategoryEntity createCategory(String name, CategoryType type) {
         if (isCategoryNameExists(name, type, null, null)) {
+            org.slf4j.LoggerFactory.getLogger(CategoryDomainService.class)
+                    .warn("【分类】创建失败：名称重复，name={}, type={}", name, type);
             throw new BusinessException(PostErrorCode.CATEGORY_NAME_EXISTS);
         }
         
@@ -40,10 +45,15 @@ public class CategoryDomainService {
         CategoryEntity parent = getCategoryById(parentId);
         
         if (!parent.getType().equals(type)) {
+            org.slf4j.LoggerFactory.getLogger(CategoryDomainService.class)
+                    .warn("【分类】创建子类失败：类型不匹配，parentId={}, parentType={}, requestType={}",
+                            parentId, parent.getType(), type);
             throw new BusinessException(PostErrorCode.CATEGORY_TYPE_MISMATCH);
         }
         
         if (isCategoryNameExists(name, type, parentId, null)) {
+            org.slf4j.LoggerFactory.getLogger(CategoryDomainService.class)
+                    .warn("【分类】创建子类失败：名称重复，name={}, parentId={}", name, parentId);
             throw new BusinessException(PostErrorCode.CATEGORY_NAME_EXISTS);
         }
         
@@ -59,6 +69,8 @@ public class CategoryDomainService {
         );
         
         if (category == null) {
+            org.slf4j.LoggerFactory.getLogger(CategoryDomainService.class)
+                    .warn("【分类】未找到：categoryId={}", categoryId);
             throw new BusinessException(PostErrorCode.CATEGORY_NOT_FOUND);
         }
         
@@ -70,6 +82,8 @@ public class CategoryDomainService {
         
         if (name != null && !name.equals(category.getName())) {
             if (isCategoryNameExists(name, category.getType(), category.getParentId(), categoryId)) {
+                org.slf4j.LoggerFactory.getLogger(CategoryDomainService.class)
+                        .warn("【分类】更新失败：名称重复，categoryId={}, name={}", categoryId, name);
                 throw new BusinessException(PostErrorCode.CATEGORY_NAME_EXISTS);
             }
             category.setName(name);
@@ -114,6 +128,7 @@ public class CategoryDomainService {
         }
 
         categoryRepository.updateById(category);
+        log.info("【分类】实体更新：categoryId={}", updated.getId());
         return category;
     }
     

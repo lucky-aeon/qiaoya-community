@@ -8,6 +8,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.util.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xhy.community.domain.user.entity.UserEntity;
 import org.xhy.community.domain.user.entity.UserCourseEntity;
 import org.xhy.community.domain.user.event.UserRegisteredEvent;
@@ -29,6 +31,7 @@ public class UserDomainService {
     private final UserCourseRepository userCourseRepository;
     private final BCryptPasswordEncoder passwordEncoder;
     private final ApplicationEventPublisher eventPublisher;
+    private static final Logger log = LoggerFactory.getLogger(UserDomainService.class);
 
     public UserDomainService(UserRepository userRepository,
                            UserCourseRepository userCourseRepository,
@@ -56,6 +59,7 @@ public class UserDomainService {
             return user;
         } catch (DataIntegrityViolationException e) {
             // 并发注册场景下邮箱唯一约束冲突，转为业务异常
+            log.warn("【用户】创建失败：邮箱已存在 email={}", user.getEmail());
             throw new BusinessException(UserErrorCode.EMAIL_EXISTS);
         }
     }
@@ -69,6 +73,7 @@ public class UserDomainService {
             userRepository.insert(user);
             return user;
         } catch (DataIntegrityViolationException e) {
+            log.warn("【用户】创建失败：邮箱已存在 email={}", user.getEmail());
             throw new BusinessException(UserErrorCode.EMAIL_EXISTS);
         }
     }
@@ -123,6 +128,8 @@ public class UserDomainService {
             return user;
         } catch (DataIntegrityViolationException e) {
             // 邮箱唯一约束冲突
+            org.slf4j.LoggerFactory.getLogger(UserDomainService.class)
+                    .warn("【用户】修改邮箱失败：邮箱已存在，userId={}, email={}", userId, newEmail);
             throw new BusinessException(UserErrorCode.EMAIL_EXISTS);
         }
     }
@@ -130,6 +137,8 @@ public class UserDomainService {
     public UserEntity changeUserPassword(String userId, String oldPassword, String newPassword) {
         UserEntity user = getUserById(userId);
         if (!verifyPassword(oldPassword, user.getPassword())) {
+            org.slf4j.LoggerFactory.getLogger(UserDomainService.class)
+                    .warn("【用户】修改密码失败：原密码不正确，userId={}", userId);
             throw new BusinessException(UserErrorCode.WRONG_PASSWORD);
         }
 
@@ -184,6 +193,8 @@ public class UserDomainService {
     public UserEntity getUserById(String userId) {
         UserEntity user = userRepository.selectById(userId);
         if (user == null) {
+            org.slf4j.LoggerFactory.getLogger(UserDomainService.class)
+                    .warn("【用户】未找到：userId={}", userId);
             throw new BusinessException(UserErrorCode.USER_NOT_FOUND);
         }
         return user;
@@ -196,6 +207,8 @@ public class UserDomainService {
                 .eq(UserEntity::getEmail, normalizedEmail)
         );
         if (user == null) {
+            org.slf4j.LoggerFactory.getLogger(UserDomainService.class)
+                    .warn("【用户】未找到：email={}", normalizedEmail);
             throw new BusinessException(UserErrorCode.USER_NOT_FOUND);
         }
         return user;

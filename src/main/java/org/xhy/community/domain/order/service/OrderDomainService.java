@@ -36,8 +36,6 @@ public class OrderDomainService {
             order.setOrderNo(generateOrderNo());
         }
         orderRepository.insert(order);
-        log.info("【订单】已创建：orderId={}, orderNo={}, userId={}, productType={}, productId={}",
-                order.getId(), order.getOrderNo(), order.getUserId(), order.getProductType(), order.getProductId());
         return order;
     }
 
@@ -79,11 +77,7 @@ public class OrderDomainService {
                    .le(query.getEndTime() != null, OrderEntity::getActivatedTime, query.getEndTime())
                    .orderByDesc(OrderEntity::getActivatedTime);
 
-        IPage<OrderEntity> result = orderRepository.selectPage(page, queryWrapper);
-        log.debug("【订单】分页查询：userId={}, type={}, productType={}, page={}/{}，返回 {} 条",
-                query.getUserId(), query.getOrderType(), query.getProductType(),
-                query.getPageNum(), query.getPageSize(), result.getRecords() != null ? result.getRecords().size() : 0);
-        return result;
+        return orderRepository.selectPage(page, queryWrapper);
     }
 
     /**

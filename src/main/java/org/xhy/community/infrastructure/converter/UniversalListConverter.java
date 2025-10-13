@@ -140,8 +140,7 @@ public class UniversalListConverter extends BaseTypeHandler<List<?>> {
                 Field field = entityClass.getDeclaredField(fieldName);
                 Class<?> elementType = getListElementType(field);
                 if (elementType != null) {
-                    log.debug("Found field {} in entity {} with element type: {}",
-                        fieldName, entityClass.getSimpleName(), elementType.getSimpleName());
+                    // 仅缓存类型信息，避免调试日志噪音
                     return elementType;
                 }
             } catch (NoSuchFieldException e) {
@@ -197,14 +196,13 @@ public class UniversalListConverter extends BaseTypeHandler<List<?>> {
                     if (className.endsWith("Entity")) {
                         Class<?> entityClass = ClassUtils.forName(className, this.getClass().getClassLoader());
                         SCANNED_ENTITIES.add(entityClass);
-                        log.debug("Scanned entity class: {}", className);
                     }
                 } catch (Exception e) {
                     log.warn("Failed to scan entity class: {}", resource.getFilename(), e);
                 }
             }
 
-            log.info("Scanned {} entity classes for UniversalListConverter", SCANNED_ENTITIES.size());
+            // 扫描完成，无需输出统计日志
         } catch (Exception e) {
             log.error("Failed to scan entity classes", e);
         }

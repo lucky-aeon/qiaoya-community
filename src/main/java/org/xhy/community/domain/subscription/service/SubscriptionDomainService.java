@@ -73,13 +73,10 @@ public class SubscriptionDomainService {
 
             UserSubscriptionEntity subscription = new UserSubscriptionEntity(userId, plan.getId(), now, endTime, null);
             userSubscriptionRepository.insert(subscription);
-
-            log.info("成功为用户 {} 创建系统赠送套餐: {}", userId, subscriptionPlanId);
             return subscription;
 
         } catch (DataIntegrityViolationException e) {
             // 唯一约束违反 = 用户已有有效套餐，这是正常情况，静默成功
-            log.debug("用户 {} 已有有效套餐，跳过系统赠送套餐创建: {}", userId, subscriptionPlanId);
             return null;
         }
     }
@@ -128,12 +125,12 @@ public class SubscriptionDomainService {
                 userSubscriptionRepository.delete(new LambdaQueryWrapper<UserSubscriptionEntity>().eq(UserSubscriptionEntity::getUserId, userId));
                 UserSubscriptionEntity subscription = new UserSubscriptionEntity(userId, newPlan.getId(), now, endTime, cdkCode);
                 userSubscriptionRepository.insert(subscription);
-                log.info("[订阅] 升级成功：userId={}, fromLevel={} toLevel={}, carryRemaining=true, end={}",
-                        userId, oldPlan.getLevel(), newPlan.getLevel(), endTime);
                 return subscription;
             } else {
                 // PURCHASE
                 if (newPlan.getLevel() < oldPlan.getLevel()) {
+                    log.warn("[订阅] 不允许降级购买：userId={}, fromLevel={} toLevel={}",
+                            userId, oldPlan.getLevel(), newPlan.getLevel());
                     throw new BusinessException(SubscriptionErrorCode.DOWNGRADE_PURCHASE_NOT_ALLOWED);
                 }
                 if (newPlan.getLevel().equals(oldPlan.getLevel())) {
@@ -143,16 +140,12 @@ public class SubscriptionDomainService {
                     currentActive.setEndTime(newEnd);
                     currentActive.setCdkCode(cdkCode);
                     userSubscriptionRepository.updateById(currentActive);
-                    log.info("[订阅] 续费成功：userId={}, level={}, oldEnd={}, newEnd={}",
-                            userId, newPlan.getLevel(), oldEnd, newEnd);
                     return currentActive;
                 } else {
                     // 更高等级：替换为新订阅（不承接剩余）
                     userSubscriptionRepository.delete(new LambdaQueryWrapper<UserSubscriptionEntity>().eq(UserSubscriptionEntity::getUserId, userId));
                     UserSubscriptionEntity subscription = createSubscription(userId, newPlan, cdkCode);
                     userSubscriptionRepository.insert(subscription);
-                    log.info("[订阅] 购买更高等级，替换成功：userId={}, fromLevel={} toLevel={}, end={}",
-                            userId, oldPlan.getLevel(), newPlan.getLevel(), subscription.getEndTime());
                     return subscription;
                 }
             }
@@ -174,6 +167,7 @@ public class SubscriptionDomainService {
     private SubscriptionPlanEntity getSubscriptionPlanOrThrow(String planId) {
         SubscriptionPlanEntity plan = subscriptionPlanRepository.selectById(planId);
         if (plan == null) {
+            log.warn("[订阅] 套餐不存在：planId={}", planId);
             throw new BusinessException(SubscriptionPlanErrorCode.SUBSCRIPTION_PLAN_NOT_FOUND);
         }
         return plan;
@@ -198,6 +192,7 @@ public class SubscriptionDomainService {
                         .eq(UserSubscriptionEntity::getUserId, userId)
         );
         if (subscription == null) {
+            log.warn("[订阅] 未找到：subscriptionId={}, userId={}", subscriptionId, userId);
             throw new BusinessException(SubscriptionErrorCode.SUBSCRIPTION_NOT_FOUND);
         }
         return subscription;

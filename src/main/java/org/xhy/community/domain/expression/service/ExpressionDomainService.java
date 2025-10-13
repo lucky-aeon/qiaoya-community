@@ -31,6 +31,8 @@ public class ExpressionDomainService {
     // 创建表情类型（校验 code 唯一）
     public ExpressionTypeEntity create(ExpressionTypeEntity entity) {
         if (isCodeExists(entity.getCode(), null)) {
+            org.slf4j.LoggerFactory.getLogger(ExpressionDomainService.class)
+                    .warn("【表情类型】创建失败：code 重复，code={}", entity.getCode());
             throw new BusinessException(ExpressionErrorCode.EXPRESSION_CODE_EXISTS);
         }
         expressionTypeRepository.insert(entity);
@@ -43,6 +45,8 @@ public class ExpressionDomainService {
 
         if (patch.getCode() != null && !patch.getCode().equals(existing.getCode())) {
             if (isCodeExists(patch.getCode(), existing.getId())) {
+                org.slf4j.LoggerFactory.getLogger(ExpressionDomainService.class)
+                        .warn("【表情类型】更新失败：code 重复，id={}, code={}", existing.getId(), patch.getCode());
                 throw new BusinessException(ExpressionErrorCode.EXPRESSION_CODE_EXISTS);
             }
             existing.setCode(patch.getCode());
@@ -70,6 +74,8 @@ public class ExpressionDomainService {
         boolean inUse = reactionRepository.exists(new LambdaQueryWrapper<ReactionEntity>()
                 .eq(ReactionEntity::getReactionType, existing.getCode()));
         if (inUse) {
+            org.slf4j.LoggerFactory.getLogger(ExpressionDomainService.class)
+                    .warn("【表情类型】删除失败：仍在使用，id={}", id);
             throw new BusinessException(ExpressionErrorCode.EXPRESSION_IN_USE);
         }
         expressionTypeRepository.deleteById(id);
@@ -117,6 +123,8 @@ public class ExpressionDomainService {
                 new LambdaQueryWrapper<ExpressionTypeEntity>().eq(ExpressionTypeEntity::getId, id)
         );
         if (entity == null) {
+            org.slf4j.LoggerFactory.getLogger(ExpressionDomainService.class)
+                    .warn("【表情类型】未找到：id={}", id);
             throw new BusinessException(ExpressionErrorCode.EXPRESSION_NOT_FOUND);
         }
         return entity;
@@ -132,4 +140,3 @@ public class ExpressionDomainService {
         return expressionTypeRepository.exists(qw);
     }
 }
-

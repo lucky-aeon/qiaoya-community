@@ -40,21 +40,17 @@ public class CourseDomainService {
 
         // 发布简化的课程创建事件
         publishContentEvent(course);
-
-        log.info("【课程】已创建：courseId={}, authorId={}, status={}", course.getId(), course.getAuthorId(), course.getStatus());
         return course;
     }
     
     public CourseEntity updateCourse(CourseEntity course) {
         courseRepository.updateById(course);
-        log.info("【课程】已更新：courseId={}", course.getId());
         return course;
     }
     
     public void deleteCourse(String courseId) {
         getCourseById(courseId);
         courseRepository.deleteById(courseId);
-        log.info("【课程】已删除：courseId={}", courseId);
     }
     
     public CourseEntity getCourseById(String courseId) {

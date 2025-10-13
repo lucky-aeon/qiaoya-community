@@ -87,8 +87,6 @@ public class CDKDomainService {
 
             // 1. 验证CDK有效性（锁内二次校验）
             CDKEntity cdk = getCDKByCode(cdkCode);
-            log.debug("[CDK激活] CDK可用性检查通过: type={}, targetId={}, acquisitionType={}",
-                    cdk.getCdkType(), cdk.getTargetId(), cdk.getAcquisitionType());
 
             if (!cdk.isUsable()) {
                 log.warn("[CDK激活] CDK不可用，拒绝处理: userId={}, cdk={}", userId, masked);
@@ -116,6 +114,7 @@ public class CDKDomainService {
     public CDKEntity getCDKById(String id) {
         CDKEntity cdk = cdkRepository.selectById(id);
         if (cdk == null) {
+            log.warn("[CDK] 未找到：id={}", id);
             throw new BusinessException(CDKErrorCode.CDK_NOT_FOUND);
         }
         return cdk;
@@ -127,6 +126,7 @@ public class CDKDomainService {
         
         CDKEntity cdk = cdkRepository.selectOne(queryWrapper);
         if (cdk == null) {
+            log.warn("[CDK] 未找到：code={}", mask(code));
             throw new BusinessException(CDKErrorCode.CDK_NOT_FOUND);
         }
         return cdk;
@@ -135,6 +135,7 @@ public class CDKDomainService {
     public void deleteCDK(String id) {
         CDKEntity cdk = getCDKById(id);
         if (cdk.getStatus() == CDKStatus.USED) {
+            log.warn("[CDK] 删除失败：已使用，id={}", id);
             throw new BusinessException(CDKErrorCode.CDK_ALREADY_USED);
         }
         cdkRepository.deleteById(id);

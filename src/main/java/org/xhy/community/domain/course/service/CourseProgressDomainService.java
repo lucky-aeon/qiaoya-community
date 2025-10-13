@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xhy.community.domain.course.entity.UserChapterProgressEntity;
 import org.xhy.community.domain.course.entity.UserCourseProgressEntity;
 import org.xhy.community.domain.course.event.CourseCompletedEvent;
@@ -22,6 +24,7 @@ import java.time.LocalDateTime;
 public class CourseProgressDomainService {
 
     private static final int COMPLETE_THRESHOLD_PERCENT = 95; // 完成阈值（视频/图文均适用）
+    private static final Logger log = LoggerFactory.getLogger(CourseProgressDomainService.class);
 
     private final UserChapterProgressRepository userChapterProgressRepository;
     private final UserCourseProgressRepository userCourseProgressRepository;
@@ -74,6 +77,7 @@ public class CourseProgressDomainService {
             rec.setLastAccessTime(now);
             if (rec.getProgressPercent() != null && rec.getProgressPercent() >= COMPLETE_THRESHOLD_PERCENT) {
                 rec.setCompletedAt(now);
+                log.info("【学习】章节完成：userId={}, courseId={}, chapterId={}", userId, courseId, chapterId);
             }
             userChapterProgressRepository.insert(rec);
         } else {
@@ -88,6 +92,7 @@ public class CourseProgressDomainService {
             rec.setLastAccessTime(now);
             if (rec.getCompletedAt() == null && newPercent >= COMPLETE_THRESHOLD_PERCENT) {
                 rec.setCompletedAt(now);
+                log.info("【学习】章节完成：userId={}, courseId={}, chapterId={}", userId, courseId, chapterId);
             }
             userChapterProgressRepository.updateById(rec);
         }
@@ -141,6 +146,7 @@ public class CourseProgressDomainService {
         // 仅在“首次完成”时发布事件
         if (!prevCompleted && target.getCompletedAt() != null) {
             eventPublisher.publishEvent(new CourseCompletedEvent(userId, courseId, target.getCompletedAt()));
+            log.info("【学习】课程完成：userId={}, courseId={}", userId, courseId);
 
         }
     }
