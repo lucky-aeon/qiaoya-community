@@ -6,6 +6,10 @@ import org.xhy.community.domain.subscription.entity.UserSubscriptionEntity;
 import org.xhy.community.domain.user.service.UserDomainService;
 import org.xhy.community.domain.subscription.service.SubscriptionDomainService;
 import org.xhy.community.domain.subscription.service.SubscriptionPlanDomainService;
+import org.xhy.community.domain.resourcebinding.service.ResourceBindingDomainService;
+import org.xhy.community.domain.resourcebinding.entity.ResourceBindingEntity;
+import org.xhy.community.domain.resourcebinding.valueobject.ResourceTargetType;
+import org.xhy.community.domain.course.service.ChapterDomainService;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -21,15 +25,21 @@ public class UserPermissionAppService {
     private final SubscriptionDomainService subscriptionDomainService;
     private final SubscriptionPlanDomainService subscriptionPlanDomainService;
     private final PlanPermissionCache planPermissionCache;
+    private final ResourceBindingDomainService resourceBindingDomainService;
+    private final ChapterDomainService chapterDomainService;
     
     public UserPermissionAppService(UserDomainService userDomainService,
                                     SubscriptionDomainService subscriptionDomainService,
                                     SubscriptionPlanDomainService subscriptionPlanDomainService,
-                                    PlanPermissionCache planPermissionCache) {
+                                    PlanPermissionCache planPermissionCache,
+                                    ResourceBindingDomainService resourceBindingDomainService,
+                                    ChapterDomainService chapterDomainService) {
         this.userDomainService = userDomainService;
         this.subscriptionDomainService = subscriptionDomainService;
         this.subscriptionPlanDomainService = subscriptionPlanDomainService;
         this.planPermissionCache = planPermissionCache;
+        this.resourceBindingDomainService = resourceBindingDomainService;
+        this.chapterDomainService = chapterDomainService;
     }
     
     /**
@@ -63,6 +73,61 @@ public class UserPermissionAppService {
 
         // 订阅集合
         List<UserSubscriptionEntity> actives = subscriptionDomainService.getUserActiveSubscriptions(userId);
+        if (actives == null || actives.isEmpty()) return false;
+        java.util.Set<String> planIds = actives.stream()
+                .map(UserSubscriptionEntity::getSubscriptionPlanId)
+                .collect(java.util.stream.Collectors.toSet());
+        java.util.Set<String> planCourses = subscriptionPlanDomainService.getCourseIdsByPlanIds(planIds);
+        return !java.util.Collections.disjoint(courseIds, planCourses);
+    }
+
+    /**
+     * 判断资源下载权限（并集）：
+     * - 套餐功能码 RESOURCE_DOWNLOAD 存在（接口能力），并且套餐包含该资源所绑定的课程之一；
+     * - 或者 用户拥有针对任一绑定课程的直购权限（等价于额外权限 RESOURCE_DOWNLOAD@COURSE）。
+     * 注意：若资源未绑定任何课程/章节，默认拒绝（需要业务方显式绑定资源至课程/章节）。
+     */
+    public boolean hasDownloadPermissionForResource(String userId, String resourceId) {
+        // 解析资源绑定到的课程集合
+        java.util.List<ResourceBindingEntity> bindings = resourceBindingDomainService.getBindingsByResourceId(resourceId);
+        if (bindings == null || bindings.isEmpty()) {
+            // 未绑定资源：仅对具备“全局下载能力”的用户开放
+            boolean hasPlanCode = hasPlanPermission(userId, "RESOURCE_DOWNLOAD");
+            List<String> ownedCourses = userDomainService.getUserCourses(userId);
+            boolean hasAnyDirect = ownedCourses != null && !ownedCourses.isEmpty();
+            return hasPlanCode || hasAnyDirect;
+        }
+
+        java.util.Set<String> courseIds = new java.util.HashSet<>();
+        java.util.Set<String> chapterIds = bindings.stream()
+                .filter(b -> b.getTargetType() == ResourceTargetType.CHAPTER)
+                .map(ResourceBindingEntity::getTargetId)
+                .collect(java.util.stream.Collectors.toSet());
+        if (!chapterIds.isEmpty()) {
+            java.util.Map<String, String> chapterCourseMap = chapterDomainService.getChapterCourseIdMapByIds(chapterIds);
+            courseIds.addAll(chapterCourseMap.values());
+        }
+        bindings.stream()
+                .filter(b -> b.getTargetType() == ResourceTargetType.COURSE)
+                .map(ResourceBindingEntity::getTargetId)
+                .forEach(courseIds::add);
+
+        if (courseIds.isEmpty()) {
+            // 绑定存在但未能解析出课程，按安全默认拒绝
+            return false;
+        }
+
+        // 路径一：用户对任一绑定课程拥有直购（额外权限）
+        java.util.Set<String> owned = new java.util.HashSet<>(userDomainService.getUserCourses(userId));
+        boolean directAllowed = !java.util.Collections.disjoint(courseIds, owned);
+        if (directAllowed) return true;
+
+        // 路径二：套餐能力 + 套餐包含课程（接口能力 + 范围能力）
+        boolean hasPlanCode = hasPlanPermission(userId, "RESOURCE_DOWNLOAD");
+        if (!hasPlanCode) return false;
+
+        // 检查有效订阅套餐是否包含任一绑定课程
+        java.util.List<UserSubscriptionEntity> actives = subscriptionDomainService.getUserActiveSubscriptions(userId);
         if (actives == null || actives.isEmpty()) return false;
         java.util.Set<String> planIds = actives.stream()
                 .map(UserSubscriptionEntity::getSubscriptionPlanId)

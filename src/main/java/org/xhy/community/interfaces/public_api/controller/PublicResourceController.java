@@ -126,13 +126,9 @@ public class PublicResourceController {
         // 解析用户ID
         String userId = jwtUtil.getUserIdFromToken(token);
 
-        // 功能权限校验：资源下载
-        try {
-            boolean allowed = userPermissionAppService.hasPlanPermission(userId, "RESOURCE_DOWNLOAD");
-            if (!allowed) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-            }
-        } catch (Exception e) {
+        // 并集判定：套餐功能码(且套餐包含课程) 或 直购对应课程
+        boolean allowed = userPermissionAppService.hasDownloadPermissionForResource(userId, resourceId);
+        if (!allowed) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         // 资源访问为常规操作，省略日志

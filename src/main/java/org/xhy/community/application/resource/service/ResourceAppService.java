@@ -97,44 +97,15 @@ public class ResourceAppService {
     }
 
     /**
-     * 生成资源访问URL（受课程权限控制）
-     * App 层不依赖 UserContext，由 API 层传入 userId
+     * 生成资源访问URL（受课程/直购权限控制）
+     * 统一通过 UserPermissionAppService 的并集判定执行授权校验
      */
     public String getResourceAccessUrl(String resourceId, String userId) {
-        // 读取绑定关系
-        java.util.List<ResourceBindingEntity> bindings = resourceBindingDomainService.getBindingsByResourceId(resourceId);
-        if (bindings == null || bindings.isEmpty()) {
-            // 未绑定，直接放行
-            return resourceDomainService.getDownloadUrl(resourceId);
+        boolean allowed = userPermissionAppService.hasDownloadPermissionForResource(userId, resourceId);
+        if (!allowed) {
+            throw new BusinessException(ACCESS_DENIED);
         }
-
-        java.util.Set<String> courseIds = new java.util.HashSet<>();
-        java.util.Set<String> chapterIds = bindings.stream()
-                .filter(b -> b.getTargetType() == ResourceTargetType.CHAPTER)
-                .map(ResourceBindingEntity::getTargetId)
-                .collect(java.util.stream.Collectors.toSet());
-        if (!chapterIds.isEmpty()) {
-            java.util.Map<String, String> chapterCourseMap = chapterDomainService.getChapterCourseIdMapByIds(chapterIds);
-            courseIds.addAll(chapterCourseMap.values());
-        }
-        bindings.stream()
-                .filter(b -> b.getTargetType() == ResourceTargetType.COURSE)
-                .map(ResourceBindingEntity::getTargetId)
-                .forEach(courseIds::add);
-
-        if (courseIds.isEmpty()) {
-            // 绑定到了未知对象，默认放行
-            return resourceDomainService.getDownloadUrl(resourceId);
-        }
-
-        // 判定用户是否解锁任一课程（复用统一权限应用服务）
-        if (userPermissionAppService.hasAccessToAnyCourse(userId, courseIds)) {
-            return resourceDomainService.getDownloadUrl(resourceId);
-        }
-
-        // 未解锁：拒绝访问
-        throw new BusinessException(
-               ACCESS_DENIED);
+        return resourceDomainService.getDownloadUrl(resourceId);
     }
     
 
