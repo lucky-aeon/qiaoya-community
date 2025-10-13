@@ -42,7 +42,34 @@ TARGET_SIDE=${TARGET_SIDE:-auto}
 
 # Optional limits and logging
 CONTAINER_LIMITS=${CONTAINER_LIMITS:---memory=1g --cpus=1.5 --pids-limit=512}
-LOG_OPTS=${LOG_OPTS:---log-opt max-size=50m --log-opt max-file=3}
+# Default to json-file with 30MB rolling buffer (10m x 3) so Promtail can read and disk risk is controlled
+LOG_OPTS=${LOG_OPTS:---log-driver json-file --log-opt max-size=10m --log-opt max-file=3}
+
+# Ensure log stack (Loki/Promtail/Grafana) is up, unless explicitly disabled
+# WITH_LOGS=0 to skip; LOG_STACK_COMPOSE to override compose path; COMPOSE_BIN to force binary
+WITH_LOGS=${WITH_LOGS:-1}
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+# 默认优先使用：脚本同级目录下的 loki/docker-compose.loki.yml（便于服务器仅拷部署资产）
+REPO_ROOT=$(cd "$SCRIPT_DIR/../.." && pwd)
+_default_compose="$SCRIPT_DIR/loki/docker-compose.loki.yml"
+if [[ ! -f "$_default_compose" ]]; then
+  _default_compose="$REPO_ROOT/deploy/observability/loki/docker-compose.loki.yml"
+fi
+LOG_STACK_COMPOSE=${LOG_STACK_COMPOSE:-$_default_compose}
+if [[ "$WITH_LOGS" == "1" ]]; then
+  if [[ -f "$LOG_STACK_COMPOSE" ]]; then
+    echo "[bluegreen] Ensuring log stack is up via $LOG_STACK_COMPOSE"
+    if docker compose version >/dev/null 2>&1; then
+      docker compose -f "$LOG_STACK_COMPOSE" up -d || true
+    elif command -v docker-compose >/dev/null 2>&1; then
+      docker-compose -f "$LOG_STACK_COMPOSE" up -d || true
+    else
+      echo "[bluegreen] docker compose not available; skipping log stack bring-up" >&2
+    fi
+  else
+    echo "[bluegreen] Log stack compose not found: $LOG_STACK_COMPOSE (set WITH_LOGS=0 to skip)" >&2
+  fi
+fi
 
 if [[ -z "$IMAGE" ]]; then
   echo "[bluegreen] IMAGE is required" >&2

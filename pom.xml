@@ -182,6 +182,22 @@
           <groupId>org.springframework.ai</groupId>
           <artifactId>spring-ai-starter-model-openai</artifactId>
       </dependency>
+      <!-- Observability: Actuator + Micrometer Prometheus for JVM/HTTP metrics -->
+      <dependency>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-starter-actuator</artifactId>
+      </dependency>
+      <dependency>
+          <groupId>io.micrometer</groupId>
+          <artifactId>micrometer-registry-prometheus</artifactId>
+      </dependency>
+      <!-- Logging: JSON 输出到 stdout 以便 Promtail 采集 -->
+      <dependency>
+          <groupId>net.logstash.logback</groupId>
+          <artifactId>logstash-logback-encoder</artifactId>
+          <version>7.4</version>
+          <scope>runtime</scope>
+      </dependency>
   </dependencies>
 
     <build>

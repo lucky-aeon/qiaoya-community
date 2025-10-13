@@ -3,6 +3,7 @@ package org.xhy.community.infrastructure.permission;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
@@ -21,7 +22,7 @@ public class PermissionCodeScanner {
     private final RequestMappingHandlerMapping handlerMapping;
     private final Map<String, String> codeNameMap = new TreeMap<>(); // code -> name
 
-    public PermissionCodeScanner(RequestMappingHandlerMapping handlerMapping) {
+    public PermissionCodeScanner(@Qualifier("requestMappingHandlerMapping") RequestMappingHandlerMapping handlerMapping) {
         this.handlerMapping = handlerMapping;
     }
 

@@ -45,7 +45,8 @@ spring:
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    # 测试环境也禁用 SQL 直出，避免污染日志（需要时用环境变量覆盖）
+    log-impl: ${MYBATIS_LOG_IMPL:org.apache.ibatis.logging.nologging.NoLoggingImpl}
   global-config:
     db-config:
       id-type: auto
@@ -81,7 +82,8 @@ logging:
   level:
     org.xhy.community: debug
     org.springframework.web: info
-    com.baomidou.mybatisplus: debug
+    com.baomidou.mybatisplus: warn
+    org.apache.ibatis: warn
   pattern:
     console: '%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n'
 

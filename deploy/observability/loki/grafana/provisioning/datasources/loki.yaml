@@ -1,0 +1,14 @@
+apiVersion: 1
+
+datasources:
+  - name: Loki
+    uid: loki
+    type: loki
+    access: proxy
+    url: ${LOKI_URL}
+    isDefault: false
+    jsonData:
+      maxLines: 1000
+      # 如果日志中有 traceId，可在此配置派生字段与链路系统联动
+      # derivedFields: []
+

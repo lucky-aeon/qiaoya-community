@@ -1,0 +1,11 @@
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+
+scrape_configs:
+  # 抓取 Spring Boot 应用 metrics（JVM/HTTP 等），通过宿主机端口访问
+  - job_name: 'app'
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ['host.docker.internal:8520']
+

@@ -5,7 +5,7 @@ spring:
   application:
     name: qiaoya-community
   profiles:
-    active: ${ENVIRONMENT:PROD}
+    active: ${ENVIRONMENT:dev}
 
   # 数据库配置
   datasource:
@@ -60,8 +60,9 @@ spring:
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
-    # 使用 SLF4J 将 MyBatis 日志并入 Logback，保持 JSON 结构化
-    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+    # 禁用 MyBatis SQL 日志，防止输出到 Loki（可用环境变量临时开启）
+    # 可覆盖：export MYBATIS_LOG_IMPL=org.apache.ibatis.logging.slf4j.Slf4jImpl
+    log-impl: ${MYBATIS_LOG_IMPL:org.apache.ibatis.logging.nologging.NoLoggingImpl}
   global-config:
     db-config:
       id-type: auto
@@ -97,7 +98,9 @@ logging:
   level:
     org.xhy.community: debug
     org.springframework.web: info
-    com.baomidou.mybatisplus: debug
+    # 收紧 MyBatis 相关日志级别，避免 DEBUG 级别输出 SQL
+    com.baomidou.mybatisplus: warn
+    org.apache.ibatis: warn
   pattern:
     console: '%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n'
 

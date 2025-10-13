@@ -4,6 +4,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.servlet.HandlerInterceptor;
@@ -44,6 +45,8 @@ public class UserContextInterceptor implements HandlerInterceptor {
 
         if (StringUtils.hasText(userId)) {
             UserContext.setCurrentUserId(userId);
+            // 将 userId 写入 MDC，使得日志中自动包含用户信息
+            MDC.put("userId", userId);
 
             // 基于设备优先的白名单检查；若缺失 deviceId，则回退到按 IP 检查
             String ip = ClientIpUtil.getClientIp(request);

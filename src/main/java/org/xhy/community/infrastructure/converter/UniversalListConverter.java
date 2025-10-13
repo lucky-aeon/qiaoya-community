@@ -100,13 +100,10 @@ public class UniversalListConverter extends BaseTypeHandler<List<?>> {
 
             if (elementType == String.class) {
                 List<String> result = objectMapper.readValue(json, new TypeReference<List<String>>() {});
-                log.debug("Successfully parsed JSON to List<String> for column {}: {} -> {}", columnName, json, result);
                 return result;
             } else {
                 // 动态创建TypeReference
                 List<?> result = objectMapper.readValue(json, objectMapper.getTypeFactory().constructCollectionType(List.class, elementType));
-                log.debug("Successfully parsed JSON to List<{}> for column {}: {} -> {} items",
-                    elementType.getSimpleName(), columnName, json, result.size());
                 return result;
             }
         } catch (JsonProcessingException e) {

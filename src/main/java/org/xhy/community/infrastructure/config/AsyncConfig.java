@@ -44,7 +44,8 @@ public class AsyncConfig {
         // 等待任务完成后再关闭线程池
         executor.setWaitForTasksToCompleteOnShutdown(true);
         executor.setAwaitTerminationSeconds(20);
-        
+        // 透传 MDC 到子线程，保证异步日志包含 requestId 等
+        executor.setTaskDecorator(new MdcTaskDecorator());
         executor.initialize();
         return executor;
     }
@@ -81,7 +82,8 @@ public class AsyncConfig {
         // 等待任务完成后再关闭线程池
         executor.setWaitForTasksToCompleteOnShutdown(true);
         executor.setAwaitTerminationSeconds(30);
-        
+        // 透传 MDC 到子线程
+        executor.setTaskDecorator(new MdcTaskDecorator());
         executor.initialize();
         return executor;
     }
@@ -98,6 +100,8 @@ public class AsyncConfig {
         executor.setQueueCapacity(200);
         executor.setKeepAliveSeconds(60);
         executor.setThreadNamePrefix("Async-");
+        // 透传 MDC 到子线程（默认执行器）
+        executor.setTaskDecorator(new MdcTaskDecorator());
         executor.initialize();
         return executor;
     }

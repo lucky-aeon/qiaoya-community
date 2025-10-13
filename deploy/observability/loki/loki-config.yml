@@ -1,0 +1,58 @@
+auth_enabled: false
+
+server:
+  http_listen_port: 3100
+
+common:
+  compactor_address: http://localhost:3100
+
+ingester:
+  wal:
+    enabled: true
+    dir: /loki/wal
+  lifecycler:
+    address: 127.0.0.1
+    ring:
+      kvstore:
+        store: inmemory
+      replication_factor: 1
+    final_sleep: 0s
+  chunk_idle_period: 1h
+  max_chunk_age: 1h
+  chunk_target_size: 1048576
+  chunk_retain_period: 30s
+
+storage_config:
+  boltdb_shipper:
+    active_index_directory: /loki/index
+    cache_location: /loki/boltdb-cache
+  filesystem:
+    directory: /loki/chunks
+
+schema_config:
+  configs:
+    - from: 2023-01-01
+      store: boltdb-shipper
+      object_store: filesystem
+      schema: v13
+      index:
+        prefix: index_
+        period: 24h
+
+compactor:
+  working_directory: /loki/compactor
+  retention_enabled: true
+
+limits_config:
+  # 全局日志保留期：7 天
+  retention_period: 168h
+  ingestion_rate_mb: 8
+  ingestion_burst_size_mb: 16
+
+chunk_store_config:
+  max_look_back_period: 168h
+
+table_manager:
+  retention_deletes_enabled: true
+  retention_period: 168h
+
