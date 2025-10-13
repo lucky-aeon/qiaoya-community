@@ -6,6 +6,8 @@ import org.springframework.stereotype.Service;
 import org.xhy.community.domain.session.valueobject.ActiveIpInfo;
 import org.xhy.community.domain.session.valueobject.EvictPolicy;
 import org.xhy.community.infrastructure.lock.DistributedLock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -25,6 +27,7 @@ import java.util.Set;
  */
 @Service
 public class DeviceSessionDomainService {
+    private static final Logger log = LoggerFactory.getLogger(DeviceSessionDomainService.class);
     private final DistributedLock lock;
     private final StringRedisTemplate redis;
 
@@ -62,6 +65,7 @@ public class DeviceSessionDomainService {
 
             // 0) 封禁检查
             if (Boolean.TRUE.equals(redis.hasKey(banKey))) {
+                log.warn("【会话】用户已处于封禁窗口：userId={}", userId);
                 return false;
             }
 
@@ -78,6 +82,7 @@ public class DeviceSessionDomainService {
                 } else {
                     redis.opsForValue().set(banKey, "1");
                 }
+                log.warn("【会话】触发封禁：userId={}, recentIpCount={}, threshold={}", userId, histCount, banThreshold);
                 return false;
             }
 
@@ -96,6 +101,7 @@ public class DeviceSessionDomainService {
             }
 
             if (policy == EvictPolicy.DENY_NEW) {
+                log.warn("【会话】拒绝新增活跃IP：userId={}, maxActiveIps={}", userId, maxActiveIps);
                 return false;
             }
 
@@ -105,6 +111,7 @@ public class DeviceSessionDomainService {
                 String victim = oldest.iterator().next().getValue();
                 if (victim != null) {
                     redis.opsForZSet().remove(activeKey, victim);
+                    log.info("【会话】淘汰最久未活跃IP：userId={}, victimIp={}", userId, victim);
                 }
             }
             redis.opsForZSet().add(activeKey, ip, now);
@@ -151,6 +158,7 @@ public class DeviceSessionDomainService {
                 } else {
                     redis.opsForValue().set(banKey, "1");
                 }
+                log.warn("【会话】触发封禁：userId={}, recentIpCount={}, threshold={}", userId, histCount, banThreshold);
                 return false;
             }
 
@@ -161,6 +169,7 @@ public class DeviceSessionDomainService {
                 long count = devCount == null ? 0 : devCount;
                 if (count >= maxActiveDevices) {
                     if (policy == EvictPolicy.DENY_NEW) {
+                        log.warn("【会话】拒绝新增设备：userId={}, maxActiveDevices={}", userId, maxActiveDevices);
                         return false;
                     }
                     // 淘汰最久未活跃设备
@@ -171,6 +180,7 @@ public class DeviceSessionDomainService {
                             redis.opsForZSet().remove(devicesKey, victimDevice);
                             // 清理该设备的 IP 集
                             redis.delete(keyDeviceIps(userId, victimDevice));
+                            log.info("【会话】淘汰最久未活跃设备：userId={}, victimDevice={}", userId, victimDevice);
                         }
                     }
                 }

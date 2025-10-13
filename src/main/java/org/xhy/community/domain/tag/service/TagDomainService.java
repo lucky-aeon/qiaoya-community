@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.xhy.community.domain.tag.entity.TagDefinitionEntity;
@@ -32,6 +34,7 @@ public class TagDomainService {
     private final TagDefinitionRepository tagDefinitionRepository;
     private final TagScopeRepository tagScopeRepository;
     private final UserTagAssignmentRepository userTagAssignmentRepository;
+    private static final Logger log = LoggerFactory.getLogger(TagDomainService.class);
 
     public TagDomainService(TagDefinitionRepository tagDefinitionRepository,
                             TagScopeRepository tagScopeRepository,
@@ -53,6 +56,7 @@ public class TagDomainService {
             throw new BusinessException(TagErrorCode.TAG_CODE_EXISTS);
         }
         tagDefinitionRepository.insert(entity);
+        log.info("【标签】已创建：tagId={}, code={}, name={}", entity.getId(), entity.getCode(), entity.getName());
         return entity;
     }
 
@@ -61,6 +65,7 @@ public class TagDomainService {
         if (entity == null || entity.getId() == null) return entity;
         TagDefinitionEntity exist = tagDefinitionRepository.selectById(entity.getId());
         if (exist == null) {
+            log.warn("【标签】更新失败：标签不存在，tagId={}", entity.getId());
             throw new BusinessException(TagErrorCode.TAG_NOT_FOUND);
         }
         exist.setName(entity.getName());
@@ -71,6 +76,7 @@ public class TagDomainService {
         if (entity.getUniquePerUser() != null) exist.setUniquePerUser(entity.getUniquePerUser());
         if (entity.getEnabled() != null) exist.setEnabled(entity.getEnabled());
         tagDefinitionRepository.updateById(exist);
+        log.info("【标签】已更新：tagId={}, name={}", exist.getId(), exist.getName());
         return exist;
     }
 
@@ -99,6 +105,7 @@ public class TagDomainService {
         if (scope == null || scope.getTagId() == null) return;
         TagDefinitionEntity tag = tagDefinitionRepository.selectById(scope.getTagId());
         if (tag == null) {
+            log.warn("【标签】添加范围失败：标签不存在，tagId={}", scope.getTagId());
             throw new BusinessException(TagErrorCode.TAG_NOT_FOUND);
         }
         Long cnt = tagScopeRepository.selectCount(new LambdaQueryWrapper<TagScopeEntity>()
@@ -108,6 +115,8 @@ public class TagDomainService {
         );
         if (cnt != null && cnt > 0) return;
         tagScopeRepository.insert(scope);
+        log.info("【标签】已添加范围：tagId={}, targetType={}, targetId={}",
+                scope.getTagId(), scope.getTargetType(), scope.getTargetId());
     }
 
     /** 根据ID删除可见范围 */
@@ -142,6 +151,7 @@ public class TagDomainService {
             userTagAssignmentEntities.add(userTagAssignmentEntity);
         }
         userTagAssignmentRepository.insert(userTagAssignmentEntities);
+        log.info("【标签】课程完成发放：userId={}, courseId={}, tags={}个", userId, courseId, userTagAssignmentEntities.size());
     }
 
     /**
@@ -186,6 +196,7 @@ public class TagDomainService {
     public void assignTagToUser(String userId, String tagId, TagSourceType sourceType, String sourceId) {
         TagDefinitionEntity def = tagDefinitionRepository.selectById(tagId);
         if (def == null || Boolean.FALSE.equals(def.getEnabled())) {
+            log.warn("【标签】发放失败：标签不存在或未启用，userId={}, tagId={}", userId, tagId);
             return; // 标签不存在或未启用，安全返回
         }
         LocalDateTime now = LocalDateTime.now();
@@ -205,6 +216,8 @@ public class TagDomainService {
         e.setSourceType(sourceType != null ? sourceType : TagSourceType.MANUAL);
         e.setSourceId(sourceId != null ? sourceId : (exist != null ? exist.getSourceId() : null));
         userTagAssignmentRepository.insertOrUpdate(e);
+        log.info("【标签】已发放：userId={}, tagId={}, sourceType={}, sourceId={}",
+                userId, tagId, e.getSourceType(), e.getSourceId());
     }
 
     /** 撤销用户标签（若存在）。 */
@@ -218,6 +231,7 @@ public class TagDomainService {
             exist.setStatus(TagAssignmentStatus.REVOKED);
             exist.setRevokedAt(LocalDateTime.now());
             userTagAssignmentRepository.updateById(exist);
+            log.info("【标签】已撤销：userId={}, tagId={}", userId, tagId);
         }
     }
 }

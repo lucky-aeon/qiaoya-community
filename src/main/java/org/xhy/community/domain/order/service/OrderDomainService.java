@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
 import org.xhy.community.domain.order.entity.OrderEntity;
 import org.xhy.community.domain.order.repository.OrderRepository;
@@ -19,6 +21,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class OrderDomainService {
 
     private final OrderRepository orderRepository;
+    private static final Logger log = LoggerFactory.getLogger(OrderDomainService.class);
     private static final AtomicLong orderSequence = new AtomicLong(1); // 保留不删除，避免二方依赖变更
 
     public OrderDomainService(OrderRepository orderRepository) {
@@ -33,6 +36,8 @@ public class OrderDomainService {
             order.setOrderNo(generateOrderNo());
         }
         orderRepository.insert(order);
+        log.info("【订单】已创建：orderId={}, orderNo={}, userId={}, productType={}, productId={}",
+                order.getId(), order.getOrderNo(), order.getUserId(), order.getProductType(), order.getProductId());
         return order;
     }
 
@@ -42,6 +47,7 @@ public class OrderDomainService {
     public OrderEntity getOrderById(String id) {
         OrderEntity order = orderRepository.selectById(id);
         if (order == null) {
+            log.warn("【订单】未找到：id={}", id);
             throw new BusinessException(OrderErrorCode.ORDER_NOT_FOUND);
         }
         return order;
@@ -73,7 +79,11 @@ public class OrderDomainService {
                    .le(query.getEndTime() != null, OrderEntity::getActivatedTime, query.getEndTime())
                    .orderByDesc(OrderEntity::getActivatedTime);
 
-        return orderRepository.selectPage(page, queryWrapper);
+        IPage<OrderEntity> result = orderRepository.selectPage(page, queryWrapper);
+        log.debug("【订单】分页查询：userId={}, type={}, productType={}, page={}/{}，返回 {} 条",
+                query.getUserId(), query.getOrderType(), query.getProductType(),
+                query.getPageNum(), query.getPageSize(), result.getRecords() != null ? result.getRecords().size() : 0);
+        return result;
     }
 
     /**

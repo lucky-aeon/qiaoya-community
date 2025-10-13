@@ -3,6 +3,8 @@ package org.xhy.community.domain.expression.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.CollectionUtils;
 import org.xhy.community.domain.comment.valueobject.BusinessType;
 import org.xhy.community.domain.expression.entity.ExpressionTypeEntity;
@@ -20,6 +22,7 @@ public class ReactionDomainService {
 
     private final ReactionRepository reactionRepository;
     private final ExpressionTypeRepository expressionTypeRepository;
+    private static final Logger log = LoggerFactory.getLogger(ReactionDomainService.class);
 
     public ReactionDomainService(ReactionRepository reactionRepository,
                                  ExpressionTypeRepository expressionTypeRepository) {
@@ -37,6 +40,7 @@ public class ReactionDomainService {
                 .eq(ExpressionTypeEntity::getCode, reaction.getReactionType())
                 .eq(ExpressionTypeEntity::getIsActive, true));
         if (!valid) {
+            log.warn("【表情】切换失败：表情类型不存在或未启用，type={}", reaction.getReactionType());
             throw new BusinessException(ExpressionErrorCode.EXPRESSION_NOT_FOUND);
         }
 
@@ -50,9 +54,13 @@ public class ReactionDomainService {
         if (exists) {
             // 逻辑删除
             reactionRepository.delete(existsQ);
+            log.info("【表情】已移除：userId={}, businessType={}, businessId={}, type={}",
+                    reaction.getUserId(), reaction.getBusinessType(), reaction.getBusinessId(), reaction.getReactionType());
             return false;
         } else {
             reactionRepository.insert(reaction);
+            log.info("【表情】已添加：userId={}, businessType={}, businessId={}, type={}",
+                    reaction.getUserId(), reaction.getBusinessType(), reaction.getBusinessId(), reaction.getReactionType());
             return true;
         }
     }

@@ -12,6 +12,8 @@ import com.aliyuncs.profile.DefaultProfile;
 import com.aliyuncs.sts.model.v20150401.AssumeRoleRequest;
 import com.aliyuncs.sts.model.v20150401.AssumeRoleResponse;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xhy.community.infrastructure.exception.SystemException;
 import org.xhy.community.infrastructure.exception.ResourceErrorCode;
 import org.xhy.community.infrastructure.config.AliyunOssProperties;
@@ -33,6 +35,7 @@ import java.util.Map;
 
 @Service
 public class AliyunOssService {
+    private static final Logger log = LoggerFactory.getLogger(AliyunOssService.class);
     
     private final AliyunOssProperties ossProperties;
     
@@ -97,8 +100,11 @@ public class AliyunOssService {
             result.put("key", sanitizedKey);
             result.put("callback", generateCallback());
             
+            log.info("【OSS】已签发STS凭证：key={}, bucket={}, region={}，expires={}",
+                    sanitizedKey, ossProperties.getBucketName(), ossProperties.getRegion(), credentials.getExpiration());
             return result;
         } catch (Exception e) {
+            log.error("【OSS】签发STS凭证失败：key={}", fileKey, e);
             throw new SystemException(ResourceErrorCode.STS_CREDENTIALS_FAILED, e.getMessage(), e);
         }
     }
@@ -141,8 +147,11 @@ public class AliyunOssService {
             result.put("key", sanitizedKey);
             result.put("callback", generateCallback(token));
 
+            log.info("【OSS】已签发STS凭证：key={}, bucket={}, region={}，expires={}",
+                    sanitizedKey, ossProperties.getBucketName(), ossProperties.getRegion(), credentials.getExpiration());
             return result;
         } catch (Exception e) {
+            log.error("【OSS】签发STS凭证失败：key={}（带token）", fileKey, e);
             throw new SystemException(ResourceErrorCode.STS_CREDENTIALS_FAILED, e.getMessage(), e);
         }
     }
@@ -256,7 +265,9 @@ public class AliyunOssService {
             request.setExpiration(expiration);
             
             URL url = ossClient.generatePresignedUrl(request);
-            return url.toString();
+            String urlStr = url.toString();
+            log.info("【OSS】生成预签名下载URL：key={}, 过期时间={}s", sanitizeKey(fileKey), ossProperties.getPresignedUrlExpiration());
+            return urlStr;
         } finally {
             ossClient.shutdown();
         }
@@ -271,6 +282,7 @@ public class AliyunOssService {
         
         try {
             ossClient.deleteObject(ossProperties.getBucketName(), sanitizeKey(fileKey));
+            log.info("【OSS】已删除对象：key={}", sanitizeKey(fileKey));
         } finally {
             ossClient.shutdown();
         }
@@ -284,7 +296,9 @@ public class AliyunOssService {
         );
         
         try {
-            return ossClient.doesObjectExist(ossProperties.getBucketName(), sanitizeKey(fileKey));
+            boolean exists = ossClient.doesObjectExist(ossProperties.getBucketName(), sanitizeKey(fileKey));
+            log.debug("【OSS】对象是否存在：key={} -> {}", sanitizeKey(fileKey), exists);
+            return exists;
         } finally {
             ossClient.shutdown();
         }

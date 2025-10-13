@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.context.ApplicationEventPublisher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.xhy.community.domain.comment.entity.CommentEntity;
 import org.xhy.community.domain.comment.repository.CommentRepository;
@@ -21,7 +23,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class CommentDomainService {
-    
+    private static final Logger log = LoggerFactory.getLogger(CommentDomainService.class);
+
     private final CommentRepository commentRepository;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -44,6 +47,10 @@ public class CommentDomainService {
         
         commentRepository.insert(comment);
 
+        log.info("【评论】已创建：commentId={}, businessType={}, businessId={}, rootId={}, parentId={}",
+                comment.getId(), comment.getBusinessType(), comment.getBusinessId(),
+                comment.getRootCommentId(), comment.getParentCommentId());
+
         // 发布简化的评论创建事件
         publishContentEvent(comment);
 
@@ -57,6 +64,7 @@ public class CommentDomainService {
         );
         
         if (comment == null) {
+            log.warn("【评论】未找到：commentId={}", commentId);
             throw new BusinessException(CommentErrorCode.COMMENT_NOT_FOUND);
         }
         
@@ -118,14 +126,17 @@ public class CommentDomainService {
         CommentEntity comment = getCommentById(commentId);
         
         if (!comment.getCommentUserId().equals(userId)) {
+            log.warn("【评论】删除未授权：commentId={}, operatorId={}", commentId, userId);
             throw new BusinessException(CommentErrorCode.UNAUTHORIZED_DELETE);
         }
         
         commentRepository.deleteById(commentId);
+        log.info("【评论】已删除：commentId={}, operatorId={}", commentId, userId);
     }
     
     public CommentEntity updateComment(CommentEntity comment) {
         commentRepository.updateById(comment);
+        log.info("【评论】已更新：commentId={}", comment.getId());
         return comment;
     }
     

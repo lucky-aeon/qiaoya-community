@@ -2,6 +2,8 @@ package org.xhy.community.domain.like.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.xhy.community.domain.like.entity.LikeEntity;
 import org.xhy.community.domain.like.repository.LikeRepository;
@@ -23,6 +25,7 @@ import java.util.stream.Collectors;
 public class LikeDomainService {
 
     private final LikeRepository likeRepository;
+    private static final Logger log = LoggerFactory.getLogger(LikeDomainService.class);
 
     public LikeDomainService(LikeRepository likeRepository) {
         this.likeRepository = likeRepository;
@@ -45,9 +48,11 @@ public class LikeDomainService {
             try {
                 LikeEntity like = new LikeEntity(userId, targetId, targetType);
                 likeRepository.insert(like);
+                log.info("【点赞】成功：userId={}, targetType={}, targetId={}", userId, targetType, targetId);
                 return true; // 点赞成功
             } catch (DataIntegrityViolationException e) {
                 // 唯一约束冲突视为已经点赞
+                log.warn("【点赞】并发冲突：已点赞，userId={}, targetType={}, targetId={}", userId, targetType, targetId);
                 throw new BusinessException(LikeErrorCode.ALREADY_LIKED);
             }
         } else {
@@ -56,6 +61,7 @@ public class LikeDomainService {
                     .eq(LikeEntity::getUserId, userId)
                     .eq(LikeEntity::getTargetId, targetId)
                     .eq(LikeEntity::getTargetType, targetType));
+            log.info("【点赞】已取消：userId={}, targetType={}, targetId={}", userId, targetType, targetId);
             return false;
         }
     }

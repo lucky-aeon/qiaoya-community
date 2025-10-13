@@ -80,7 +80,7 @@ public class RequestIdFilter extends OncePerRequestFilter {
             String endAt = OffsetDateTime.now().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
             MDC.put(MDC_END_AT, endAt);
             MDC.put(MDC_DURATION_MS, String.valueOf(cost));
-            log.info("HTTP {} {} -> {} ({}ms) userId={}", request.getMethod(), uri, response.getStatus(), cost, userId);
+            log.info("请求 {} {} -> 状态 {} ({}ms) 用户ID={}", request.getMethod(), uri, response.getStatus(), cost, userId);
 
             // 5. 清理 MDC（确保不会内存泄漏）
             MDC.clear();

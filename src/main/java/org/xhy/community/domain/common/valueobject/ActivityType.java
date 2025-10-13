@@ -351,7 +351,21 @@ public enum ActivityType {
     /** 管理员删除表情类型 */
     ADMIN_EXPRESSION_DELETE("管理员删除表情类型"),
     /** 管理员切换表情类型状态 */
-    ADMIN_EXPRESSION_TOGGLE("管理员切换表情类型状态");
+    ADMIN_EXPRESSION_TOGGLE("管理员切换表情类型状态"),
+
+    // ==================== 标签管理（管理员） ====================
+    /** 管理员创建标签 */
+    ADMIN_TAG_CREATE("管理员创建标签"),
+    /** 管理员更新标签 */
+    ADMIN_TAG_UPDATE("管理员更新标签"),
+    /** 管理员添加标签范围 */
+    ADMIN_TAG_ADD_SCOPE("管理员添加标签范围"),
+    /** 管理员移除标签范围 */
+    ADMIN_TAG_REMOVE_SCOPE("管理员移除标签范围"),
+    /** 管理员手动发放标签 */
+    ADMIN_TAG_ASSIGN("管理员手动发放标签"),
+    /** 管理员撤销用户标签 */
+    ADMIN_TAG_REVOKE("管理员撤销用户标签");
     
     private final String description;
     
@@ -451,6 +465,12 @@ public enum ActivityType {
             case ADMIN_EXPRESSION_UPDATE:
             case ADMIN_EXPRESSION_DELETE:
             case ADMIN_EXPRESSION_TOGGLE:
+            case ADMIN_TAG_CREATE:
+            case ADMIN_TAG_UPDATE:
+            case ADMIN_TAG_ADD_SCOPE:
+            case ADMIN_TAG_REMOVE_SCOPE:
+            case ADMIN_TAG_ASSIGN:
+            case ADMIN_TAG_REVOKE:
                 return ActivityCategory.ADMINISTRATION;
                 
             default:

@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.context.ApplicationEventPublisher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.xhy.community.domain.follow.entity.FollowEntity;
@@ -22,7 +24,8 @@ import java.util.List;
  */
 @Service
 public class FollowDomainService {
-    
+    private static final Logger log = LoggerFactory.getLogger(FollowDomainService.class);
+
     private final FollowRepository followRepository;
     private final ApplicationEventPublisher eventPublisher;
     
@@ -37,31 +40,34 @@ public class FollowDomainService {
     public FollowEntity createFollow(String followerId, String targetId, FollowTargetType targetType) {
         // 1. 检查是否自己关注自己
         if (targetType == FollowTargetType.USER && followerId.equals(targetId)) {
+            log.warn("【关注】不允许关注自己：userId={}", followerId);
             throw new BusinessException(FollowErrorCode.CANNOT_FOLLOW_SELF);
         }
 
         // 2. 检查是否已经关注
         FollowEntity existingFollow = getFollowRelation(followerId, targetId, targetType);
-        if (existingFollow != null) {
-            if (existingFollow.isActive()) {
-                throw new BusinessException(FollowErrorCode.ALREADY_FOLLOWED);
-            } else {
-                // 重新关注
-                existingFollow.refollow();
-                followRepository.updateById(existingFollow);
-
-
-                return existingFollow;
+            if (existingFollow != null) {
+                if (existingFollow.isActive()) {
+                    log.warn("【关注】已关注：followerId={}, targetType={}, targetId={}", followerId, targetType, targetId);
+                    throw new BusinessException(FollowErrorCode.ALREADY_FOLLOWED);
+                } else {
+                    // 重新关注
+                    existingFollow.refollow();
+                    followRepository.updateById(existingFollow);
+                    log.info("【关注】重新关注成功：followerId={}, targetType={}, targetId={}", followerId, targetType, targetId);
+                    return existingFollow;
+                }
             }
-        }
 
         // 3. 创建新的关注关系（并发兜底：唯一约束冲突视为已关注）
         try {
             FollowEntity follow = new FollowEntity(followerId, targetId, targetType);
             followRepository.insert(follow);
+            log.info("【关注】关注成功：followerId={}, targetType={}, targetId={}", followerId, targetType, targetId);
             return follow;
         } catch (DataIntegrityViolationException e) {
             // 并发情况下可能出现唯一约束冲突，转化为业务语义：已关注
+            log.warn("【关注】并发冲突：已关注，followerId={}, targetType={}, targetId={}", followerId, targetType, targetId);
             throw new BusinessException(FollowErrorCode.ALREADY_FOLLOWED);
         }
     }
@@ -72,11 +78,13 @@ public class FollowDomainService {
     public void unfollow(String followerId, String targetId, FollowTargetType targetType) {
         FollowEntity follow = getFollowRelation(followerId, targetId, targetType);
         if (follow == null || follow.isCancelled()) {
+            log.warn("【关注】取消失败：未关注，followerId={}, targetType={}, targetId={}", followerId, targetType, targetId);
             throw new BusinessException(FollowErrorCode.NOT_FOLLOWED);
         }
 
         follow.unfollow();
         followRepository.updateById(follow);
+        log.info("【关注】取消关注成功：followerId={}, targetType={}, targetId={}", followerId, targetType, targetId);
     }
 
     /**

@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.context.ApplicationEventPublisher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.xhy.community.domain.post.query.PostQuery;
@@ -36,6 +38,7 @@ import java.util.stream.Collectors;
 
 @Service
 public class PostDomainService {
+    private static final Logger log = LoggerFactory.getLogger(PostDomainService.class);
     
     private final PostRepository postRepository;
     private final CategoryRepository categoryRepository;
@@ -81,7 +84,8 @@ public class PostDomainService {
         if (post.getStatus() == PostStatus.PUBLISHED) {
             publishContentEvent(post);
         }
-
+        log.info("【文章】已创建：postId={}, authorId={}, categoryId={}, status={}",
+                post.getId(), post.getAuthorId(), post.getCategoryId(), post.getStatus());
         return post;
     }
 
@@ -95,13 +99,16 @@ public class PostDomainService {
                 .eq(PostEntity::getId, postId)
         );
         if (post == null) {
+            log.warn("【文章】采纳失败：文章不存在，postId={}, operatorId={}", postId, operatorId);
             throw new BusinessException(PostErrorCode.POST_NOT_FOUND);
         }
         CategoryEntity category = categoryRepository.selectById(post.getCategoryId());
         if (category == null) {
+            log.warn("【文章】采纳失败：分类不存在，postId={}, categoryId={}", postId, post.getCategoryId());
             throw new BusinessException(PostErrorCode.CATEGORY_NOT_FOUND);
         }
         if (category.getType() != CategoryType.QA) {
+            log.warn("【文章】采纳失败：非问答分类，postId={}, categoryId={}", postId, post.getCategoryId());
             throw new BusinessException(PostErrorCode.NOT_QA_CATEGORY);
         }
         if (accessLevel == AccessLevel.USER && !post.getAuthorId().equals(operatorId)) {
@@ -127,6 +134,7 @@ public class PostDomainService {
                 .eq(PostAcceptedCommentEntity::getCommentId, commentId)
         );
         if (exists != null && exists > 0) {
+            log.debug("【文章】采纳幂等：已存在采纳关系，postId={}, commentId={}", postId, commentId);
             return post;
         }
 
@@ -153,6 +161,8 @@ public class PostDomainService {
             post.setSolvedAt(LocalDateTime.now());
         }
 
+        log.info("【文章】已采纳评论：postId={}, commentId={}, operatorId={}, access={}",
+                postId, commentId, operatorId, accessLevel);
         return post;
     }
 
@@ -165,9 +175,11 @@ public class PostDomainService {
                 .eq(PostEntity::getId, postId)
         );
         if (post == null) {
+            log.warn("【文章】撤销采纳失败：文章不存在，postId={}, operatorId={}", postId, operatorId);
             throw new BusinessException(PostErrorCode.POST_NOT_FOUND);
         }
         if (accessLevel == AccessLevel.USER && !post.getAuthorId().equals(operatorId)) {
+            log.warn("【文章】撤销采纳未授权：postId={}, operatorId={}", postId, operatorId);
             throw new BusinessException(PostErrorCode.UNAUTHORIZED_ACCEPT);
         }
 
@@ -180,6 +192,7 @@ public class PostDomainService {
 
         // 幂等：如果没有记录，直接返回当前状态
         if (deleted == 0) {
+            log.debug("【文章】撤销采纳幂等：不存在采纳关系，postId={}, commentId={}", postId, commentId);
             return post;
         }
 
@@ -197,6 +210,8 @@ public class PostDomainService {
             post.setResolveStatus(QAResolveStatus.UNSOLVED);
             post.setSolvedAt(null);
         }
+        log.info("【文章】已撤销采纳：postId={}, commentId={}, operatorId={}, remainAccepted={}",
+                postId, commentId, operatorId, remain);
         return post;
     }
 
@@ -226,6 +241,7 @@ public class PostDomainService {
                 .set(PostEntity::getResolveStatus, QAResolveStatus.UNSOLVED)
                 .set(PostEntity::getSolvedAt, null);
         postRepository.update(null, update);
+        log.info("【文章】已清空采纳并标记为未解决：postId={}", postId);
     }
 
     /**
@@ -238,6 +254,7 @@ public class PostDomainService {
                 .eq(PostAcceptedCommentEntity::getCommentId, commentId)
         );
         if (list.isEmpty()) {
+            log.debug("【文章】按评论移除采纳：无关联记录，commentId={}", commentId);
             return;
         }
         java.util.Set<String> postIds = list.stream().map(PostAcceptedCommentEntity::getPostId).collect(java.util.stream.Collectors.toSet());
@@ -260,6 +277,7 @@ public class PostDomainService {
                 postRepository.update(null, update);
             }
         }
+        log.info("【文章】按评论移除采纳：commentId={}, 受影响帖子数={}", commentId, postIds.size());
     }
 
     /**
@@ -311,9 +329,11 @@ public class PostDomainService {
         // 验证分类是否可用
         CategoryEntity category = categoryRepository.selectById(post.getCategoryId());
         if (category == null) {
+            log.warn("【文章】更新失败：分类不存在，postId={}, categoryId={}", post.getId(), post.getCategoryId());
             throw new BusinessException(PostErrorCode.CATEGORY_NOT_FOUND);
         }
         if (!category.getIsActive()) {
+            log.warn("【文章】更新失败：分类未启用，postId={}, categoryId={}", post.getId(), post.getCategoryId());
             throw new BusinessException(PostErrorCode.CATEGORY_DISABLED);
         }
         
@@ -327,9 +347,10 @@ public class PostDomainService {
         
         int updated = postRepository.update(post, updateWrapper);
         if (updated == 0) {
+            log.warn("【文章】更新失败：不存在或非作者，postId={}, authorId={}", post.getId(), authorId);
             throw new BusinessException(PostErrorCode.POST_NOT_FOUND);
         }
-        
+        log.info("【文章】已更新：postId={}, authorId={}", post.getId(), authorId);
         return post;
     }
     
@@ -342,19 +363,23 @@ public class PostDomainService {
         );
         
         if (post == null) {
+            log.warn("【文章】发布失败：文章不存在，postId={}, authorId={}", postId, authorId);
             throw new BusinessException(PostErrorCode.POST_NOT_FOUND);
         }
         
         if (post.getStatus() == PostStatus.PUBLISHED) {
+            log.warn("【文章】发布失败：已是发布状态，postId={}, authorId={}", postId, authorId);
             throw new BusinessException(PostErrorCode.POST_ALREADY_PUBLISHED);
         }
         
         // 验证分类是否可用
         CategoryEntity category = categoryRepository.selectById(post.getCategoryId());
         if (category == null) {
+            log.warn("【文章】发布失败：分类不存在，postId={}, categoryId={}", postId, post.getCategoryId());
             throw new BusinessException(PostErrorCode.CATEGORY_NOT_FOUND);
         }
         if (!category.getIsActive()) {
+            log.warn("【文章】发布失败：分类未启用，postId={}, categoryId={}", postId, post.getCategoryId());
             throw new BusinessException(PostErrorCode.CATEGORY_DISABLED);
         }
         
@@ -367,6 +392,7 @@ public class PostDomainService {
         
         int updated = postRepository.update(null, updateWrapper);
         if (updated == 0) {
+            log.warn("【文章】发布失败：不存在或非作者，postId={}, authorId={}", postId, authorId);
             throw new BusinessException(PostErrorCode.POST_NOT_FOUND);
         }
         
@@ -377,6 +403,7 @@ public class PostDomainService {
         // 发布简化的内容发布事件
         publishContentEvent(post);
 
+        log.info("【文章】已发布：postId={}, authorId={}", postId, authorId);
         return post;
     }
     
@@ -389,10 +416,12 @@ public class PostDomainService {
         );
         
         if (post == null) {
+            log.warn("【文章】撤回失败：文章不存在，postId={}, authorId={}", postId, authorId);
             throw new BusinessException(PostErrorCode.POST_NOT_FOUND);
         }
         
         if (post.getStatus() == PostStatus.DRAFT) {
+            log.warn("【文章】撤回失败：已是草稿状态，postId={}, authorId={}", postId, authorId);
             throw new BusinessException(PostErrorCode.POST_ALREADY_DRAFT);
         }
         
@@ -405,12 +434,14 @@ public class PostDomainService {
         
         int updated = postRepository.update(null, updateWrapper);
         if (updated == 0) {
+            log.warn("【文章】撤回失败：不存在或非作者，postId={}, authorId={}", postId, authorId);
             throw new BusinessException(PostErrorCode.POST_NOT_FOUND);
         }
         
         // 更新内存中的实体状态并返回
         post.setStatus(PostStatus.DRAFT);
         post.setPublishTime(null);
+        log.info("【文章】已撤回：postId={}, authorId={}", postId, authorId);
         return post;
     }
     
@@ -418,11 +449,13 @@ public class PostDomainService {
         PostEntity post = getPostById(postId);
         
         if (post.getStatus() != PostStatus.PUBLISHED) {
+            log.warn("【文章】置顶/取消失败：非发布状态，postId={}", postId);
             throw new BusinessException(PostErrorCode.POST_NOT_PUBLISHED);
         }
         
         post.setIsTop(isTop);
         postRepository.updateById(post);
+        log.info("【文章】置顶状态已更新：postId={}, isTop={}", postId, isTop);
     }
     
     public void incrementViewCount(String postId) {
@@ -432,6 +465,7 @@ public class PostDomainService {
                 .setSql("view_count = view_count + 1");
         int updated = postRepository.update(null, updateWrapper);
         if (updated == 0) {
+            log.warn("【文章】浏览计数自增失败：postId={}", postId);
             throw new BusinessException(PostErrorCode.POST_NOT_FOUND);
         }
     }
@@ -443,6 +477,7 @@ public class PostDomainService {
                 .setSql("comment_count = comment_count + 1");
         int updated = postRepository.update(null, updateWrapper);
         if (updated == 0) {
+            log.warn("【文章】评论计数自增失败：postId={}", postId);
             throw new BusinessException(PostErrorCode.POST_NOT_FOUND);
         }
     }
@@ -495,8 +530,10 @@ public class PostDomainService {
         
         int deleted = postRepository.delete(deleteWrapper);
         if (deleted == 0) {
+            log.warn("【文章】删除失败：不存在或非作者，postId={}, authorId={}", postId, authorId);
             throw new BusinessException(PostErrorCode.POST_NOT_FOUND);
         }
+        log.info("【文章】已删除：postId={}, authorId={}", postId, authorId);
     }
     
     public void updatePostFields(PostEntity post) {

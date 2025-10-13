@@ -6,6 +6,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xhy.community.domain.course.entity.CourseEntity;
 import org.xhy.community.domain.course.repository.CourseRepository;
 import org.xhy.community.domain.common.event.ContentPublishedEvent;
@@ -22,7 +24,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class CourseDomainService {
-    
+    private static final Logger log = LoggerFactory.getLogger(CourseDomainService.class);
+
     private final CourseRepository courseRepository;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -38,22 +41,26 @@ public class CourseDomainService {
         // 发布简化的课程创建事件
         publishContentEvent(course);
 
+        log.info("【课程】已创建：courseId={}, authorId={}, status={}", course.getId(), course.getAuthorId(), course.getStatus());
         return course;
     }
     
     public CourseEntity updateCourse(CourseEntity course) {
         courseRepository.updateById(course);
+        log.info("【课程】已更新：courseId={}", course.getId());
         return course;
     }
     
     public void deleteCourse(String courseId) {
         getCourseById(courseId);
         courseRepository.deleteById(courseId);
+        log.info("【课程】已删除：courseId={}", courseId);
     }
     
     public CourseEntity getCourseById(String courseId) {
         CourseEntity course = courseRepository.selectById(courseId);
         if (course == null) {
+            log.warn("【课程】未找到：courseId={}", courseId);
             throw new BusinessException(CourseErrorCode.COURSE_NOT_FOUND);
         }
         return course;

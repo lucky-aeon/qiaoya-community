@@ -15,6 +15,8 @@ import org.xhy.community.interfaces.post.request.PostQueryRequest;
 import org.xhy.community.interfaces.post.request.PostStatusRequest;
 import org.xhy.community.interfaces.post.request.UpdatePostRequest;
 import org.xhy.community.infrastructure.annotation.RequiresPlanPermissions;
+import org.xhy.community.infrastructure.annotation.ActivityLog;
+import org.xhy.community.domain.common.valueobject.ActivityType;
 
 /**
  * 用户文章管理控制器
@@ -46,6 +48,7 @@ public class UserPostController {
      */
     @PostMapping
     @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "POST_CREATE", name = "发布文章")})
+    @ActivityLog(ActivityType.CREATE_POST)
     public ApiResponse<PostDTO> createPost(@Valid @RequestBody CreatePostRequest request) {
         String currentUserId = UserContext.getCurrentUserId();
         PostDTO post = postAppService.createPost(request, currentUserId);
@@ -68,6 +71,7 @@ public class UserPostController {
      */
     @PutMapping("/{id}")
     @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "POST_EDIT_SELF", name = "编辑本人文章")})
+    @ActivityLog(ActivityType.UPDATE_POST)
     public ApiResponse<PostDTO> updatePost(@PathVariable String id, @Valid @RequestBody UpdatePostRequest request) {
         String currentUserId = UserContext.getCurrentUserId();
         PostDTO post = postAppService.updatePost(id, request, currentUserId);
@@ -121,6 +125,7 @@ public class UserPostController {
      */
     @DeleteMapping("/{id}")
     @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "POST_DELETE_SELF", name = "删除本人文章")})
+    @ActivityLog(ActivityType.DELETE_POST)
     public ApiResponse<Void> deletePost(@PathVariable String id) {
         String currentUserId = UserContext.getCurrentUserId();
         postAppService.deletePost(id, currentUserId);
