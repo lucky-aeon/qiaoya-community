@@ -65,22 +65,22 @@ public class PublicResourceController {
         // 读取并校验回调token
         String token = callbackRequest.getToken();
         if (!StringUtils.hasText(token)) {
-            log.warn("【OSS回调】未携带token，key={} size={} contentType={}",
-                    callbackRequest.getObjectKey(), callbackRequest.getSize(), callbackRequest.getMimeType());
+            log.warn("【OSS回调】未携带token，filename={} size={} contentType={}",
+                    callbackRequest.getFilename(), callbackRequest.getSize(), callbackRequest.getMimeType());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("Status", "UNAUTHORIZED", "message", "missing token"));
         }
 
         // 黑名单校验
         if (tokenBlacklistAppService.isBlacklisted(token)) {
-            log.warn("【OSS回调】token在黑名单，objectKey={}", callbackRequest.getObjectKey());
+            log.warn("【OSS回调】token在黑名单，filename={}", callbackRequest.getFilename());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("Status", "UNAUTHORIZED", "message", "token blacklisted"));
         }
 
         // JWT 有效性校验
         if (!jwtUtil.validateToken(token)) {
-            log.warn("【OSS回调】token无效，objectKey={}", callbackRequest.getObjectKey());
+            log.warn("【OSS回调】token无效，filename={}", callbackRequest.getFilename());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("Status", "UNAUTHORIZED", "message", "invalid token"));
         }
