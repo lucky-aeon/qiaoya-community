@@ -48,19 +48,35 @@ public class ContentEventDispatcher {
     @Async
     public void handleContentPublishedEvent(ContentPublishedEvent event) {
         try {
-            // 略过调试日志，避免噪音
-
             // 根据内容类型获取对应的处理器
             NotificationHandler handler = handlerMap.get(event.getContentType());
             if (handler == null) {
                 log.warn("No handler found for content type: {}", event.getContentType());
                 return;
             }
+            // 查询关注者信息
+            List<ContentNotificationService.NotificationRecipient> recipients =
+                    contentNotificationService.getContentFollowers(
+                            event.getContentType(),
+                            event.getContentId(),
+                            event.getAuthorId()
+                    );
+
+            if (recipients.isEmpty()) {
+                log.debug("No followers found for content {} of type {}",
+                        event.getContentId(), event.getContentType());
+                return;
+            }
+
+            log.info("[通知-分发] eventType={} contentId={} authorId={} handler={} recipients={}",
+                    event.getContentType(), event.getContentId(), event.getAuthorId(),
+                    handler.getClass().getSimpleName(), recipients.size());
 
             // 委托给具体的处理器处理通知
-            handler.handleNotification(event.getContentId(), event.getAuthorId(), List.of());
+            handler.handleNotification(event.getContentId(), event.getAuthorId(), recipients);
 
-            // 处理成功，无需额外日志
+            log.info("[通知-分发] 完成，eventType={} contentId={} recipients={}",
+                    event.getContentType(), event.getContentId(), recipients.size());
 
         } catch (Exception e) {
             // 记录错误但不重新抛出异常，避免影响主业务流程

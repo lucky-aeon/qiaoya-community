@@ -31,10 +31,38 @@ public class InAppNotificationTemplates {
 
         @Override
         public ContentType getContentType() {
+            // 关注内容更新（文章等）统一使用 PUBLISH_CONTENT 作为键
             return ContentType.PUBLISH_CONTENT;
         }
     }
     
+
+    /**
+     * 课程发布站内消息模板（复用内容更新渲染逻辑）
+     */
+    public static class CoursePublishedTemplate implements NotificationTemplate<ContentUpdateNotificationData> {
+
+        @Override
+        public String renderTitle(ContentUpdateNotificationData data) {
+            return "关注内容更新";
+        }
+
+        @Override
+        public String renderContent(ContentUpdateNotificationData data) {
+            String typeLabel = data.getContentType() == null ? "内容" : data.getContentType().getDescription();
+            return data.getAuthorName() + " 发布了新的" + typeLabel + "：" + data.getContentTitle();
+        }
+
+        @Override
+        public Class<ContentUpdateNotificationData> getSupportedDataType() {
+            return ContentUpdateNotificationData.class;
+        }
+
+        @Override
+        public ContentType getContentType() {
+            return ContentType.COURSE;
+        }
+    }
 
     /**
      * 评论站内消息模板
@@ -89,7 +117,8 @@ public class InAppNotificationTemplates {
 
         @Override
         public ContentType getContentType() {
-            return ContentType.POST;
+            // 章节更新必须以 CHAPTER 作为模板键，避免与 POST 冲突
+            return ContentType.CHAPTER;
         }
     }
 

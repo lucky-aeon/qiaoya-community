@@ -29,10 +29,10 @@ public class NotificationTemplateRegistry {
     private static final Logger log = LoggerFactory.getLogger(NotificationTemplateRegistry.class);
     
     // 站内消息模板
-    private final Map<ContentType, NotificationTemplate> inAppTemplates = new HashMap<>();
+    private final Map<ContentType, NotificationTemplate<?>> inAppTemplates = new HashMap<>();
     
     // 站外消息模板
-    private final Map<ContentType, NotificationTemplate> outAppTemplates = new HashMap<>();
+    private final Map<ContentType, NotificationTemplate<?>> outAppTemplates = new HashMap<>();
     
     private final ClasspathTemplateLoader templateLoader;
     private final SimpleTemplateRenderer templateRenderer;
@@ -56,6 +56,7 @@ public class NotificationTemplateRegistry {
     public void initTemplates() {
         // 注册站内消息模板
         registerInAppTemplate(new InAppNotificationTemplates.ContentUpdateTemplate());
+        registerInAppTemplate(new InAppNotificationTemplates.CoursePublishedTemplate());
         registerInAppTemplate(new InAppNotificationTemplates.CommentTemplate());
         registerInAppTemplate(new InAppNotificationTemplates.ChapterUpdatedTemplate());
         registerInAppTemplate(new InAppNotificationTemplates.UpdateLogPublishedTemplate());
@@ -71,7 +72,7 @@ public class NotificationTemplateRegistry {
 
 
         // 关注内容更新
-        registerOutAppTemplate(ContentType.PUBLISH_CONTENT,new FileBasedNotificationTemplate<>(
+        FileBasedNotificationTemplate<ContentUpdateNotificationData> contentUpdateEmailTemplate = new FileBasedNotificationTemplate<>(
             ContentUpdateNotificationData.class,
             "敲鸭社区 - 关注内容更新",
             "content-update.html",
@@ -87,7 +88,11 @@ public class NotificationTemplateRegistry {
                 return m;
             },
             webUrlConfig
-        ));
+        );
+        // 为不同内容类型复用同一份“关注内容更新”邮件模板
+        registerOutAppTemplate(ContentType.PUBLISH_CONTENT, contentUpdateEmailTemplate);
+        registerOutAppTemplate(ContentType.POST, contentUpdateEmailTemplate);
+        registerOutAppTemplate(ContentType.COURSE, contentUpdateEmailTemplate);
 
         // 评论/回复评论（邮件）
         registerOutAppTemplate(ContentType.COMMENT,new FileBasedNotificationTemplate<>(
@@ -179,15 +184,22 @@ public class NotificationTemplateRegistry {
     /**
      * 注册站内消息模板
      */
-    private void registerInAppTemplate(NotificationTemplate template) {
-        inAppTemplates.put(template.getContentType(), template);
+    private void registerInAppTemplate(NotificationTemplate<?> template) {
+        ContentType key = template.getContentType();
+        NotificationTemplate<?> old = inAppTemplates.put(key, template);
+        if (old != null && old.getClass() != template.getClass()) {
+            log.warn("站内模板键冲突: key={}, old={}, new={}", key, old.getClass().getSimpleName(), template.getClass().getSimpleName());
+        }
     }
     
     /**
      * 注册站外消息模板
      */
-    private void registerOutAppTemplate(ContentType contentType,NotificationTemplate template) {
-        outAppTemplates.put(contentType, template);
+    private void registerOutAppTemplate(ContentType contentType, NotificationTemplate<?> template) {
+        NotificationTemplate<?> old = outAppTemplates.put(contentType, template);
+        if (old != null && old.getClass() != template.getClass()) {
+            log.warn("站外模板键冲突: key={}, old={}, new={}", contentType, old.getClass().getSimpleName(), template.getClass().getSimpleName());
+        }
     }
     
     /**
@@ -195,7 +207,7 @@ public class NotificationTemplateRegistry {
      */
     @SuppressWarnings("unchecked")
     public <T extends NotificationData> NotificationTemplate<T> getInAppTemplate(ContentType contentType) {
-        return inAppTemplates.get(contentType);
+        return (NotificationTemplate<T>) inAppTemplates.get(contentType);
     }
     
     /**
@@ -203,7 +215,7 @@ public class NotificationTemplateRegistry {
      */
     @SuppressWarnings("unchecked")
     public <T extends NotificationData> NotificationTemplate<T> getOutAppTemplate(ContentType contentType) {
-        return outAppTemplates.get(contentType);
+        return (NotificationTemplate<T>) outAppTemplates.get(contentType);
     }
     
     /**

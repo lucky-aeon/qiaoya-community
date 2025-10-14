@@ -53,12 +53,23 @@ public class NotificationDomainService {
     /**
      * 发送到指定渠道
      */
-    private <T extends NotificationData> void sendToChannel(NotificationData notificationData, ChannelType channelType) {
+    private <T extends NotificationData> void sendToChannel(T notificationData, ChannelType channelType) {
         try {
 
             // 1. 获取模板
-            NotificationTemplate template = templateRegistry.getTemplate(notificationData.getContentType(), channelType);
+            NotificationTemplate<T> template = templateRegistry.getTemplate(notificationData.getContentType(), channelType);
             if (template == null) return;
+
+            // 防御：模板数据类型与实际数据不匹配时直接跳过，避免 ClassCastException
+            if (template.getSupportedDataType() != null &&
+                !template.getSupportedDataType().isInstance(notificationData)) {
+                log.warn("通知模板数据类型不匹配: expected={}, actual={}, contentType={}, channel={}",
+                        template.getSupportedDataType().getSimpleName(),
+                        notificationData.getClass().getSimpleName(),
+                        notificationData.getContentType(),
+                        channelType);
+                return;
+            }
 
             // 2. 渲染内容
             String title = template.renderTitle(notificationData);

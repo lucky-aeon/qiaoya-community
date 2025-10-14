@@ -1,0 +1,98 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "通知分发速率(每秒)",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "fieldConfig": { "defaults": { "unit": "ops" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "refId": "A",
+          "editorMode": "code",
+          "expr": "sum by (env) (rate(({service=\"qiaoya-community\"} |= \"[通知-分发] 完成\")[$__rate_interval]))"
+        }
+      ],
+      "options": { "legend": { "showLegend": true }, "tooltip": { "mode": "single" } }
+    },
+    {
+      "type": "timeseries",
+      "title": "通知发送错误速率",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "fieldConfig": { "defaults": { "unit": "ops" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "refId": "A",
+          "editorMode": "code",
+          "expr": "sum(rate(({service=\"qiaoya-community\", level=\"ERROR\"} |= \"通知-\")[$__rate_interval]))"
+        }
+      ],
+      "options": { "legend": { "showLegend": true }, "tooltip": { "mode": "single" } }
+    },
+    {
+      "type": "bargauge",
+      "title": "各处理器发送分布(按logger)",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "options": { "displayMode": "gradient", "orientation": "horizontal" },
+      "targets": [
+        {
+          "refId": "A",
+          "editorMode": "code",
+          "expr": "sum by (logger) (count_over_time(({service=\"qiaoya-community\"} |= \"[通知-\" |~ \"已(发送|通知)\")[$__interval]))"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "邮件未启用跳过次数(1h)",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 8 },
+      "targets": [
+        {
+          "refId": "A",
+          "editorMode": "code",
+          "expr": "sum(count_over_time(({service=\"qiaoya-community\"} |= \"邮件服务未启用\")[1h]))"
+        }
+      ],
+      "options": { "reduceOptions": { "calcs": ["last"], "values": false } }
+    },
+    {
+      "type": "logs",
+      "title": "最近错误日志(通知)",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 16 },
+      "targets": [
+        {
+          "refId": "A",
+          "editorMode": "code",
+          "expr": "{service=\"qiaoya-community\", level=\"ERROR\"} |= \"通知-\""
+        }
+      ],
+      "options": { "showLabels": true, "showTime": true }
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["loki", "logs", "notifications"],
+  "templating": { "list": [] },
+  "time": { "from": "now-6h", "to": "now" },
+  "timepicker": {},
+  "timezone": "",
+  "title": "Notifications Overview",
+  "uid": "notifications_overview",
+  "version": 1,
+  "weekStart": ""
+}
+
