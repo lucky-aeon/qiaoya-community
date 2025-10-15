@@ -30,6 +30,7 @@ public class DeviceSessionDomainService {
     private static final Logger log = LoggerFactory.getLogger(DeviceSessionDomainService.class);
     private final DistributedLock lock;
     private final StringRedisTemplate redis;
+    private static final String KEY_USER_BAN_SET = "session:user:ban:set"; // ZSET(userId -> expireAtMillis)
 
     public DeviceSessionDomainService(DistributedLock lock, StringRedisTemplate redis) {
         this.lock = lock;
@@ -79,8 +80,13 @@ public class DeviceSessionDomainService {
             if (histCount != null && histCount > banThreshold) {
                 if (banTtlMs > 0) {
                     redis.opsForValue().set(banKey, "1", Duration.ofMillis(banTtlMs));
+                    long expireAt = now + banTtlMs;
+                    redis.opsForZSet().add(KEY_USER_BAN_SET, userId, expireAt);
                 } else {
+                    // 永久封禁：key 无过期；为了可枚举，这里将过期时间设置为远未来
                     redis.opsForValue().set(banKey, "1");
+                    long expireAt = now + Duration.ofDays(36500).toMillis(); // 约100年
+                    redis.opsForZSet().add(KEY_USER_BAN_SET, userId, expireAt);
                 }
                 log.warn("【会话】触发封禁：userId={}, recentIpCount={}, threshold={}", userId, histCount, banThreshold);
                 return false;
@@ -154,8 +160,13 @@ public class DeviceSessionDomainService {
             if (histCount != null && histCount > banThreshold) {
                 if (banTtlMs > 0) {
                     redis.opsForValue().set(banKey, "1", Duration.ofMillis(banTtlMs));
+                    long expireAt = now + banTtlMs;
+                    redis.opsForZSet().add(KEY_USER_BAN_SET, userId, expireAt);
                 } else {
+                    // 永久封禁：key 无过期；为了可枚举，这里将过期时间设置为远未来
                     redis.opsForValue().set(banKey, "1");
+                    long expireAt = now + Duration.ofDays(36500).toMillis(); // 约100年
+                    redis.opsForZSet().add(KEY_USER_BAN_SET, userId, expireAt);
                 }
                 log.warn("【会话】触发封禁：userId={}, recentIpCount={}, threshold={}", userId, histCount, banThreshold);
                 return false;
@@ -437,5 +448,78 @@ public class DeviceSessionDomainService {
      */
     public boolean isUserBanned(String userId) {
         return Boolean.TRUE.equals(redis.hasKey(keyBan(userId)));
+    }
+
+    /**
+     * 列出仍处于封禁期的用户。
+     * - 自动清理已过期的成员；
+     * - 对于永久封禁（无TTL），继续保留并返回，bannedUntil=null，remainSeconds=-1。
+     */
+    public List<UserBanInfo> listBannedUsers() {
+        long now = System.currentTimeMillis();
+        Set<ZSetOperations.TypedTuple<String>> tuples =
+                redis.opsForZSet().rangeByScoreWithScores(KEY_USER_BAN_SET, now, Double.POSITIVE_INFINITY);
+
+        List<UserBanInfo> result = new ArrayList<>();
+        if (tuples == null || tuples.isEmpty()) {
+            return result;
+        }
+
+        for (ZSetOperations.TypedTuple<String> t : tuples) {
+            String userId = t.getValue();
+            if (userId == null) continue;
+
+            String banKey = keyBan(userId);
+            Long ttlSeconds = redis.getExpire(banKey);
+            if (ttlSeconds == null || ttlSeconds == -2) {
+                // 不存在：从集合中清理
+                redis.opsForZSet().remove(KEY_USER_BAN_SET, userId);
+                continue;
+            }
+
+            if (ttlSeconds == -1) {
+                // 永久封禁
+                result.add(new UserBanInfo(userId, null, -1));
+                continue;
+            }
+
+            if (ttlSeconds > 0) {
+                long expireAtMillis = now + ttlSeconds * 1000;
+                LocalDateTime expireAt = LocalDateTime.ofInstant(
+                        Instant.ofEpochMilli(expireAtMillis), ZoneId.systemDefault());
+                result.add(new UserBanInfo(userId, expireAt, ttlSeconds));
+            }
+        }
+        return result;
+    }
+
+    /**
+     * 解除指定用户封禁
+     */
+    public void unbanUser(String userId) {
+        if (userId == null) return;
+        redis.delete(keyBan(userId));
+        redis.opsForZSet().remove(KEY_USER_BAN_SET, userId);
+        // 核心：清空滑窗历史，避免刚解封即因历史计数再次触发封禁
+        redis.delete(keyHist(userId));
+    }
+
+    /**
+     * 用户封禁信息
+     */
+    public static class UserBanInfo {
+        private final String userId;
+        private final LocalDateTime expireAt; // 永久封禁为 null
+        private final long remainSeconds;     // 永久封禁为 -1
+
+        public UserBanInfo(String userId, LocalDateTime expireAt, long remainSeconds) {
+            this.userId = userId;
+            this.expireAt = expireAt;
+            this.remainSeconds = remainSeconds;
+        }
+
+        public String getUserId() { return userId; }
+        public LocalDateTime getExpireAt() { return expireAt; }
+        public long getRemainSeconds() { return remainSeconds; }
     }
 }

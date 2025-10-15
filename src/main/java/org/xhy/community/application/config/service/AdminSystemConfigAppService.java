@@ -52,16 +52,16 @@ public class AdminSystemConfigAppService {
      * 根据类型更新系统配置
      */
     public SystemConfigDTO updateConfigByType(SystemConfigType type, Object configData) {
-        // 根据配置类型进行特殊验证和处理
-        switch (type) {
-            case DEFAULT_SUBSCRIPTION_PLAN -> validateAndUpdateDefaultSubscriptionConfig(configData);
-            case EMAIL_TEMPLATE, SYSTEM_MAINTENANCE -> validateGeneralConfig(configData);
-            case USER_SESSION_LIMIT -> validateAndUpdateUserSessionConfig(configData);
-            case OAUTH_GITHUB -> validateAndUpdateGithubOAuthConfig(configData);
-        }
+        // 根据配置类型进行特殊验证和处理，并返回规范化后的对象用于持久化
+        Object normalized = switch (type) {
+            case DEFAULT_SUBSCRIPTION_PLAN -> { validateAndUpdateDefaultSubscriptionConfig(configData); yield configData; }
+            case EMAIL_TEMPLATE, SYSTEM_MAINTENANCE -> { validateGeneralConfig(configData); yield configData; }
+            case USER_SESSION_LIMIT -> validateAndBuildUserSessionConfig(configData);
+            case OAUTH_GITHUB -> { validateAndUpdateGithubOAuthConfig(configData); yield configData; }
+        };
 
-        // 更新配置
-        systemConfigDomainService.updateConfigData(type, configData);
+        // 使用规范化对象进行持久化，避免未知字段导致后续解析失败
+        systemConfigDomainService.updateConfigData(type, normalized);
 
         // 返回更新后的配置
         return getConfigByType(type);
@@ -145,7 +145,7 @@ public class AdminSystemConfigAppService {
     /**
      * 验证并更新用户会话限制配置
      */
-    private void validateAndUpdateUserSessionConfig(Object configData) {
+    private UserSessionConfig validateAndBuildUserSessionConfig(Object configData) {
         try {
             UserSessionConfig config;
             if (configData instanceof UserSessionConfig) {
@@ -173,6 +173,7 @@ public class AdminSystemConfigAppService {
                     "封禁时长不能为负数");
             }
 
+            return config;
         } catch (Exception e) {
             if (e instanceof BusinessException) {
                 throw e;
