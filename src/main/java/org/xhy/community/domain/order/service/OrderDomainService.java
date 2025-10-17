@@ -100,9 +100,9 @@ public class OrderDomainService {
      */
     public java.util.List<OrderEntity> getOrders(LocalDateTime startTime, LocalDateTime endTime) {
         LambdaQueryWrapper<OrderEntity> queryWrapper = new LambdaQueryWrapper<OrderEntity>()
+                .select(OrderEntity::getActivatedTime, OrderEntity::getAmount)
                 .ge(startTime != null, OrderEntity::getActivatedTime, startTime)
-                .le(endTime != null, OrderEntity::getActivatedTime, endTime)
-                .orderByAsc(OrderEntity::getActivatedTime);
+                .le(endTime != null, OrderEntity::getActivatedTime, endTime);
 
         return orderRepository.selectList(queryWrapper);
     }

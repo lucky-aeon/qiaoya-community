@@ -179,6 +179,7 @@ public class CourseProgressDomainService {
                                                                                java.time.LocalDateTime endTime) {
         return userCourseProgressRepository.selectList(
                 new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<UserCourseProgressEntity>()
+                        .select(UserCourseProgressEntity::getCourseId, UserCourseProgressEntity::getLastAccessTime)
                         .ge(startTime != null, UserCourseProgressEntity::getLastAccessTime, startTime)
                         .le(endTime != null, UserCourseProgressEntity::getLastAccessTime, endTime)
         );

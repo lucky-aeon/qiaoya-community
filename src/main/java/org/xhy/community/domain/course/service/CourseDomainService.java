@@ -150,9 +150,9 @@ public class CourseDomainService {
      */
     public List<CourseEntity> getCourses(java.time.LocalDateTime startTime, java.time.LocalDateTime endTime) {
         LambdaQueryWrapper<CourseEntity> queryWrapper = new LambdaQueryWrapper<CourseEntity>()
+                .select(CourseEntity::getCreateTime)
                 .ge(startTime != null, CourseEntity::getCreateTime, startTime)
-                .le(endTime != null, CourseEntity::getCreateTime, endTime)
-                .orderByAsc(CourseEntity::getCreateTime);
+                .le(endTime != null, CourseEntity::getCreateTime, endTime);
 
         return courseRepository.selectList(queryWrapper);
     }

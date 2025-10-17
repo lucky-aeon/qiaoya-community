@@ -1,5 +1,6 @@
 package org.xhy.community.application.metrics.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 import org.xhy.community.application.metrics.assembler.MetricsAssembler;
 import org.xhy.community.application.metrics.dto.*;
@@ -18,11 +19,13 @@ import org.xhy.community.domain.subscription.service.SubscriptionDomainService;
 import org.xhy.community.domain.subscription.service.SubscriptionPlanDomainService;
 import org.xhy.community.domain.user.entity.UserEntity;
 import org.xhy.community.domain.user.service.UserDomainService;
+import org.xhy.community.infrastructure.cache.DashboardMetricsCache;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 /**
@@ -39,6 +42,8 @@ public class AdminMetricsAppService {
     private final SubscriptionDomainService subscriptionDomainService;
     private final SubscriptionPlanDomainService subscriptionPlanDomainService;
     private final CourseProgressDomainService courseProgressDomainService;
+    private final DashboardMetricsCache metricsCache;
+    private final ObjectMapper objectMapper;
 
     public AdminMetricsAppService(UserDomainService userDomainService,
                                  UserActivityLogDomainService activityLogDomainService,
@@ -46,7 +51,9 @@ public class AdminMetricsAppService {
                                  CourseDomainService courseDomainService,
                                  SubscriptionDomainService subscriptionDomainService,
                                  SubscriptionPlanDomainService subscriptionPlanDomainService,
-                                 CourseProgressDomainService courseProgressDomainService) {
+                                 CourseProgressDomainService courseProgressDomainService,
+                                 DashboardMetricsCache metricsCache,
+                                 ObjectMapper objectMapper) {
         this.userDomainService = userDomainService;
         this.activityLogDomainService = activityLogDomainService;
         this.orderDomainService = orderDomainService;
@@ -54,6 +61,8 @@ public class AdminMetricsAppService {
         this.subscriptionDomainService = subscriptionDomainService;
         this.subscriptionPlanDomainService = subscriptionPlanDomainService;
         this.courseProgressDomainService = courseProgressDomainService;
+        this.metricsCache = metricsCache;
+        this.objectMapper = objectMapper;
     }
 
     /**
@@ -64,16 +73,31 @@ public class AdminMetricsAppService {
     public DashboardMetricsDTO getDashboardMetrics(TimeRange timeRange, Integer days) {
         int queryDays = (days != null && days > 0) ? days : 30;
 
-        // 获取各项指标
-        ActiveUserTrendDTO activeUserTrend = getActiveUserTrend(timeRange, queryDays);
-        OrderTrendDTO orderTrend = getOrderTrend(timeRange, queryDays);
-        RegistrationTrendDTO registrationTrend = getRegistrationTrend(timeRange, queryDays);
-        CourseTrendDTO courseTrend = getCourseTrend(timeRange, queryDays);
+        // 1) 读取缓存（30s 窗口内复用）
+        try {
+            String cached = metricsCache.get(timeRange.name(), queryDays);
+            if (cached != null && !cached.isBlank()) {
+                return objectMapper.readValue(cached, DashboardMetricsDTO.class);
+            }
+        } catch (Exception ignored) {}
 
-        // 课程学习指标（当期天/周/月内，学习过课程的学习人数聚合）
-        java.util.List<CourseLearningItemDTO> courseLearningMetrics = getCourseLearningMetrics(timeRange);
+        // 2) 并发计算各项指标
+        CompletableFuture<ActiveUserTrendDTO> f1 = CompletableFuture.supplyAsync(() -> getActiveUserTrend(timeRange, queryDays));
+        CompletableFuture<OrderTrendDTO> f2 = CompletableFuture.supplyAsync(() -> getOrderTrend(timeRange, queryDays));
+        CompletableFuture<RegistrationTrendDTO> f3 = CompletableFuture.supplyAsync(() -> getRegistrationTrend(timeRange, queryDays));
+        CompletableFuture<CourseTrendDTO> f4 = CompletableFuture.supplyAsync(() -> getCourseTrend(timeRange, queryDays));
+        CompletableFuture<java.util.List<CourseLearningItemDTO>> f5 = CompletableFuture.supplyAsync(() -> getCourseLearningMetrics(timeRange));
 
-        return new DashboardMetricsDTO(activeUserTrend, orderTrend, registrationTrend, courseTrend, courseLearningMetrics);
+        DashboardMetricsDTO dto = new DashboardMetricsDTO(
+                f1.join(), f2.join(), f3.join(), f4.join(), f5.join()
+        );
+
+        // 3) 写入缓存（容错）
+        try {
+            metricsCache.set(timeRange.name(), queryDays, objectMapper.writeValueAsString(dto));
+        } catch (Exception ignored) {}
+
+        return dto;
     }
 
     /**

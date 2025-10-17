@@ -397,9 +397,9 @@ public class UserDomainService {
      */
     public List<UserEntity> getRegisteredUsers(java.time.LocalDateTime startTime, java.time.LocalDateTime endTime) {
         LambdaQueryWrapper<UserEntity> queryWrapper = new LambdaQueryWrapper<UserEntity>()
+                .select(UserEntity::getCreateTime)
                 .ge(startTime != null, UserEntity::getCreateTime, startTime)
-                .le(endTime != null, UserEntity::getCreateTime, endTime)
-                .orderByAsc(UserEntity::getCreateTime);
+                .le(endTime != null, UserEntity::getCreateTime, endTime);
 
         return userRepository.selectList(queryWrapper);
     }

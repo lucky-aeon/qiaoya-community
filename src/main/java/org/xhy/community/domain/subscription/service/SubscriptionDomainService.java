@@ -280,6 +280,7 @@ public class SubscriptionDomainService {
         }
 
         LambdaQueryWrapper<UserSubscriptionEntity> queryWrapper = new LambdaQueryWrapper<UserSubscriptionEntity>()
+                .select(UserSubscriptionEntity::getUserId, UserSubscriptionEntity::getSubscriptionPlanId)
                 .in(UserSubscriptionEntity::getUserId, userIds)
                 .le(UserSubscriptionEntity::getStartTime, endTime)
                 .ge(UserSubscriptionEntity::getEndTime, startTime);

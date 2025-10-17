@@ -299,10 +299,10 @@ public class UserActivityLogDomainService {
      */
     public List<UserActivityLogEntity> getActiveUserLogs(LocalDateTime startTime, LocalDateTime endTime) {
         LambdaQueryWrapper<UserActivityLogEntity> queryWrapper = new LambdaQueryWrapper<UserActivityLogEntity>()
+                .select(UserActivityLogEntity::getUserId, UserActivityLogEntity::getCreateTime)
                 .ge(startTime != null, UserActivityLogEntity::getCreateTime, startTime)
                 .le(endTime != null, UserActivityLogEntity::getCreateTime, endTime)
-                .isNotNull(UserActivityLogEntity::getUserId)
-                .orderByAsc(UserActivityLogEntity::getCreateTime);
+                .isNotNull(UserActivityLogEntity::getUserId);
 
         return userActivityLogRepository.selectList(queryWrapper);
     }
