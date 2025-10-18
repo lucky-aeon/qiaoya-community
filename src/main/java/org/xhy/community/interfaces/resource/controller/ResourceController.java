@@ -62,6 +62,7 @@ public class ResourceController {
     }
     
     /**
+     * 用来请求 /api/public/resource/{resourceId}/access 接口前要使用的，设置 cookie
      * 建立资源访问会话：签发短时效 HttpOnly Cookie (RAUTH)
      * 说明：前端以 Bearer 调用本接口，后端将 Bearer 中的token写入 HttpOnly Cookie，
      *       Path 受限在 /api/public/resource，用于元素请求(<img>/<a>)的鉴权。

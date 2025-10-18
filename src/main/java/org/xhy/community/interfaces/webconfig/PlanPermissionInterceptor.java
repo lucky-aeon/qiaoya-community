@@ -8,12 +8,14 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.xhy.community.application.permission.service.UserPermissionAppService;
+import org.xhy.community.domain.user.entity.UserCourseEntity;
 import org.xhy.community.infrastructure.annotation.RequiresPlanPermissions;
 import org.xhy.community.infrastructure.config.UserContext;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -28,6 +30,7 @@ public class PlanPermissionInterceptor implements HandlerInterceptor {
     private static final Logger log = LoggerFactory.getLogger(PlanPermissionInterceptor.class);
 
     private final UserPermissionAppService userPermissionAppService;
+
 
     public PlanPermissionInterceptor(UserPermissionAppService userPermissionAppService) {
         this.userPermissionAppService = userPermissionAppService;
@@ -60,6 +63,10 @@ public class PlanPermissionInterceptor implements HandlerInterceptor {
             }
         }
         Set<String> have = new HashSet<>(userPermissionAppService.getUserPlanPermissionCodes(userId));
+
+        // 如果用户有购买课程，则手动添加权限
+        addPermissionFoyBuyCourse(have,userId);
+
         boolean allowed = have.containsAll(need);
 
         if (!allowed) {
@@ -69,6 +76,14 @@ public class PlanPermissionInterceptor implements HandlerInterceptor {
         }
 
         return true;
+    }
+
+    private void addPermissionFoyBuyCourse(Set<String> permissionCodes,String userId){
+        List<String> directCoursesIds = userPermissionAppService.getDirectCoursesIds(userId);
+        if (directCoursesIds !=null && !directCoursesIds.isEmpty()){
+            permissionCodes.add("RESOURCE_DOWNLOAD");
+            permissionCodes.add("CHAPTER_APP_DETAIL");
+        }
     }
 
     private RequiresPlanPermissions getAnnotation(HandlerMethod handlerMethod) {
