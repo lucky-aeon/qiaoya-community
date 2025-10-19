@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 public class JwtProperties {
     
     private String secret = "qiaoyaCommunitySecretKeyForJWTTokenGenerationAndValidation2024";
-    private long expiration = 86400000; // 24小时，单位毫秒
+    private long expiration = 2592000000L; // 30天，单位毫秒
     private String header = "Authorization";
     private String tokenPrefix = "Bearer ";
     
