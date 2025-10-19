@@ -2,7 +2,8 @@ package org.xhy.community.domain.post.valueobject;
 
 public enum CategoryType {
     ARTICLE("文章"),
-    QA("问答");
+    QA("问答"),
+    INTERVIEW("面试题");
     
     private final String description;
     

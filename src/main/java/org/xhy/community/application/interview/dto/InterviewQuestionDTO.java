@@ -12,6 +12,12 @@ public class InterviewQuestionDTO {
     private Integer rating;
     private String categoryId;
     private String authorId;
+    // 扩展展示字段
+    private String categoryName;
+    private String authorName;
+    private Integer likeCount;
+    private Integer viewCount;
+    private Integer commentCount;
     private ProblemStatus status;
     private LocalDateTime publishTime;
     private List<String> tags;  // 标签列表
@@ -32,6 +38,16 @@ public class InterviewQuestionDTO {
     public void setCategoryId(String categoryId) { this.categoryId = categoryId; }
     public String getAuthorId() { return authorId; }
     public void setAuthorId(String authorId) { this.authorId = authorId; }
+    public String getCategoryName() { return categoryName; }
+    public void setCategoryName(String categoryName) { this.categoryName = categoryName; }
+    public String getAuthorName() { return authorName; }
+    public void setAuthorName(String authorName) { this.authorName = authorName; }
+    public Integer getLikeCount() { return likeCount; }
+    public void setLikeCount(Integer likeCount) { this.likeCount = likeCount; }
+    public Integer getViewCount() { return viewCount; }
+    public void setViewCount(Integer viewCount) { this.viewCount = viewCount; }
+    public Integer getCommentCount() { return commentCount; }
+    public void setCommentCount(Integer commentCount) { this.commentCount = commentCount; }
     public ProblemStatus getStatus() { return status; }
     public void setStatus(ProblemStatus status) { this.status = status; }
     public LocalDateTime getPublishTime() { return publishTime; }

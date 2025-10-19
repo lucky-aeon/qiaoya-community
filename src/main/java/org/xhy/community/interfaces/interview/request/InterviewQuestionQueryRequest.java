@@ -7,7 +7,7 @@ public class InterviewQuestionQueryRequest extends PageRequest {
 
     private ProblemStatus status;
     private String categoryId;
-    private String keyword;  // 标题搜索关键词
+    private String title;  // 标题搜索关键词
     private String tag;  // 标签筛选（单个标签）
     private Integer minRating;  // 最小难度
     private Integer maxRating;  // 最大难度
@@ -31,12 +31,12 @@ public class InterviewQuestionQueryRequest extends PageRequest {
         this.categoryId = categoryId;
     }
 
-    public String getKeyword() {
-        return keyword;
+    public String getTitle() {
+        return title;
     }
 
-    public void setKeyword(String keyword) {
-        this.keyword = keyword;
+    public void setTitle(String title) {
+        this.title = title;
     }
 
     public String getTag() {

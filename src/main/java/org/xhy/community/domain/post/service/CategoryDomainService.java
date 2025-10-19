@@ -213,7 +213,29 @@ public class CategoryDomainService {
             .orderByAsc(CategoryEntity::getLevel)
             .orderByAsc(CategoryEntity::getSortOrder)
             .orderByDesc(CategoryEntity::getCreateTime);
-        
+
         return categoryRepository.selectList(queryWrapper);
+    }
+
+    /**
+     * 校验面试分类是否有效
+     * 校验规则：分类存在、类型为 INTERVIEW、且处于激活状态
+     *
+     * @param categoryId 分类ID
+     * @throws BusinessException 如果分类不存在、类型不匹配或已禁用
+     */
+    public void validateInterviewCategory(String categoryId) {
+        CategoryEntity category = getCategoryById(categoryId);
+
+        if (!CategoryType.INTERVIEW.equals(category.getType())) {
+            log.warn("【分类校验】分类类型不匹配：categoryId={}, 期望=INTERVIEW, 实际={}",
+                    categoryId, category.getType());
+            throw new BusinessException(PostErrorCode.CATEGORY_TYPE_MISMATCH);
+        }
+
+        if (!Boolean.TRUE.equals(category.getIsActive())) {
+            log.warn("【分类校验】分类已禁用：categoryId={}", categoryId);
+            throw new BusinessException(PostErrorCode.CATEGORY_DISABLED);
+        }
     }
 }

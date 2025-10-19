@@ -10,6 +10,8 @@ import org.xhy.community.infrastructure.annotation.ActivityLog;
 import org.xhy.community.infrastructure.config.ApiResponse;
 import org.xhy.community.interfaces.interview.request.InterviewQuestionQueryRequest;
 import org.xhy.community.interfaces.interview.request.UpdateInterviewQuestionRequest;
+import org.xhy.community.interfaces.interview.request.AdminBatchCreateInterviewQuestionRequest;
+import org.xhy.community.infrastructure.config.UserContext;
 
 /**
  * 管理员面试题管理控制器
@@ -72,36 +74,6 @@ public class AdminInterviewQuestionController {
     }
 
     /**
-     * 发布面试题
-     * 管理员发布任意面试题
-     * 需要管理员权限认证
-     *
-     * @param id 面试题ID
-     * @return 操作结果
-     */
-    @PostMapping("/{id}/publish")
-    @ActivityLog(ActivityType.ADMIN_INTERVIEW_QUESTION_PUBLISH)
-    public ApiResponse<Void> publishQuestion(@PathVariable String id) {
-        adminInterviewQuestionAppService.publish(id);
-        return ApiResponse.success("发布成功");
-    }
-
-    /**
-     * 归档面试题
-     * 管理员归档任意面试题
-     * 需要管理员权限认证
-     *
-     * @param id 面试题ID
-     * @return 操作结果
-     */
-    @PostMapping("/{id}/archive")
-    @ActivityLog(ActivityType.ADMIN_INTERVIEW_QUESTION_ARCHIVE)
-    public ApiResponse<Void> archiveQuestion(@PathVariable String id) {
-        adminInterviewQuestionAppService.archive(id);
-        return ApiResponse.success("归档成功");
-    }
-
-    /**
      * 删除面试题
      * 管理员软删除指定的面试题
      * 需要管理员权限认证
@@ -114,5 +86,16 @@ public class AdminInterviewQuestionController {
     public ApiResponse<Void> deleteQuestion(@PathVariable String id) {
         adminInterviewQuestionAppService.delete(id);
         return ApiResponse.success("删除成功");
+    }
+
+    /**
+     * 批量创建面试题（已发布）
+     * 入参仅标题与分类ID
+     */
+    @PostMapping("/batch")
+    public ApiResponse<java.util.List<InterviewQuestionDTO>> batchCreate(@Valid @RequestBody AdminBatchCreateInterviewQuestionRequest request) {
+        String operatorId = UserContext.getCurrentUserId();
+        java.util.List<InterviewQuestionDTO> dtos = adminInterviewQuestionAppService.batchCreatePublished(request, operatorId);
+        return ApiResponse.success("批量创建成功", dtos);
     }
 }

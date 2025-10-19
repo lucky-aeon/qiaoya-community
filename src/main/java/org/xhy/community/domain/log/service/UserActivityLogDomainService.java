@@ -250,6 +250,60 @@ public class UserActivityLogDomainService {
         }
         return result;
     }
+
+    // ==================== 面试题浏览统计（按用户去重） ====================
+
+    /**
+     * 统计某道面试题的“按用户去重”的浏览人数
+     */
+    public Long getDistinctViewerCountByInterviewQuestionId(String questionId) {
+        if (!org.springframework.util.StringUtils.hasText(questionId)) {
+            return 0L;
+        }
+
+        LambdaQueryWrapper<UserActivityLogEntity> wrapper = new LambdaQueryWrapper<UserActivityLogEntity>()
+                .eq(UserActivityLogEntity::getActivityType, ActivityType.VIEW_INTERVIEW_QUESTION)
+                .eq(UserActivityLogEntity::getTargetType, "INTERVIEW_QUESTION")
+                .eq(UserActivityLogEntity::getTargetId, questionId)
+                .isNotNull(UserActivityLogEntity::getUserId)
+                .select(UserActivityLogEntity::getUserId)
+                .groupBy(UserActivityLogEntity::getUserId);
+
+        List<UserActivityLogEntity> list = userActivityLogRepository.selectList(wrapper);
+        return (long) list.size();
+    }
+
+    /**
+     * 批量统计面试题的“按用户去重”的浏览人数
+     * 返回 Map<questionId, count>
+     */
+    public Map<String, Long> getDistinctViewerCountMapByInterviewQuestionIds(Collection<String> questionIds) {
+        if (questionIds == null || questionIds.isEmpty()) {
+            return Map.of();
+        }
+
+        LambdaQueryWrapper<UserActivityLogEntity> wrapper = new LambdaQueryWrapper<UserActivityLogEntity>()
+                .eq(UserActivityLogEntity::getActivityType, ActivityType.VIEW_INTERVIEW_QUESTION)
+                .eq(UserActivityLogEntity::getTargetType, "INTERVIEW_QUESTION")
+                .in(UserActivityLogEntity::getTargetId, questionIds)
+                .isNotNull(UserActivityLogEntity::getUserId)
+                .select(UserActivityLogEntity::getTargetId, UserActivityLogEntity::getUserId)
+                .groupBy(UserActivityLogEntity::getTargetId, UserActivityLogEntity::getUserId);
+
+        List<UserActivityLogEntity> rows = userActivityLogRepository.selectList(wrapper);
+        Map<String, Long> result = new HashMap<>();
+        for (UserActivityLogEntity row : rows) {
+            String qid = row.getTargetId();
+            if (qid != null) {
+                result.merge(qid, 1L, Long::sum);
+            }
+        }
+
+        for (String id : questionIds) {
+            result.putIfAbsent(id, 0L);
+        }
+        return result;
+    }
     
     /**
      * 根据活动分类获取该分类下的所有活动类型

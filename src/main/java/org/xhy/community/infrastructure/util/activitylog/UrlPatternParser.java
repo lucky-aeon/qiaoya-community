@@ -57,6 +57,9 @@ public class UrlPatternParser {
         URL_PATTERNS.put(Pattern.compile("/api/admin/chapters/([\\w-]+)"), new TargetTypeMapping("CHAPTER", 1));
         URL_PATTERNS.put(Pattern.compile("/api/admin/cdk/([\\w-]+)"), new TargetTypeMapping("CDK", 1));
         URL_PATTERNS.put(Pattern.compile("/api/admin/update-logs/([\\w-]+)(?:/toggle-status)?"), new TargetTypeMapping("UPDATE_LOG", 1));
+
+        // 面试题相关
+        URL_PATTERNS.put(Pattern.compile("/api/interview-questions/([\\w-]+)"), new TargetTypeMapping("INTERVIEW_QUESTION", 1));
     }
     
     /**

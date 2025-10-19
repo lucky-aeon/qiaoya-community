@@ -7,13 +7,9 @@ import java.util.List;
 public class CreateInterviewQuestionRequest {
     @NotBlank
     private String title;
-    @NotBlank
     private String description;
-    @NotBlank
     private String answer;
-    @NotNull
-    @Min(1)
-    @Max(5)
+    // 难度：对用户可选（默认3；由应用/领域层控制），管理员可在更新时修改
     private Integer rating;
     @NotBlank
     private String categoryId;
@@ -32,4 +28,3 @@ public class CreateInterviewQuestionRequest {
     public List<String> getTags() { return tags; }
     public void setTags(List<String> tags) { this.tags = tags; }
 }
-

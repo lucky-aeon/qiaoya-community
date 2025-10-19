@@ -67,6 +67,9 @@ public enum ActivityType {
      * 查看课程
      */
     VIEW_COURSE("查看课程"),
+
+    /** 查看面试题 */
+    VIEW_INTERVIEW_QUESTION("查看面试题"),
     
     /**
      * 查看用户资料
@@ -365,7 +368,17 @@ public enum ActivityType {
     /** 管理员手动发放标签 */
     ADMIN_TAG_ASSIGN("管理员手动发放标签"),
     /** 管理员撤销用户标签 */
-    ADMIN_TAG_REVOKE("管理员撤销用户标签");
+    ADMIN_TAG_REVOKE("管理员撤销用户标签"),
+
+    // ==================== 面试题管理（管理员） ====================
+    /** 管理员更新面试题 */
+    ADMIN_INTERVIEW_QUESTION_UPDATE("管理员更新面试题"),
+    /** 管理员发布面试题 */
+    ADMIN_INTERVIEW_QUESTION_PUBLISH("管理员发布面试题"),
+    /** 管理员归档面试题 */
+    ADMIN_INTERVIEW_QUESTION_ARCHIVE("管理员归档面试题"),
+    /** 管理员删除面试题 */
+    ADMIN_INTERVIEW_QUESTION_DELETE("管理员删除面试题");
     
     private final String description;
     
@@ -400,6 +413,7 @@ public enum ActivityType {
             case VIEW_COURSE:
             case VIEW_USER_PROFILE:
             case SEARCH_CONTENT:
+            case VIEW_INTERVIEW_QUESTION:
             case RESOURCE_DOWNLOAD:
                 return ActivityCategory.BROWSING;
                 
@@ -471,6 +485,10 @@ public enum ActivityType {
             case ADMIN_TAG_REMOVE_SCOPE:
             case ADMIN_TAG_ASSIGN:
             case ADMIN_TAG_REVOKE:
+            case ADMIN_INTERVIEW_QUESTION_UPDATE:
+            case ADMIN_INTERVIEW_QUESTION_PUBLISH:
+            case ADMIN_INTERVIEW_QUESTION_ARCHIVE:
+            case ADMIN_INTERVIEW_QUESTION_DELETE:
                 return ActivityCategory.ADMINISTRATION;
                 
             default:

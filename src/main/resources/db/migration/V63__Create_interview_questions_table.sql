@@ -12,7 +12,7 @@ CREATE TABLE interview_questions (
     extra JSONB NOT NULL DEFAULT '{}'::jsonb,
     create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     update_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    deleted BOOLEAN NOT NULL DEFAULT FALSE
+    deleted_at   TIMESTAMP   NULL
 );
 
 -- 索引（按高频访问维度）
@@ -34,5 +34,5 @@ COMMENT ON COLUMN interview_questions.publish_time IS '发布时间（发布时�
 COMMENT ON COLUMN interview_questions.extra IS '扩展字段（低频信息）';
 COMMENT ON COLUMN interview_questions.create_time IS '创建时间';
 COMMENT ON COLUMN interview_questions.update_time IS '更新时间';
-COMMENT ON COLUMN interview_questions.deleted IS '软删除标记';
+COMMENT ON COLUMN interview_questions.deleted_at IS '软删除标记';
 

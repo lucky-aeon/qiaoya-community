@@ -5,12 +5,18 @@ import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 import org.xhy.community.application.interview.dto.InterviewQuestionDTO;
 import org.xhy.community.application.interview.service.InterviewQuestionAppService;
+import org.xhy.community.domain.common.valueobject.ActivityType;
 import org.xhy.community.infrastructure.annotation.RequiresPlanPermissions;
+import org.xhy.community.infrastructure.annotation.ActivityLog;
 import org.xhy.community.infrastructure.config.ApiResponse;
 import org.xhy.community.infrastructure.config.UserContext;
 import org.xhy.community.interfaces.interview.request.CreateInterviewQuestionRequest;
 import org.xhy.community.interfaces.interview.request.InterviewQuestionQueryRequest;
 import org.xhy.community.interfaces.interview.request.UpdateInterviewQuestionRequest;
+import org.xhy.community.interfaces.interview.request.InterviewQuestionStatusRequest;
+import org.xhy.community.infrastructure.config.ValidationErrorCode;
+import org.xhy.community.infrastructure.exception.BusinessException;
+import org.xhy.community.interfaces.interview.request.BatchCreateInterviewQuestionsRequest;
 
 /**
  * 面试题控制器
@@ -70,6 +76,7 @@ public class InterviewQuestionController {
      */
     @GetMapping("/{id}")
     @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "INTERVIEW_QUESTION_DETAIL", name = "查看面试题详情")})
+    @ActivityLog(ActivityType.VIEW_INTERVIEW_QUESTION)
     public ApiResponse<InterviewQuestionDTO> getQuestion(@PathVariable String id) {
         InterviewQuestionDTO question = interviewQuestionAppService.getById(id);
         return ApiResponse.success(question);
@@ -106,37 +113,6 @@ public class InterviewQuestionController {
         return ApiResponse.success(questions);
     }
 
-    /**
-     * 发布面试题
-     * 将草稿状态的面试题发布
-     * 需要用户登录,只能发布自己的面试题
-     *
-     * @param id 面试题ID
-     * @return 操作结果
-     */
-    @PostMapping("/{id}/publish")
-    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "INTERVIEW_QUESTION_PUBLISH", name = "发布面试题")})
-    public ApiResponse<Void> publishQuestion(@PathVariable String id) {
-        String userId = UserContext.getCurrentUserId();
-        interviewQuestionAppService.publish(id, userId);
-        return ApiResponse.success("发布成功");
-    }
-
-    /**
-     * 归档面试题
-     * 将面试题归档
-     * 需要用户登录,只能归档自己的面试题
-     *
-     * @param id 面试题ID
-     * @return 操作结果
-     */
-    @PostMapping("/{id}/archive")
-    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "INTERVIEW_QUESTION_ARCHIVE", name = "归档面试题")})
-    public ApiResponse<Void> archiveQuestion(@PathVariable String id) {
-        String userId = UserContext.getCurrentUserId();
-        interviewQuestionAppService.archive(id, userId);
-        return ApiResponse.success("归档成功");
-    }
 
     /**
      * 删除面试题
@@ -152,5 +128,33 @@ public class InterviewQuestionController {
         String userId = UserContext.getCurrentUserId();
         interviewQuestionAppService.delete(id, userId);
         return ApiResponse.success("删除成功");
+    }
+
+    /**
+     * 修改面试题状态（草稿/发布）
+     */
+    @PatchMapping("/{id}/status")
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "INTERVIEW_QUESTION_STATUS_CHANGE", name = "修改面试题状态")})
+    public ApiResponse<InterviewQuestionDTO> changeStatus(@PathVariable String id,
+                                                          @Valid @RequestBody InterviewQuestionStatusRequest request) {
+        if (request.getStatus() != org.xhy.community.domain.interview.valueobject.ProblemStatus.DRAFT
+                && request.getStatus() != org.xhy.community.domain.interview.valueobject.ProblemStatus.PUBLISHED) {
+            throw new BusinessException(ValidationErrorCode.PARAM_INVALID, "不支持的面试题状态");
+        }
+        String userId = UserContext.getCurrentUserId();
+        InterviewQuestionDTO dto = interviewQuestionAppService.changeStatus(id, request.getStatus(), userId);
+        return ApiResponse.success("修改成功", dto);
+    }
+
+    /**
+     * 批量创建面试题（默认已发布）
+     * 入参：多个标题 + 单一分类ID
+     */
+    @PostMapping("/batch")
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "INTERVIEW_QUESTION_CREATE", name = "创建面试题")})
+    public ApiResponse<java.util.List<InterviewQuestionDTO>> batchCreate(@Valid @RequestBody BatchCreateInterviewQuestionsRequest request) {
+        String userId = UserContext.getCurrentUserId();
+        java.util.List<InterviewQuestionDTO> dtos = interviewQuestionAppService.batchCreatePublished(request, userId);
+        return ApiResponse.success("批量创建成功", dtos);
     }
 }
