@@ -37,6 +37,7 @@ public class ContentUpdateNotificationData extends NotificationData {
             case CHAPTER -> "https://qiaoya.com/dashboard/chapters/" + contentId;
             case COMMENT -> "https://qiaoya.com/dashboard/discussions/" + contentId;
             case UPDATE_LOG -> null;
+            case INTERVIEW_QUESTION -> "https://qiaoya.com/dashboard/interviews/" + contentId;
             case PUBLISH_CONTENT -> null;
         };
     }

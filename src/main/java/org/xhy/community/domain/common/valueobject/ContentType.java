@@ -11,6 +11,7 @@ public enum ContentType {
     CHAPTER("章节"),
     COMMENT("评论"),
     UPDATE_LOG("更新日志"),
+    INTERVIEW_QUESTION("题目"),
     PUBLISH_CONTENT("关注内容");
 
 

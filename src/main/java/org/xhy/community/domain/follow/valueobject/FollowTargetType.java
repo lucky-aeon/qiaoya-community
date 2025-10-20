@@ -16,7 +16,10 @@ public enum FollowTargetType {
     CHAPTER("章节"),
     
     /** 关注文章 */
-    POST("文章");
+    POST("文章"),
+
+    /** 关注题目 */
+    INTERVIEW_QUESTION("题目");
     
     private final String description;
     

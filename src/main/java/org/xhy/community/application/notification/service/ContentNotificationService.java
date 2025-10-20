@@ -114,6 +114,7 @@ public class ContentNotificationService {
             case CHAPTER -> FollowTargetType.CHAPTER;
             case COMMENT -> null;
             case UPDATE_LOG -> null;
+            case INTERVIEW_QUESTION -> null;
             case PUBLISH_CONTENT -> null;
         };
     }

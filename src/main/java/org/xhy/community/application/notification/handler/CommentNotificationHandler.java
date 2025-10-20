@@ -35,18 +35,21 @@ public class CommentNotificationHandler implements NotificationHandler {
     private final UserDomainService userDomainService;
     private final NotificationDomainService notificationDomainService;
     private final ChapterDomainService chapterDomainService;
+    private final org.xhy.community.domain.interview.service.InterviewQuestionDomainService interviewQuestionDomainService;
 
     public CommentNotificationHandler(CommentDomainService commentDomainService,
                                       PostDomainService postDomainService,
                                       CourseDomainService courseDomainService,
                                       UserDomainService userDomainService,
-                                      NotificationDomainService notificationDomainService, ChapterDomainService chapterDomainService) {
+                                      NotificationDomainService notificationDomainService, ChapterDomainService chapterDomainService,
+                                      org.xhy.community.domain.interview.service.InterviewQuestionDomainService interviewQuestionDomainService) {
         this.commentDomainService = commentDomainService;
         this.postDomainService = postDomainService;
         this.courseDomainService = courseDomainService;
         this.userDomainService = userDomainService;
         this.notificationDomainService = notificationDomainService;
         this.chapterDomainService = chapterDomainService;
+        this.interviewQuestionDomainService = interviewQuestionDomainService;
     }
 
     @Override
@@ -90,6 +93,14 @@ public class CommentNotificationHandler implements NotificationHandler {
                 targetType = FollowTargetType.CHAPTER;
                 notificationType = NotificationType.CHAPTER_UPDATED;
                 log.info("[通知-评论] 目标=章节 chapterId={} authorId={}", chapter.getId(), courseAuthor.getId());
+            } else if (comment.getBusinessType() == BusinessType.INTERVIEW_QUESTION) {
+                org.xhy.community.domain.interview.entity.InterviewQuestionEntity question = interviewQuestionDomainService.getById(comment.getBusinessId());
+                UserEntity questionAuthor = userDomainService.getUserById(question.getAuthorId());
+                targetTitle = question.getTitle();
+                targetAuthorId = question.getAuthorId();
+                targetType = FollowTargetType.INTERVIEW_QUESTION;
+                notificationType = NotificationType.INTERVIEW_QUESTION_COMMENT;
+                log.info("[通知-评论] 目标=题目 questionId={} authorId={}", question.getId(), questionAuthor.getId());
             }
 
             boolean isReply = comment.getReplyUserId() != null;

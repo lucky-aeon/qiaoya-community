@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.xhy.community.domain.common.valueobject.AccessLevel;
@@ -20,9 +21,12 @@ import java.time.LocalDateTime;
 public class InterviewQuestionDomainService {
 
     private final InterviewQuestionRepository interviewQuestionRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
-    public InterviewQuestionDomainService(InterviewQuestionRepository interviewQuestionRepository) {
+    public InterviewQuestionDomainService(InterviewQuestionRepository interviewQuestionRepository,
+                                          ApplicationEventPublisher eventPublisher) {
         this.interviewQuestionRepository = interviewQuestionRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     /**
@@ -82,6 +86,21 @@ public class InterviewQuestionDomainService {
             list.add(e);
         }
         interviewQuestionRepository.insert(list);
+
+        // 发布内容事件（题目默认已发布时触发通知）
+        for (InterviewQuestionEntity e : list) {
+            try {
+                org.xhy.community.domain.common.event.ContentPublishedEvent event =
+                        new org.xhy.community.domain.common.event.ContentPublishedEvent(
+                                org.xhy.community.domain.common.valueobject.ContentType.INTERVIEW_QUESTION,
+                                e.getId(),
+                                e.getAuthorId()
+                        );
+                eventPublisher.publishEvent(event);
+            } catch (Exception ignore) {
+                // 事件发布失败不影响主流程
+            }
+        }
         return list;
     }
 
@@ -152,7 +171,23 @@ public class InterviewQuestionDomainService {
             throw new BusinessException(InterviewErrorCode.INTERVIEW_QUESTION_NOT_FOUND);
         }
 
-        return getById(id);
+        InterviewQuestionEntity latest = getById(id);
+        // 若设置为发布状态，触发内容发布事件
+        if (targetStatus == ProblemStatus.PUBLISHED) {
+            try {
+                org.xhy.community.domain.common.event.ContentPublishedEvent event =
+                        new org.xhy.community.domain.common.event.ContentPublishedEvent(
+                                org.xhy.community.domain.common.valueobject.ContentType.INTERVIEW_QUESTION,
+                                latest.getId(),
+                                latest.getAuthorId()
+                        );
+                eventPublisher.publishEvent(event);
+            } catch (Exception ignore) {
+                // 事件发布失败不影响主流程
+            }
+        }
+
+        return latest;
     }
 
     /**

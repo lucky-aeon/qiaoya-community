@@ -65,6 +65,33 @@ public class InAppNotificationTemplates {
     }
 
     /**
+     * 面试题发布站内消息模板（复用内容更新渲染逻辑）
+     */
+    public static class InterviewQuestionPublishedTemplate implements NotificationTemplate<ContentUpdateNotificationData> {
+
+        @Override
+        public String renderTitle(ContentUpdateNotificationData data) {
+            return "关注内容更新";
+        }
+
+        @Override
+        public String renderContent(ContentUpdateNotificationData data) {
+            String typeLabel = data.getContentType() == null ? "内容" : data.getContentType().getDescription();
+            return data.getAuthorName() + " 发布了新的" + typeLabel + "：" + data.getContentTitle();
+        }
+
+        @Override
+        public Class<ContentUpdateNotificationData> getSupportedDataType() {
+            return ContentUpdateNotificationData.class;
+        }
+
+        @Override
+        public ContentType getContentType() {
+            return ContentType.INTERVIEW_QUESTION;
+        }
+    }
+
+    /**
      * 评论站内消息模板
      */
     public static class CommentTemplate implements NotificationTemplate<CommentNotificationData> {

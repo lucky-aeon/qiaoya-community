@@ -57,6 +57,7 @@ public class NotificationTemplateRegistry {
         // 注册站内消息模板
         registerInAppTemplate(new InAppNotificationTemplates.ContentUpdateTemplate());
         registerInAppTemplate(new InAppNotificationTemplates.CoursePublishedTemplate());
+        registerInAppTemplate(new InAppNotificationTemplates.InterviewQuestionPublishedTemplate());
         registerInAppTemplate(new InAppNotificationTemplates.CommentTemplate());
         registerInAppTemplate(new InAppNotificationTemplates.ChapterUpdatedTemplate());
         registerInAppTemplate(new InAppNotificationTemplates.UpdateLogPublishedTemplate());
@@ -93,6 +94,7 @@ public class NotificationTemplateRegistry {
         registerOutAppTemplate(ContentType.PUBLISH_CONTENT, contentUpdateEmailTemplate);
         registerOutAppTemplate(ContentType.POST, contentUpdateEmailTemplate);
         registerOutAppTemplate(ContentType.COURSE, contentUpdateEmailTemplate);
+        registerOutAppTemplate(ContentType.INTERVIEW_QUESTION, contentUpdateEmailTemplate);
 
         // 评论/回复评论（邮件）
         registerOutAppTemplate(ContentType.COMMENT,new FileBasedNotificationTemplate<>(
