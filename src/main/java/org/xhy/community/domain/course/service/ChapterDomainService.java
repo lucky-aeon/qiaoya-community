@@ -15,6 +15,7 @@ import org.xhy.community.domain.common.valueobject.ContentType;
 import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.infrastructure.exception.CourseErrorCode;
 import org.xhy.community.domain.course.query.ChapterQuery;
+import java.time.LocalDateTime;
 
 import java.util.List;
 import java.util.Collection;
@@ -125,6 +126,17 @@ public class ChapterDomainService {
             new LambdaQueryWrapper<ChapterEntity>()
                 .orderByDesc(ChapterEntity::getCreateTime)
                 .last("LIMIT 5")
+        );
+    }
+
+    /**
+     * 统计自 since 起创建的章节数量（全站维度）。
+     * 口径：create_time > since；若 since 为空则统计全部。
+     */
+    public Long countSince(LocalDateTime since) {
+        return chapterRepository.selectCount(
+            new LambdaQueryWrapper<ChapterEntity>()
+                .gt(since != null, ChapterEntity::getCreateTime, since)
         );
     }
 

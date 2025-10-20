@@ -89,6 +89,18 @@ public class PostDomainService {
     }
 
     /**
+     * 统计自 since 起“已发布”的文章数量。
+     * 口径：状态=PUBLISHED 且 publish_time > since（若 since 为空则统计全部已发布）。
+     */
+    public Long countPublishedSince(LocalDateTime since) {
+        return postRepository.selectCount(
+                new LambdaQueryWrapper<PostEntity>()
+                        .eq(PostEntity::getStatus, PostStatus.PUBLISHED)
+                        .gt(since != null, PostEntity::getPublishTime, since)
+        );
+    }
+
+    /**
      * 采纳评论（作者可对多条评论采纳）
      */
     public PostEntity acceptComment(String postId, String commentId, String operatorId, AccessLevel accessLevel) {

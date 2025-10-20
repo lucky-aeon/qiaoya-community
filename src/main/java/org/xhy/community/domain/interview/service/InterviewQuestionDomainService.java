@@ -44,6 +44,18 @@ public class InterviewQuestionDomainService {
     }
 
     /**
+     * 统计自 since 起“已发布”的题目数量。
+     * 口径：状态=PUBLISHED 且 publish_time > since（若 since 为空则统计全部已发布）。
+     */
+    public Long countPublishedSince(LocalDateTime since) {
+        return interviewQuestionRepository.selectCount(
+                new LambdaQueryWrapper<InterviewQuestionEntity>()
+                        .eq(InterviewQuestionEntity::getStatus, ProblemStatus.PUBLISHED)
+                        .gt(since != null, InterviewQuestionEntity::getPublishTime, since)
+        );
+    }
+
+    /**
      * 批量按标题创建题目（默认发布，难度=3，描述/答案为空串）
      * 仅需标题列表与分类ID与作者ID，领域内部处理默认值
      */
