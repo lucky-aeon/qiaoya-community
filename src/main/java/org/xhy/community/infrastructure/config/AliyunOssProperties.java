@@ -13,6 +13,7 @@ public class AliyunOssProperties {
     private String bucketName;
     private String region;
     private String roleArn;
+    private String customDomain; // 自定义域名，如 https://oss.xhyovo.cn
     private Callback callback = new Callback();
     private Long presignedUrlExpiration = 3600L; // 默认1小时
     
@@ -79,7 +80,15 @@ public class AliyunOssProperties {
     public void setPresignedUrlExpiration(Long presignedUrlExpiration) {
         this.presignedUrlExpiration = presignedUrlExpiration;
     }
-    
+
+    public String getCustomDomain() {
+        return customDomain;
+    }
+
+    public void setCustomDomain(String customDomain) {
+        this.customDomain = customDomain;
+    }
+
     public static class Callback {
         private String url;
         private String body;

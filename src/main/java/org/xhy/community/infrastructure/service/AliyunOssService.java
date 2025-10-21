@@ -87,6 +87,11 @@ public class AliyunOssService {
             // 生成上传策略 - 使用STS临时AccessKeySecret计算签名
             Map<String, Object> uploadPolicy = generateUploadPolicy(sanitizedKey, credentials.getAccessKeySecret());
             
+            // 构造完整的bucket endpoint供前端上传使用
+            String bucketEndpoint = String.format("https://%s.oss-%s.aliyuncs.com",
+                    ossProperties.getBucketName(),
+                    ossProperties.getRegion());
+
             Map<String, Object> result = new HashMap<>();
             result.put("accessKeyId", credentials.getAccessKeyId());
             result.put("accessKeySecret", credentials.getAccessKeySecret());
@@ -94,7 +99,7 @@ public class AliyunOssService {
             result.put("expiration", credentials.getExpiration());
             result.put("region", ossProperties.getRegion());
             result.put("bucket", ossProperties.getBucketName());
-            result.put("endpoint", ossProperties.getEndpoint());
+            result.put("endpoint", bucketEndpoint);
             result.put("policy", uploadPolicy.get("policy"));
             result.put("signature", uploadPolicy.get("signature"));
             result.put("key", sanitizedKey);
@@ -131,6 +136,11 @@ public class AliyunOssService {
 
             Map<String, Object> uploadPolicy = generateUploadPolicy(sanitizedKey, credentials.getAccessKeySecret());
 
+            // 构造完整的bucket endpoint供前端上传使用
+            String bucketEndpoint = String.format("https://%s.oss-%s.aliyuncs.com",
+                    ossProperties.getBucketName(),
+                    ossProperties.getRegion());
+
             Map<String, Object> result = new HashMap<>();
             result.put("accessKeyId", credentials.getAccessKeyId());
             result.put("accessKeySecret", credentials.getAccessKeySecret());
@@ -138,7 +148,7 @@ public class AliyunOssService {
             result.put("expiration", credentials.getExpiration());
             result.put("region", ossProperties.getRegion());
             result.put("bucket", ossProperties.getBucketName());
-            result.put("endpoint", ossProperties.getEndpoint());
+            result.put("endpoint", bucketEndpoint);
             result.put("policy", uploadPolicy.get("policy"));
             result.put("signature", uploadPolicy.get("signature"));
             result.put("key", sanitizedKey);
@@ -250,17 +260,33 @@ public class AliyunOssService {
                 ossProperties.getAccessKeyId(),
                 ossProperties.getAccessKeySecret()
         );
-        
+
         try {
             Date expiration = new Date(System.currentTimeMillis() + ossProperties.getPresignedUrlExpiration() * 1000);
             GeneratePresignedUrlRequest request = new GeneratePresignedUrlRequest(
-                    ossProperties.getBucketName(), 
+                    ossProperties.getBucketName(),
                     sanitizeKey(fileKey)
             );
             request.setExpiration(expiration);
-            
+
             URL url = ossClient.generatePresignedUrl(request);
-            return url.toString();
+            String urlString = url.toString();
+
+            // 如果配置了自定义域名,替换URL中的域名部分
+            if (ossProperties.getCustomDomain() != null && !ossProperties.getCustomDomain().isEmpty()) {
+                // 构造原始的bucket域名: bucket-name.oss-region.aliyuncs.com
+                String bucketDomain = String.format("%s.oss-%s.aliyuncs.com",
+                        ossProperties.getBucketName(),
+                        ossProperties.getRegion());
+                // 提取自定义域名(去除协议前缀)
+                String customDomain = ossProperties.getCustomDomain()
+                        .replace("https://", "")
+                        .replace("http://", "");
+                // 替换域名部分
+                urlString = urlString.replace(bucketDomain, customDomain);
+            }
+
+            return urlString;
         } finally {
             ossClient.shutdown();
         }
