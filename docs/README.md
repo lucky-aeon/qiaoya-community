@@ -69,12 +69,14 @@
   - 文件：docs/activity/用户活动日志系统扩展设计文档.md
 
 ### 集成（Integration）
-- GitHub 登录接入技术方案（方案）
+- GitHub 登录接入技术方案（已落地）
   - 文件：docs/integration/GitHub登录接入技术方案.md
+  - 摘要：接入 GitHub OAuth2 登录，支持首次登录创建账户、后续快捷登录，以及用户侧绑定/解绑；发放站内访问令牌。
 - 邮件服务配置指南（指南）
   - 文件：docs/integration/邮件服务配置指南.md
- - 对外 SSO（OIDC）技术方案（设计稿）
-  - 文件：docs/integration/对外SSO-OIDC技术方案.md
+- OAuth2 授权服务器技术方案（设计稿）
+  - 文件：docs/integration/OAuth2授权服务器技术方案.md
+  - 摘要：敲鸭社区作为 OAuth2/OIDC 身份提供者（IdP），供第三方应用接入，实现"使用敲鸭账号登录"；基于 Spring Authorization Server，包含客户端管理后台、授权码模式、PKCE、用户授权同意、Token 管理等完整方案。
 
 ### 安全（Security）
 - 基于 IP 的登录设备限制技术方案（方案）
