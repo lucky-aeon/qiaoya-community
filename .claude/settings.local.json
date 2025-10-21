@@ -43,7 +43,8 @@
       "Bash(echo:*)",
       "Bash(done)",
       "Bash(awk:*)",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Read(//Users/xhy/IdeaProjects/qiaoya-community/qiaoya-community-frontend/**)"
     ],
     "deny": [],
     "ask": []

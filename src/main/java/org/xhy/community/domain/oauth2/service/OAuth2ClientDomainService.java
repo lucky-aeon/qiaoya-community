@@ -11,7 +11,11 @@ import org.xhy.community.domain.oauth2.valueobject.OAuth2ClientStatus;
 import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.infrastructure.exception.OAuth2ErrorCode;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * OAuth2 客户端领域服务
@@ -114,6 +118,26 @@ public class OAuth2ClientDomainService {
             throw new BusinessException(OAuth2ErrorCode.CLIENT_NOT_FOUND);
         }
         return client;
+    }
+
+    /**
+     * 批量查询客户端并返回Map
+     *
+     * @param clientIds 客户端ID集合
+     * @return clientId -> OAuth2ClientEntity 的映射
+     */
+    public Map<String, OAuth2ClientEntity> getClientMapByClientIds(Set<String> clientIds) {
+        if (clientIds == null || clientIds.isEmpty()) {
+            return Map.of();
+        }
+
+        LambdaQueryWrapper<OAuth2ClientEntity> queryWrapper = new LambdaQueryWrapper<OAuth2ClientEntity>()
+            .in(OAuth2ClientEntity::getClientId, clientIds);
+
+        List<OAuth2ClientEntity> clients = oauth2ClientRepository.selectList(queryWrapper);
+
+        return clients.stream()
+            .collect(Collectors.toMap(OAuth2ClientEntity::getClientId, client -> client));
     }
 
     /**
