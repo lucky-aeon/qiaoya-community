@@ -132,11 +132,17 @@ community:
       # logoSrc: ""
       # 使用 classpath 中的 logo 文件自动生成 data URI
       logoFile: classpath:branding/logo-email.jpg
-      # 页脚“管理通知设置”链接
+      # 页脚"管理通知设置"链接
       manageNotificationsUrl: /dashboard/user-backend/profile
   # 站点基础域名（用于将相对路径解析为绝对 URL）
   web:
     base-url: ${COMMUNITY_WEB_BASE_URL:http://code.dev.xhyovo.cn/}
+
+# OAuth2 授权服务器配置
+oauth2:
+  frontend:
+    # 前端授权页面URL（用户未登录或需要授权同意时重定向到此页面）
+    authorize-url: ${OAUTH2_FRONTEND_AUTHORIZE_URL:http://localhost:5173/oauth2/authorize}
 
 # 备份报表读取配置（平台查看备份情况）
 backup:

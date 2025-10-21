@@ -18,6 +18,7 @@ public enum OAuth2ErrorCode implements ErrorCode {
     INVALID_GRANT_TYPE(3311, "不支持的授权类型"),
     INVALID_SCOPE(3312, "无效的Scope"),
     AUTHORIZATION_DENIED(3313, "用户拒绝授权"),
+    UNAUTHORIZED(3314, "用户未登录或认证失败"),
 
     // 授权码相关错误 (3320-3329)
     INVALID_AUTHORIZATION_CODE(3320, "无效的授权码"),
