@@ -48,6 +48,32 @@ public class ChapterNotificationHandler implements NotificationHandler {
         return ContentType.CHAPTER;
     }
 
+    /**
+     * 章节发布通知课程订阅者，而不是章节订阅者
+     * 覆盖默认实现，返回课程订阅者列表
+     */
+    @Override
+    public List<ContentNotificationService.NotificationRecipient> getRecipients(
+            String contentId,
+            String authorId,
+            ContentNotificationService contentNotificationService) {
+        try {
+            // 获取章节所属的课程ID
+            ChapterEntity chapter = chapterDomainService.getChapterById(contentId);
+            String courseId = chapter.getCourseId();
+
+            // 返回课程订阅者（关注作者 + 关注课程）
+            return contentNotificationService.getSpecificContentFollowers(
+                    courseId,
+                    FollowTargetType.COURSE,
+                    authorId
+            );
+        } catch (Exception e) {
+            log.error("[通知-章节] 获取接收者失败，chapterId={}，错误={}", contentId, e.getMessage(), e);
+            return List.of();
+        }
+    }
+
     @Override
     public void handleNotification(String contentId, String authorId,
                                    List<ContentNotificationService.NotificationRecipient> recipients) {
@@ -56,14 +82,11 @@ public class ChapterNotificationHandler implements NotificationHandler {
             CourseEntity course = courseDomainService.getCourseById(chapter.getCourseId());
             UserEntity author = userDomainService.getUserById(authorId);
 
-            List<ContentNotificationService.NotificationRecipient> courseFollowers =
-                contentNotificationService.getSpecificContentFollowers(course.getId(), FollowTargetType.COURSE, authorId);
-
             log.info("[通知-章节] 准备发送，courseId={} chapterId={} authorId={} recipients={}",
-                    course.getId(), chapter.getId(), authorId, courseFollowers.size());
+                    course.getId(), chapter.getId(), authorId, recipients.size());
 
             ArrayList<NotificationData.Recipient> recipients1 = new ArrayList<>();
-            for (ContentNotificationService.NotificationRecipient recipient : courseFollowers) {
+            for (ContentNotificationService.NotificationRecipient recipient : recipients) {
                 recipients1.add(new NotificationData.Recipient(recipient.getUserId(), recipient.getUserEmail(), recipient.getEmailNotificationEnabled()));
             }
             notificationDomainService.send(new ChapterUpdatedNotificationData(
@@ -76,7 +99,7 @@ public class ChapterNotificationHandler implements NotificationHandler {
                     chapter.getTitle()
             ));
 
-            log.info("[通知-章节] 已发送，courseId={} chapterId={} recipients={}", course.getId(), chapter.getId(), courseFollowers.size());
+            log.info("[通知-章节] 已发送，courseId={} chapterId={} recipients={}", course.getId(), chapter.getId(), recipients.size());
         } catch (Exception e) {
             log.error("[通知-章节] 发送失败，contentId={} authorId={}，错误={}", contentId, authorId, e.getMessage(), e);
         }

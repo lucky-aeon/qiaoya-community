@@ -17,6 +17,28 @@ public interface NotificationHandler {
     ContentType getSupportedContentType();
 
     /**
+     * 获取通知接收者列表
+     * 默认实现：获取内容订阅者（关注作者的用户 + 关注内容的用户）
+     * 特殊场景（如评论）可以覆盖此方法实现自定义逻辑
+     *
+     * @param contentId                  内容ID
+     * @param authorId                   作者ID
+     * @param contentNotificationService 内容通知服务
+     * @return 通知接收者列表
+     */
+    default List<ContentNotificationService.NotificationRecipient> getRecipients(
+            String contentId,
+            String authorId,
+            ContentNotificationService contentNotificationService) {
+        // 默认行为：获取订阅者（关注作者 + 关注内容）
+        return contentNotificationService.getContentFollowers(
+                getSupportedContentType(),
+                contentId,
+                authorId
+        );
+    }
+
+    /**
      * 处理内容发布通知
      *
      * @param contentId  内容ID

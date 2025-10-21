@@ -112,9 +112,9 @@ public class ContentNotificationService {
             case POST -> FollowTargetType.POST;
             case COURSE -> FollowTargetType.COURSE;
             case CHAPTER -> FollowTargetType.CHAPTER;
+            case INTERVIEW_QUESTION -> FollowTargetType.INTERVIEW_QUESTION;
             case COMMENT -> null;
             case UPDATE_LOG -> null;
-            case INTERVIEW_QUESTION -> null;
             case PUBLISH_CONTENT -> null;
         };
     }

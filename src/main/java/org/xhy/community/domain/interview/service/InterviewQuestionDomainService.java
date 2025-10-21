@@ -255,4 +255,23 @@ public class InterviewQuestionDomainService {
             throw new BusinessException(InterviewErrorCode.INVALID_RATING);
         }
     }
+
+    /**
+     * 批量查询面试题标题映射
+     *
+     * @param questionIds 面试题ID集合
+     * @return 面试题ID到标题的映射
+     */
+    public java.util.Map<String, String> getQuestionTitleMapByIds(java.util.Collection<String> questionIds) {
+        if (questionIds == null || questionIds.isEmpty()) {
+            return java.util.Map.of();
+        }
+
+        java.util.List<InterviewQuestionEntity> questions = interviewQuestionRepository.selectBatchIds(questionIds);
+        return questions.stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        InterviewQuestionEntity::getId,
+                        InterviewQuestionEntity::getTitle
+                ));
+    }
 }

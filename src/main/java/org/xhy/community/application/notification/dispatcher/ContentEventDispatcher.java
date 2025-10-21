@@ -54,25 +54,21 @@ public class ContentEventDispatcher {
                 log.warn("No handler found for content type: {}", event.getContentType());
                 return;
             }
-            // 查询关注者信息
-            List<ContentNotificationService.NotificationRecipient> recipients =
-                    contentNotificationService.getContentFollowers(
-                            event.getContentType(),
-                            event.getContentId(),
-                            event.getAuthorId()
-                    );
 
-            if (recipients.isEmpty()) {
-                log.debug("No followers found for content {} of type {}",
-                        event.getContentId(), event.getContentType());
-                return;
-            }
+            // 委托给 Handler 获取接收者（不同类型的内容有不同的接收者逻辑）
+            List<ContentNotificationService.NotificationRecipient> recipients =
+                    handler.getRecipients(
+                            event.getContentId(),
+                            event.getAuthorId(),
+                            contentNotificationService
+                    );
 
             log.info("[通知-分发] eventType={} contentId={} authorId={} handler={} recipients={}",
                     event.getContentType(), event.getContentId(), event.getAuthorId(),
                     handler.getClass().getSimpleName(), recipients.size());
 
             // 委托给具体的处理器处理通知
+            // 注意：某些 Handler（如评论）可能返回空 recipients，但在内部自行处理接收者
             handler.handleNotification(event.getContentId(), event.getAuthorId(), recipients);
 
             log.info("[通知-分发] 完成，eventType={} contentId={} recipients={}",

@@ -57,6 +57,21 @@ public class CommentNotificationHandler implements NotificationHandler {
         return ContentType.COMMENT;
     }
 
+    /**
+     * 评论通知不使用订阅者模型，而是直接通知被回复者和内容作者
+     * 覆盖默认实现，返回空列表以避免无用的订阅者查询
+     * 实际的接收者在 handleNotification 中根据业务逻辑确定
+     */
+    @Override
+    public List<ContentNotificationService.NotificationRecipient> getRecipients(
+            String contentId,
+            String authorId,
+            ContentNotificationService contentNotificationService) {
+        // 评论通知有特殊逻辑（区分被回复者和内容作者，发送不同通知模板）
+        // 不使用统一的订阅者列表，在 handleNotification 中自行处理
+        return List.of();
+    }
+
     @Override
     public void handleNotification(String contentId, String authorId,
                                    List<ContentNotificationService.NotificationRecipient> recipients) {
