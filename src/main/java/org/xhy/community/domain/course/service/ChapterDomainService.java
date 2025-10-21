@@ -154,6 +154,22 @@ public class ChapterDomainService {
     }
 
     /**
+     * 批量查询章节实体映射（用于收藏列表等场景）
+     */
+    public Map<String, ChapterEntity> getChapterEntityMapByIds(Collection<String> chapterIds) {
+        if (chapterIds == null || chapterIds.isEmpty()) {
+            return Map.of();
+        }
+
+        List<ChapterEntity> chapters = chapterRepository.selectBatchIds(chapterIds);
+        return chapters.stream()
+                .collect(Collectors.toMap(
+                        ChapterEntity::getId,
+                        chapter -> chapter
+                ));
+    }
+
+    /**
      * 批量查询章节所属课程ID映射
      */
     public Map<String, String> getChapterCourseIdMapByIds(Collection<String> chapterIds) {

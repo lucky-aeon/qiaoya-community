@@ -77,6 +77,8 @@ import org.xhy.community.domain.like.valueobject.LikeTargetType;
 import org.xhy.community.domain.summary.valueobject.SummaryTargetType;
 import org.xhy.community.infrastructure.converter.SummaryTargetTypeConverter;
 import org.xhy.community.infrastructure.converter.LikeTargetTypeConverter;
+import org.xhy.community.domain.favorite.valueobject.FavoriteTargetType;
+import org.xhy.community.infrastructure.converter.FavoriteTargetTypeConverter;
 
 import jakarta.annotation.PostConstruct;
 
@@ -132,6 +134,7 @@ public class MyBatisTypeHandlerConfig {
         typeHandlerRegistry.register(DailySource.class, new DailySourceConverter());
         typeHandlerRegistry.register(DailyItemStatus.class, new DailyItemStatusConverter());
         typeHandlerRegistry.register(LikeTargetType.class, new LikeTargetTypeConverter());
+        typeHandlerRegistry.register(FavoriteTargetType.class, new FavoriteTargetTypeConverter());
         typeHandlerRegistry.register(TagAssignmentStatus.class, new TagAssignmentStatusConverter());
         typeHandlerRegistry.register(TagTargetType.class, new TagTargetTypeConverter());
         typeHandlerRegistry.register(TagSourceType.class, new TagSourceTypeConverter());
@@ -147,7 +150,7 @@ public class MyBatisTypeHandlerConfig {
         // 依赖@TableField(typeHandler = XxxConverter.class)注解来指定具体的转换器
         // CourseEntity中的字段会根据@TableField注解自动选择对应的转换器
 
-        log.info("手动注册类型处理器：UserStatusConverter, UserRoleConverter, PostStatusConverter, CategoryTypeConverter, CourseStatusConverter, BusinessTypeConverter, QAResolveStatusConverter, ResourceTypeConverter, SubscriptionPlanStatusConverter, SubscriptionStatusConverter, CDKTypeConverter, CDKStatusConverter, CDKAcquisitionTypeConverter, OrderTypeConverter, ActivityTypeConverter, FollowTargetTypeConverter, FollowStatusConverter, NotificationTypeConverter, ChannelTypeConverter, NotificationStatusConverter, UpdateLogStatusConverter, ChangeTypeConverter, TestimonialStatusConverter, ResourceTargetTypeConverter, DailySourceConverter, DailyItemStatusConverter, LikeTargetTypeConverter, TagAssignmentStatusConverter, TagTargetTypeConverter, TagSourceTypeConverter, SummaryTargetTypeConverter, ProblemStatusConverter, MapJsonTypeHandler");
+        log.info("手动注册类型处理器：UserStatusConverter, UserRoleConverter, PostStatusConverter, CategoryTypeConverter, CourseStatusConverter, BusinessTypeConverter, QAResolveStatusConverter, ResourceTypeConverter, SubscriptionPlanStatusConverter, SubscriptionStatusConverter, CDKTypeConverter, CDKStatusConverter, CDKAcquisitionTypeConverter, OrderTypeConverter, ActivityTypeConverter, FollowTargetTypeConverter, FollowStatusConverter, NotificationTypeConverter, ChannelTypeConverter, NotificationStatusConverter, UpdateLogStatusConverter, ChangeTypeConverter, TestimonialStatusConverter, ResourceTargetTypeConverter, DailySourceConverter, DailyItemStatusConverter, LikeTargetTypeConverter, FavoriteTargetTypeConverter, TagAssignmentStatusConverter, TagTargetTypeConverter, TagSourceTypeConverter, SummaryTargetTypeConverter, ProblemStatusConverter, MapJsonTypeHandler");
         log.info("已注册的类型处理器总数: {}", typeHandlerRegistry.getTypeHandlers().size());
     }
 }

@@ -504,7 +504,7 @@ public class PostDomainService {
     
     /**
      * 批量获取文章标题映射
-     * 
+     *
      * @param postIds 文章ID集合
      * @return 文章ID到标题的映射
      */
@@ -512,12 +512,31 @@ public class PostDomainService {
         if (postIds == null || postIds.isEmpty()) {
             return Map.of();
         }
-        
+
         List<PostEntity> posts = postRepository.selectBatchIds(postIds);
         return posts.stream()
                 .collect(Collectors.toMap(
                     PostEntity::getId,
                     PostEntity::getTitle
+                ));
+    }
+
+    /**
+     * 批量查询文章实体映射（用于收藏列表等场景）
+     *
+     * @param postIds 文章ID集合
+     * @return 文章ID到实体的映射
+     */
+    public Map<String, PostEntity> getPostEntityMapByIds(Collection<String> postIds) {
+        if (postIds == null || postIds.isEmpty()) {
+            return Map.of();
+        }
+
+        List<PostEntity> posts = postRepository.selectBatchIds(postIds);
+        return posts.stream()
+                .collect(Collectors.toMap(
+                        PostEntity::getId,
+                        post -> post
                 ));
     }
     

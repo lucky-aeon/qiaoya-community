@@ -274,4 +274,23 @@ public class InterviewQuestionDomainService {
                         InterviewQuestionEntity::getTitle
                 ));
     }
+
+    /**
+     * 批量查询面试题实体映射（用于收藏列表等场景）
+     *
+     * @param questionIds 面试题ID集合
+     * @return 面试题ID到实体的映射
+     */
+    public java.util.Map<String, InterviewQuestionEntity> getQuestionEntityMapByIds(java.util.Collection<String> questionIds) {
+        if (questionIds == null || questionIds.isEmpty()) {
+            return java.util.Map.of();
+        }
+
+        java.util.List<InterviewQuestionEntity> questions = interviewQuestionRepository.selectBatchIds(questionIds);
+        return questions.stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        InterviewQuestionEntity::getId,
+                        question -> question
+                ));
+    }
 }

@@ -217,6 +217,47 @@ public class CommentDomainService {
     }
 
     /**
+     * 批量查询评论内容映射（用于收藏列表等场景）
+     * @param commentIds 评论ID集合
+     * @return 评论ID到内容摘要的映射（content前50字符）
+     */
+    public Map<String, String> getCommentContentMapByIds(Collection<String> commentIds) {
+        if (commentIds == null || commentIds.isEmpty()) {
+            return Map.of();
+        }
+
+        List<CommentEntity> comments = commentRepository.selectBatchIds(commentIds);
+        return comments.stream()
+                .collect(Collectors.toMap(
+                        CommentEntity::getId,
+                        comment -> {
+                            String content = comment.getContent();
+                            return content != null && content.length() > 50
+                                ? content.substring(0, 50) + "..."
+                                : content;
+                        }
+                ));
+    }
+
+    /**
+     * 批量查询评论实体映射
+     * @param commentIds 评论ID集合
+     * @return 评论ID到评论实体的映射
+     */
+    public Map<String, CommentEntity> getCommentEntityMapByIds(Collection<String> commentIds) {
+        if (commentIds == null || commentIds.isEmpty()) {
+            return Map.of();
+        }
+
+        List<CommentEntity> comments = commentRepository.selectBatchIds(commentIds);
+        return comments.stream()
+                .collect(Collectors.toMap(
+                        CommentEntity::getId,
+                        comment -> comment
+                ));
+    }
+
+    /**
      * 发布简化的评论内容事件
      * 只包含必要的标识信息，由Application层统一处理通知逻辑
      */
