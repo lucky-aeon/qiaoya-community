@@ -79,6 +79,8 @@ import org.xhy.community.infrastructure.converter.SummaryTargetTypeConverter;
 import org.xhy.community.infrastructure.converter.LikeTargetTypeConverter;
 import org.xhy.community.domain.favorite.valueobject.FavoriteTargetType;
 import org.xhy.community.infrastructure.converter.FavoriteTargetTypeConverter;
+import org.xhy.community.domain.oauth2.valueobject.OAuth2ClientStatus;
+import org.xhy.community.infrastructure.converter.OAuth2ClientStatusConverter;
 
 import jakarta.annotation.PostConstruct;
 
@@ -142,6 +144,9 @@ public class MyBatisTypeHandlerConfig {
 
         // 面试题库相关
         typeHandlerRegistry.register(ProblemStatus.class, new ProblemStatusConverter());
+
+        // OAuth2 相关
+        typeHandlerRegistry.register(OAuth2ClientStatus.class, new OAuth2ClientStatusConverter());
 
         // 注册集合类型处理器
         typeHandlerRegistry.register(java.util.Map.class, new MapJsonTypeHandler());

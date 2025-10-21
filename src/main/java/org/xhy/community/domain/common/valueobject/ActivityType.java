@@ -378,7 +378,23 @@ public enum ActivityType {
     /** 管理员归档面试题 */
     ADMIN_INTERVIEW_QUESTION_ARCHIVE("管理员归档面试题"),
     /** 管理员删除面试题 */
-    ADMIN_INTERVIEW_QUESTION_DELETE("管理员删除面试题");
+    ADMIN_INTERVIEW_QUESTION_DELETE("管理员删除面试题"),
+
+    // ==================== OAuth2客户端管理（管理员） ====================
+    /** 管理员创建OAuth2客户端 */
+    ADMIN_OAUTH2_CLIENT_CREATE("管理员创建OAuth2客户端"),
+    /** 管理员更新OAuth2客户端 */
+    ADMIN_OAUTH2_CLIENT_UPDATE("管理员更新OAuth2客户端"),
+    /** 管理员删除OAuth2客户端 */
+    ADMIN_OAUTH2_CLIENT_DELETE("管理员删除OAuth2客户端"),
+    /** 管理员重新生成OAuth2客户端密钥 */
+    ADMIN_OAUTH2_CLIENT_REGENERATE_SECRET("管理员重新生成OAuth2客户端密钥"),
+    /** 管理员激活OAuth2客户端 */
+    ADMIN_OAUTH2_CLIENT_ACTIVATE("管理员激活OAuth2客户端"),
+    /** 管理员暂停OAuth2客户端 */
+    ADMIN_OAUTH2_CLIENT_SUSPEND("管理员暂停OAuth2客户端"),
+    /** 管理员撤销OAuth2客户端 */
+    ADMIN_OAUTH2_CLIENT_REVOKE("管理员撤销OAuth2客户端");
     
     private final String description;
     
@@ -489,6 +505,13 @@ public enum ActivityType {
             case ADMIN_INTERVIEW_QUESTION_PUBLISH:
             case ADMIN_INTERVIEW_QUESTION_ARCHIVE:
             case ADMIN_INTERVIEW_QUESTION_DELETE:
+            case ADMIN_OAUTH2_CLIENT_CREATE:
+            case ADMIN_OAUTH2_CLIENT_UPDATE:
+            case ADMIN_OAUTH2_CLIENT_DELETE:
+            case ADMIN_OAUTH2_CLIENT_REGENERATE_SECRET:
+            case ADMIN_OAUTH2_CLIENT_ACTIVATE:
+            case ADMIN_OAUTH2_CLIENT_SUSPEND:
+            case ADMIN_OAUTH2_CLIENT_REVOKE:
                 return ActivityCategory.ADMINISTRATION;
                 
             default:
