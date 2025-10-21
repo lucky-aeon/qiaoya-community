@@ -22,9 +22,9 @@ public class CorsConfig {
 
         // 允许的前端域名
         config.setAllowedOriginPatterns(Arrays.asList(
-            "http://localhost:*",      // 开发环境 - 所有本地端口
-            "https://qiaoya.com",       // 生产环境 - 主站
-            "https://*.qiaoya.com"      // 生产环境 - 子域名
+                "http://localhost:*",      // 开发环境 - 所有本地端口
+                "https://*.xhyovo.cn",      // 生产环境 - 子域名
+                "http://*.xhyovo.cn"      // 生产环境 - 子域名
         ));
 
         // 允许的 HTTP 方法
@@ -41,9 +41,9 @@ public class CorsConfig {
 
         // 暴露的响应头
         config.setExposedHeaders(Arrays.asList(
-            "Authorization",
-            "Content-Type",
-            "X-Request-Id"
+                "Authorization",
+                "Content-Type",
+                "X-Request-Id"
         ));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
