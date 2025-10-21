@@ -44,7 +44,7 @@ public class CommentNotificationData extends NotificationData {
             case POST -> "https://qiaoya.com/dashboard/discussions/" + targetId;
             case COURSE -> "https://qiaoya.com/dashboard/courses/" + targetId;
             case CHAPTER -> "https://qiaoya.com/dashboard/chapters/" + targetId;
-            case USER -> "https://qiaoya.com/dashboard/users/" + targetId;
+            default -> "https://qiaoya.com/dashboard/" + targetId;
         };
     }
 

@@ -60,6 +60,10 @@
 - 关注功能（Follow）设计文档（方案）
   - 文件：docs/follow/关注功能设计文档.md
 
+### 收藏（Favorite）
+- 收藏功能设计文档（方案）
+  - 文件：docs/favorite/收藏功能设计文档.md
+
 ### 活动日志（Activity Log）
 - 用户活动日志系统扩展设计文档（方案）
   - 文件：docs/activity/用户活动日志系统扩展设计文档.md
@@ -69,6 +73,8 @@
   - 文件：docs/integration/GitHub登录接入技术方案.md
 - 邮件服务配置指南（指南）
   - 文件：docs/integration/邮件服务配置指南.md
+ - 对外 SSO（OIDC）技术方案（设计稿）
+  - 文件：docs/integration/对外SSO-OIDC技术方案.md
 
 ### 安全（Security）
 - 基于 IP 的登录设备限制技术方案（方案）
