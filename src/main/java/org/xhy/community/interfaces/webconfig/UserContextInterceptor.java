@@ -66,10 +66,10 @@ public class UserContextInterceptor implements HandlerInterceptor {
             } else {
                 allowed = deviceSessionAppService.isIpAllowed(userId, ip);
             }
-//            if (!allowed) {
-//                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-//                return false;
-//            }
+            if (!allowed) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                return false;
+            }
 
             // 用户状态检查：确保用户处于激活状态
             boolean userActive = userAppService.isUserActive(userId);

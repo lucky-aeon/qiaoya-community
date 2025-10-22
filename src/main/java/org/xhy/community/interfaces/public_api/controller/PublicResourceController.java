@@ -14,6 +14,7 @@ import org.xhy.community.application.resource.dto.ResourceDTO;
 import org.xhy.community.application.resource.service.ResourceAppService;
 import org.xhy.community.application.session.service.TokenBlacklistAppService;
 import org.xhy.community.infrastructure.config.ApiResponse;
+import org.xhy.community.infrastructure.config.EnvironmentConfig;
 import org.xhy.community.infrastructure.config.JwtUtil;
 import org.xhy.community.interfaces.resource.request.OssCallbackRequest;
 import org.xhy.community.application.permission.service.UserPermissionAppService;
@@ -37,15 +38,18 @@ public class PublicResourceController {
     private final JwtUtil jwtUtil;
     private final TokenBlacklistAppService tokenBlacklistAppService;
     private final UserPermissionAppService userPermissionAppService;
-    
+    private final EnvironmentConfig environmentConfig;
+
     public PublicResourceController(ResourceAppService resourceAppService,
                                    JwtUtil jwtUtil,
                                    TokenBlacklistAppService tokenBlacklistAppService,
-                                   UserPermissionAppService userPermissionAppService) {
+                                   UserPermissionAppService userPermissionAppService,
+                                   EnvironmentConfig environmentConfig) {
         this.resourceAppService = resourceAppService;
         this.jwtUtil = jwtUtil;
         this.tokenBlacklistAppService = tokenBlacklistAppService;
         this.userPermissionAppService = userPermissionAppService;
+        this.environmentConfig = environmentConfig;
     }
     
     /**
@@ -126,15 +130,15 @@ public class PublicResourceController {
         // 解析用户ID
         String userId = jwtUtil.getUserIdFromToken(token);
 
-        // 并集判定：套餐功能码(且套餐包含课程) 或 直购对应课程
-        boolean allowed = userPermissionAppService.hasDownloadPermissionForResource(userId, resourceId);
-        if (!allowed) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
-        // 资源访问为常规操作，省略日志
-
         // 生成带签名的直链并重定向
         String accessUrl = resourceAppService.getResourceAccessUrl(resourceId, userId);
+
+        // LOCAL 环境：在 URL 中添加 token 参数，用于 CDN 鉴权
+        if (environmentConfig.isLocal()) {
+            String separator = accessUrl.contains("?") ? "&" : "?";
+            accessUrl = accessUrl + separator + "token=" + token;
+        }
+
         return ResponseEntity.status(HttpStatus.FOUND)
                 .location(URI.create(accessUrl))
                 .build();

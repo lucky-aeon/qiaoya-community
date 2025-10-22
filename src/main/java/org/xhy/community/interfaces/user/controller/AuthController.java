@@ -1,12 +1,16 @@
 package org.xhy.community.interfaces.user.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.web.bind.annotation.*;
 import org.xhy.community.application.user.dto.LoginResponseDTO;
 import org.xhy.community.application.user.dto.UserDTO;
 import org.xhy.community.application.user.service.UserAppService;
 import org.xhy.community.infrastructure.config.ApiResponse;
+import org.xhy.community.infrastructure.config.EnvironmentConfig;
 import org.xhy.community.infrastructure.config.JwtUtil;
 import org.xhy.community.infrastructure.util.ClientIpUtil;
 import org.xhy.community.interfaces.user.request.LoginRequest;
@@ -34,9 +38,12 @@ public class AuthController {
 
     private final JwtUtil jwtUtil;
 
-    public AuthController(UserAppService userAppService, JwtUtil jwtUtil) {
+    private final EnvironmentConfig environmentConfig;
+
+    public AuthController(UserAppService userAppService, JwtUtil jwtUtil, EnvironmentConfig environmentConfig) {
         this.userAppService = userAppService;
         this.jwtUtil = jwtUtil;
+        this.environmentConfig = environmentConfig;
     }
     
     /**
@@ -53,10 +60,16 @@ public class AuthController {
         successType = ActivityType.LOGIN_SUCCESS,
         failureType = ActivityType.LOGIN_FAILED
     )
-    public ApiResponse<LoginResponseDTO> login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest) {
+    public ApiResponse<LoginResponseDTO> login(@Valid @RequestBody LoginRequest request,
+                                               HttpServletRequest httpRequest,
+                                               HttpServletResponse httpResponse) {
         String ip = ClientIpUtil.getClientIp(httpRequest);
         String deviceId = extractDeviceId(httpRequest);
         LoginResponseDTO loginResponse = userAppService.login(request.getEmail(), request.getPassword(), ip, deviceId);
+
+        // 设置 RAUTH Cookie 用于 CDN 资源访问鉴权
+        setRauthCookie(httpRequest, httpResponse, loginResponse.getToken());
+
         return ApiResponse.success("登录成功", loginResponse);
     }
 
@@ -87,7 +100,9 @@ public class AuthController {
         successType = ActivityType.REGISTER_SUCCESS,
         failureType = ActivityType.REGISTER_FAILED
     )
-    public ApiResponse<HashMap<String, Object>> register(@Valid @RequestBody RegisterRequest request) {
+    public ApiResponse<HashMap<String, Object>> register(@Valid @RequestBody RegisterRequest request,
+                                                         HttpServletRequest httpRequest,
+                                                         HttpServletResponse httpResponse) {
         UserDTO user = userAppService.register(
                 request.getEmail(),
                 request.getEmailVerificationCode(),
@@ -97,6 +112,10 @@ public class AuthController {
         String token = jwtUtil.generateToken(user.getId(), user.getEmail());
         res.put("user",user);
         res.put("token",token);
+
+        // 设置 RAUTH Cookie 用于 CDN 资源访问鉴权
+        setRauthCookie(httpRequest, httpResponse, token);
+
         return ApiResponse.success("注册成功", res);
     }
 
@@ -133,7 +152,8 @@ public class AuthController {
      */
     @PostMapping("/logout")
     @ActivityLog(ActivityType.LOGOUT)
-    public ApiResponse<HashMap<String, Object>> logout(HttpServletRequest httpRequest) {
+    public ApiResponse<HashMap<String, Object>> logout(HttpServletRequest httpRequest,
+                                                       HttpServletResponse httpResponse) {
         String authorization = httpRequest.getHeader("Authorization");
         String ip = ClientIpUtil.getClientIp(httpRequest);
         String deviceId = extractDeviceId(httpRequest);
@@ -145,6 +165,9 @@ public class AuthController {
                 userAppService.logout(userId, token, ip, deviceId);
             }
         }
+
+        // 清除 RAUTH Cookie
+        clearRauthCookie(httpRequest, httpResponse);
 
         HashMap<String, Object> data = new HashMap<>();
         data.put("message", "退出成功");
@@ -166,5 +189,54 @@ public class AuthController {
             }
         }
         return null;
+    }
+
+    /**
+     * 设置 RAUTH Cookie 用于 CDN 资源访问鉴权
+     * Cookie 配置：
+     * - Domain: LOCAL环境不设置domain，其他环境设置.xhyovo.cn (支持所有子域名，包括 oss.xhyovo.cn)
+     * - Path: / (全局有效)
+     * - MaxAge: 30天 (与 JWT 过期时间一致)
+     * - HttpOnly: true (防止 XSS 攻击)
+     * - Secure: 根据请求协议动态判断
+     * - SameSite: Lax (防止 CSRF 攻击)
+     */
+    private void setRauthCookie(HttpServletRequest request, HttpServletResponse response, String token) {
+        boolean isSecure = request.isSecure() || "https".equalsIgnoreCase(request.getHeader("X-Forwarded-Proto"));
+        ResponseCookie.ResponseCookieBuilder cookieBuilder = ResponseCookie.from("RAUTH", token)
+                .httpOnly(true)
+                .secure(isSecure)
+                .sameSite("Lax")
+                .path("/")
+                .maxAge(2592000); // 30天（秒）
+
+        // 根据环境决定是否设置 domain
+        String domain = environmentConfig.getCookieDomain();
+        if (domain != null) {
+            cookieBuilder.domain(domain);
+        }
+
+        response.addHeader(HttpHeaders.SET_COOKIE, cookieBuilder.build().toString());
+    }
+
+    /**
+     * 清除 RAUTH Cookie
+     */
+    private void clearRauthCookie(HttpServletRequest request, HttpServletResponse response) {
+        boolean isSecure = request.isSecure() || "https".equalsIgnoreCase(request.getHeader("X-Forwarded-Proto"));
+        ResponseCookie.ResponseCookieBuilder cookieBuilder = ResponseCookie.from("RAUTH", "")
+                .httpOnly(true)
+                .secure(isSecure)
+                .sameSite("Lax")
+                .path("/")
+                .maxAge(0); // 立即过期
+
+        // 根据环境决定是否设置 domain（必须与设置时保持一致）
+        String domain = environmentConfig.getCookieDomain();
+        if (domain != null) {
+            cookieBuilder.domain(domain);
+        }
+
+        response.addHeader(HttpHeaders.SET_COOKIE, cookieBuilder.build().toString());
     }
 }
