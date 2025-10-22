@@ -68,9 +68,26 @@ public class OAuth2ClientDomainService {
             throw new BusinessException(OAuth2ErrorCode.CLIENT_NOT_FOUND);
         }
 
-        // 如果密钥被修改，重新加密
-        if (!client.getClientSecretEnc().equals(existing.getClientSecretEnc())) {
-            String encryptedSecret = passwordEncoder.encode(client.getClientSecretEnc());
+        // 处理客户端密钥更新：
+        // - 未传入（null/blank）=> 不改密，沿用原加密密钥
+        // - 传入值与现有加密值完全相同（多为从DB读出回传的场景）=> 不改密
+        // - 传入明文与现有加密匹配 => 不改密
+        // - 其他情况 => 视为提供了新明文密钥，进行加密后更新
+        String incomingSecret = client.getClientSecretEnc();
+        String existingEncrypted = existing.getClientSecretEnc();
+
+        if (incomingSecret == null || incomingSecret.isBlank()) {
+            // 未传入密钥，保持不变
+            client.setClientSecretEnc(existingEncrypted);
+        } else if (incomingSecret.equals(existingEncrypted)) {
+            // 传入的就是原加密值，保持不变
+            client.setClientSecretEnc(existingEncrypted);
+        } else if (existingEncrypted != null && passwordEncoder.matches(incomingSecret, existingEncrypted)) {
+            // 传入明文与原加密相同，保持不变
+            client.setClientSecretEnc(existingEncrypted);
+        } else {
+            // 提供了新明文密钥，重新加密
+            String encryptedSecret = passwordEncoder.encode(incomingSecret);
             client.setClientSecretEnc(encryptedSecret);
         }
 

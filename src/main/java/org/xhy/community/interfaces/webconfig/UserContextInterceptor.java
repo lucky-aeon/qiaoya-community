@@ -61,7 +61,10 @@ public class UserContextInterceptor implements HandlerInterceptor {
             }
 
             boolean allowed;
-            if (StringUtils.hasText(deviceId)) {
+            if (isLocalLoopback(ip)) {
+                // 本地开发/回环地址直接放行
+                allowed = true;
+            } else if (StringUtils.hasText(deviceId)) {
                 allowed = deviceSessionAppService.isDeviceAllowed(userId, deviceId);
             } else {
                 allowed = deviceSessionAppService.isIpAllowed(userId, ip);
@@ -132,5 +135,17 @@ public class UserContextInterceptor implements HandlerInterceptor {
             log.warn("JWT token解析失败: {}", e.getMessage());
         }
         return null;
+    }
+
+    // 本地回环地址判定
+    private boolean isLocalLoopback(String ip) {
+        if (!StringUtils.hasText(ip)) {
+            return false;
+        }
+        String v = ip.trim();
+        return "127.0.0.1".equals(v)
+                || "localhost".equalsIgnoreCase(v)
+                || "::1".equals(v)
+                || v.startsWith("0:0:0:0:0:0:0:1");
     }
 }
