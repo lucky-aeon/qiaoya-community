@@ -14,7 +14,6 @@ import org.xhy.community.application.resource.dto.ResourceDTO;
 import org.xhy.community.application.resource.service.ResourceAppService;
 import org.xhy.community.application.session.service.TokenBlacklistAppService;
 import org.xhy.community.infrastructure.config.ApiResponse;
-import org.xhy.community.infrastructure.config.EnvironmentConfig;
 import org.xhy.community.infrastructure.config.JwtUtil;
 import org.xhy.community.interfaces.resource.request.OssCallbackRequest;
 import org.xhy.community.application.permission.service.UserPermissionAppService;
@@ -38,18 +37,15 @@ public class PublicResourceController {
     private final JwtUtil jwtUtil;
     private final TokenBlacklistAppService tokenBlacklistAppService;
     private final UserPermissionAppService userPermissionAppService;
-    private final EnvironmentConfig environmentConfig;
 
     public PublicResourceController(ResourceAppService resourceAppService,
                                    JwtUtil jwtUtil,
                                    TokenBlacklistAppService tokenBlacklistAppService,
-                                   UserPermissionAppService userPermissionAppService,
-                                   EnvironmentConfig environmentConfig) {
+                                   UserPermissionAppService userPermissionAppService) {
         this.resourceAppService = resourceAppService;
         this.jwtUtil = jwtUtil;
         this.tokenBlacklistAppService = tokenBlacklistAppService;
         this.userPermissionAppService = userPermissionAppService;
-        this.environmentConfig = environmentConfig;
     }
     
     /**
@@ -96,9 +92,10 @@ public class PublicResourceController {
     }
 
     /**
-     * 资源访问（Cookie/Bearer 双通道鉴权）
+     * 资源访问接口（Cookie/Bearer 双通道鉴权）
      * - 优先从 HttpOnly Cookie: RAUTH 读取 token；若不存在则回退到 Authorization Bearer
-     * - 校验通过后记录访问信息并重定向至OSS签名URL
+     * - 校验通过后生成带 token 参数的 OSS 签名 URL 并重定向
+     * - CDN 远程鉴权通过 URL 中的 token 参数进行验证
      */
     @GetMapping("/resource/{resourceId}/access")
     @ActivityLog(ActivityType.RESOURCE_DOWNLOAD)
@@ -133,11 +130,9 @@ public class PublicResourceController {
         // 生成带签名的直链并重定向
         String accessUrl = resourceAppService.getResourceAccessUrl(resourceId, userId);
 
-        // LOCAL 环境：在 URL 中添加 token 参数，用于 CDN 鉴权
-        if (environmentConfig.isLocal()) {
-            String separator = accessUrl.contains("?") ? "&" : "?";
-            accessUrl = accessUrl + separator + "token=" + token;
-        }
+        // 所有环境：在 URL 中添加 token 参数，用于 CDN 鉴权
+        String separator = accessUrl.contains("?") ? "&" : "?";
+        accessUrl = accessUrl + separator + "token=" + token;
 
         return ResponseEntity.status(HttpStatus.FOUND)
                 .location(URI.create(accessUrl))
