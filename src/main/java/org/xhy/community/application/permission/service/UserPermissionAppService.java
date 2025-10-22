@@ -89,8 +89,9 @@ public class UserPermissionAppService {
      * - 或者 用户拥有针对任一绑定课程的直购权限（等价于额外权限 RESOURCE_DOWNLOAD@COURSE）。
      *
      * 资源未绑定课程：
-     * - 套餐等级1的用户：拒绝访问
-     * - 其他用户（等级2+、无套餐、有直购课程）：允许访问
+     * - 套餐等级1 + 无直购课程：拒绝访问
+     * - 套餐等级1 + 有直购课程：允许访问
+     * - 其他用户（等级2+、无套餐）：允许访问
      */
     public boolean hasDownloadPermissionForResource(String userId, String resourceId) {
         // 解析资源绑定到的课程集合
@@ -116,13 +117,20 @@ public class UserPermissionAppService {
                     .max()
                     .orElse(0);
 
-                // 3. 如果用户最高套餐等级是1，拒绝访问
+                // 3. 如果用户最高套餐等级是1，需要额外检查是否有直购课程
                 if (maxLevel == 1) {
-                    return false;
+                    // 3.1 检查用户是否有直购课程
+                    List<String> ownedCourses = userDomainService.getUserCourses(userId);
+                    boolean hasDirectPurchase = ownedCourses != null && !ownedCourses.isEmpty();
+
+                    // 3.2 如果没有直购课程，拒绝访问；有直购课程则继续往下走，允许访问
+                    if (!hasDirectPurchase) {
+                        return false;
+                    }
                 }
             }
 
-            // 4. 其他情况（等级2+、无套餐、有直购课程等）：允许访问
+            // 4. 其他情况（等级2+、无套餐、等级1但有直购课程）：允许访问
             return true;
         }
 
