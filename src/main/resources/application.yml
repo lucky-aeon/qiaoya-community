@@ -5,7 +5,7 @@ spring:
   application:
     name: qiaoya-community
   profiles:
-    active: ${ENVIRONMENT:dev}
+    active: ${ENVIRONMENT:local}
 
   # 数据库配置
   datasource:

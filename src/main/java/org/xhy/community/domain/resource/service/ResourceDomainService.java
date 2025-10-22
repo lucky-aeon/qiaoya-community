@@ -89,7 +89,11 @@ public class ResourceDomainService {
     
     public String getDownloadUrl(String resourceId) {
         ResourceEntity resource = getResourceById(resourceId);
-        return aliyunOssService.generatePresignedDownloadUrl(resource.getFileKey());
+        String presignedUrl = aliyunOssService.generatePresignedDownloadUrl(resource.getFileKey());
+
+        // 在URL上添加resourceId参数
+        String separator = presignedUrl.contains("?") ? "&" : "?";
+        return presignedUrl + separator + "resourceId=" + resourceId;
     }
     
     public List<ResourceEntity> getUserResources(String userId) {

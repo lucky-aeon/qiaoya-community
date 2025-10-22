@@ -82,20 +82,48 @@ public class UserPermissionAppService {
     }
 
     /**
-     * 判断资源下载权限（并集）：
+     * 判断资源下载权限
+     *
+     * 资源已绑定课程：
      * - 套餐功能码 RESOURCE_DOWNLOAD 存在（接口能力），并且套餐包含该资源所绑定的课程之一；
      * - 或者 用户拥有针对任一绑定课程的直购权限（等价于额外权限 RESOURCE_DOWNLOAD@COURSE）。
-     * 注意：若资源未绑定任何课程/章节，默认拒绝（需要业务方显式绑定资源至课程/章节）。
+     *
+     * 资源未绑定课程：
+     * - 套餐等级1的用户：拒绝访问
+     * - 其他用户（等级2+、无套餐、有直购课程）：允许访问
      */
     public boolean hasDownloadPermissionForResource(String userId, String resourceId) {
         // 解析资源绑定到的课程集合
         java.util.List<ResourceBindingEntity> bindings = resourceBindingDomainService.getBindingsByResourceId(resourceId);
         if (bindings == null || bindings.isEmpty()) {
-            // 未绑定资源：仅对具备“全局下载能力”的用户开放
-            boolean hasPlanCode = hasPlanPermission(userId, "RESOURCE_DOWNLOAD");
-            List<String> ownedCourses = userDomainService.getUserCourses(userId);
-            boolean hasAnyDirect = ownedCourses != null && !ownedCourses.isEmpty();
-            return hasPlanCode || hasAnyDirect;
+            // 未绑定资源：拦截套餐等级1的用户，其他用户允许访问
+
+            // 1. 获取用户当前有效订阅
+            java.util.List<UserSubscriptionEntity> actives = subscriptionDomainService.getUserActiveSubscriptions(userId);
+
+            if (actives != null && !actives.isEmpty()) {
+                // 2. 获取所有订阅的套餐信息，找出最高等级
+                java.util.Set<String> planIds = actives.stream()
+                    .map(UserSubscriptionEntity::getSubscriptionPlanId)
+                    .collect(java.util.stream.Collectors.toSet());
+
+                List<org.xhy.community.domain.subscription.entity.SubscriptionPlanEntity> plans =
+                    subscriptionPlanDomainService.getSubscriptionPlansByIds(planIds);
+
+                int maxLevel = plans.stream()
+                    .filter(p -> p.getLevel() != null)
+                    .mapToInt(org.xhy.community.domain.subscription.entity.SubscriptionPlanEntity::getLevel)
+                    .max()
+                    .orElse(0);
+
+                // 3. 如果用户最高套餐等级是1，拒绝访问
+                if (maxLevel == 1) {
+                    return false;
+                }
+            }
+
+            // 4. 其他情况（等级2+、无套餐、有直购课程等）：允许访问
+            return true;
         }
 
         java.util.Set<String> courseIds = new java.util.HashSet<>();

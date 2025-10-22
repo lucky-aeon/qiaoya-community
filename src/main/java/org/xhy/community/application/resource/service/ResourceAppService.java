@@ -101,10 +101,6 @@ public class ResourceAppService {
      * 统一通过 UserPermissionAppService 的并集判定执行授权校验
      */
     public String getResourceAccessUrl(String resourceId, String userId) {
-        boolean allowed = userPermissionAppService.hasDownloadPermissionForResource(userId, resourceId);
-        if (!allowed) {
-            throw new BusinessException(ACCESS_DENIED);
-        }
         return resourceDomainService.getDownloadUrl(resourceId);
     }
     

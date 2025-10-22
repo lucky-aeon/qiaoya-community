@@ -1,18 +1,12 @@
 package org.xhy.community.interfaces.resource.controller;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.ResponseCookie;
-import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.xhy.community.application.resource.dto.PagedResourceDTO;
 import org.xhy.community.application.resource.dto.UploadCredentialsDTO;
 import org.xhy.community.application.resource.service.ResourceAppService;
 import org.xhy.community.infrastructure.config.ApiResponse;
-import org.xhy.community.infrastructure.annotation.RequiresPlanPermissions;
 import org.xhy.community.infrastructure.annotation.RequiresPlanPermissions;
 import org.xhy.community.interfaces.resource.request.GetUploadCredentialsRequest;
 import org.xhy.community.interfaces.resource.request.ResourceQueryRequest;
@@ -61,37 +55,10 @@ public class ResourceController {
         return ApiResponse.success(credentials);
     }
     
-    /**
-     * 用来请求 /api/public/resource/{resourceId}/access 接口前要使用的，设置 cookie
-     * 建立资源访问会话：签发短时效 HttpOnly Cookie (RAUTH)
-     * 说明：前端以 Bearer 调用本接口，后端将 Bearer 中的token写入 HttpOnly Cookie，
-     *       Path 受限在 /api/public/resource，用于元素请求(<img>/<a>)的鉴权。
-     */
-    @PostMapping("/access-session")
-    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "RESOURCE_DOWNLOAD", name = "下载资源")})
-    public ResponseEntity<Void> createAccessSession(
-            @RequestHeader(value = "Authorization", required = false) String authorization,
-            HttpServletRequest request,
-            HttpServletResponse response
-    ) {
-        if (!StringUtils.hasText(authorization) || !authorization.startsWith("Bearer ")) {
-            return ResponseEntity.status(401).build();
-        }
-        String token = authorization.substring(7);
+    // 已删除 access-session 接口
+    // RAUTH Cookie 现在在用户登录/注册时由 AuthController 自动设置
+    // 有效期为 30 天，Domain 为 .xhyovo.cn，支持所有子域名（包括 oss.xhyovo.cn）
 
-        // 下发 HttpOnly Cookie，作用域仅限资源访问路径，时效短
-        boolean isSecure = request.isSecure() || "https".equalsIgnoreCase(request.getHeader("X-Forwarded-Proto"));
-        ResponseCookie cookie = ResponseCookie.from("RAUTH", token)
-                .httpOnly(true)
-                .secure(isSecure) // 本地开发HTTP下不设置Secure，生产启用HTTPS
-                .sameSite("Lax")
-                .path("/api/public/resource")
-                .maxAge(900) // 15分钟
-                .build();
-        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
-        return ResponseEntity.noContent().build();
-    }
-    
     /**
      * 分页查询当前用户的资源列表
      * 根据查询条件获取当前用户上传的资源文件列表，支持按资源类型筛选
