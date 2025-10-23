@@ -158,10 +158,6 @@ public class UserPermissionAppService {
         boolean directAllowed = !java.util.Collections.disjoint(courseIds, owned);
         if (directAllowed) return true;
 
-        // 路径二：套餐能力 + 套餐包含课程（接口能力 + 范围能力）
-        boolean hasPlanCode = hasPlanPermission(userId, "RESOURCE_DOWNLOAD");
-        if (!hasPlanCode) return false;
-
         // 检查有效订阅套餐是否包含任一绑定课程
         java.util.List<UserSubscriptionEntity> actives = subscriptionDomainService.getUserActiveSubscriptions(userId);
         if (actives == null || actives.isEmpty()) return false;
