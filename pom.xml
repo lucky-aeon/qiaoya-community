@@ -38,6 +38,11 @@
     </dependencyManagement>
     
   <dependencies>
+        <!-- Spring WebSocket for real-time push -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+        </dependency>
         <!-- Redis for distributed locking and ZSET operations -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
