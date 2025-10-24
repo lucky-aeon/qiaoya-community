@@ -13,6 +13,7 @@ import org.xhy.community.infrastructure.config.WebUrlConfig;
 import org.xhy.community.infrastructure.util.ContentUrlResolver;
 import org.xhy.community.domain.common.valueobject.ContentType;
 import org.xhy.community.domain.follow.valueobject.FollowTargetType;
+import org.xhy.community.domain.notification.context.ChatMentionNotificationData;
 
 import jakarta.annotation.PostConstruct;
 
@@ -160,6 +161,31 @@ public class NotificationTemplateRegistry {
             data -> {
                 java.util.Map<String, String> m = new java.util.HashMap<>();
                 m.put("TITLE", data.getTitle() == null ? "" : data.getTitle());
+                return m;
+            },
+            webUrlConfig
+        ));
+
+        // 聊天室 @ 提及（邮件）- 无跳转按钮
+        registerOutAppTemplate(ContentType.CHAT_MESSAGE, new FileBasedNotificationTemplate<>(
+            ChatMentionNotificationData.class,
+            "敲鸭社区 - 聊天室提及提醒",
+            "chat-mention.html",
+            templateLoader,
+            templateRenderer,
+            brandingConfig,
+            data -> {
+                java.util.Map<String, String> m = new java.util.HashMap<>();
+                String sender = data.getSenderName() == null ? "有人" : data.getSenderName();
+                String room = (data.getRoomName() == null || data.getRoomName().isBlank()) ? "聊天室" : data.getRoomName();
+                String preview = data.getContent();
+                if (preview != null && preview.length() > 120) {
+                    preview = preview.substring(0, 120) + "...";
+                }
+                m.put("SENDER_NAME", sender);
+                m.put("ROOM_NAME", room);
+                m.put("TRUNCATED_CONTENT", preview == null ? "" : preview);
+                m.put("PREVIEW_LINE", "聊天室提及提醒：" + sender + " 在《" + room + "》提及了你");
                 return m;
             },
             webUrlConfig
