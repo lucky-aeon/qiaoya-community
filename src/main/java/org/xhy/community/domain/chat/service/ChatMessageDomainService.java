@@ -56,12 +56,43 @@ public class ChatMessageDomainService {
             }
         }
 
+        // 业务校验：仅允许 @ 提及当前房间成员。对非法ID进行过滤（不报错，保持消息可发送）。
+        if (message.getMentionedUserIds() != null && !message.getMentionedUserIds().isEmpty()) {
+            java.util.List<String> filtered = filterMentionsToRoomMembers(message.getRoomId(), message.getMentionedUserIds());
+            message.setMentionedUserIds((filtered == null || filtered.isEmpty()) ? null : filtered);
+        }
+
         chatMessageRepository.insert(message);
         // 发布消息创建事件（由 @TransactionalEventListener 在事务提交后处理）
         ChatMessageCreatedEvent event = new ChatMessageCreatedEvent(
                 message.getId(), message.getRoomId(), message.getSenderId(), message.getContent(), message.getQuotedMessageId(), message.getMentionedUserIds());
         eventPublisher.publishEvent(event);
         return message;
+    }
+
+    /**
+     * 仅保留属于该房间成员的 @ 提及用户ID，去重并保持原始顺序。
+     */
+    private java.util.List<String> filterMentionsToRoomMembers(String roomId, java.util.List<String> mentionedUserIds) {
+        if (mentionedUserIds == null || mentionedUserIds.isEmpty()) return java.util.Collections.emptyList();
+
+        java.util.LinkedHashSet<String> dedup = new java.util.LinkedHashSet<>();
+        for (String uid : mentionedUserIds) {
+            if (uid != null && !uid.isBlank()) dedup.add(uid);
+        }
+        if (dedup.isEmpty()) return java.util.Collections.emptyList();
+
+        java.util.List<ChatRoomMemberEntity> validMembers = chatRoomMemberRepository.selectList(
+                new LambdaQueryWrapper<ChatRoomMemberEntity>()
+                        .eq(ChatRoomMemberEntity::getRoomId, roomId)
+                        .in(ChatRoomMemberEntity::getUserId, dedup)
+        );
+        java.util.HashSet<String> allowed = new java.util.HashSet<>();
+        for (ChatRoomMemberEntity m : validMembers) allowed.add(m.getUserId());
+
+        java.util.List<String> filtered = new java.util.ArrayList<>();
+        for (String uid : dedup) if (allowed.contains(uid)) filtered.add(uid);
+        return filtered;
     }
 
     /**
