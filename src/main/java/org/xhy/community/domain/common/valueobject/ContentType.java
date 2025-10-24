@@ -12,7 +12,8 @@ public enum ContentType {
     COMMENT("评论"),
     UPDATE_LOG("更新日志"),
     INTERVIEW_QUESTION("题目"),
-    PUBLISH_CONTENT("关注内容");
+    PUBLISH_CONTENT("关注内容"),
+    CHAT_MESSAGE("聊天室消息");
 
 
     private final String description;

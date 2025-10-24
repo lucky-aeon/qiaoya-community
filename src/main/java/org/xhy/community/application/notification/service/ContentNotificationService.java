@@ -116,6 +116,7 @@ public class ContentNotificationService {
             case COMMENT -> null;
             case UPDATE_LOG -> null;
             case PUBLISH_CONTENT -> null;
+            case CHAT_MESSAGE -> null;
         };
     }
 

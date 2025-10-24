@@ -9,8 +9,10 @@ import org.xhy.community.domain.chat.event.ChatMessageCreatedEvent;
 import org.xhy.community.infrastructure.ws.ChatLiveSessionRegistry;
 import org.xhy.community.infrastructure.ws.model.ChatMessagePush;
 import org.xhy.community.infrastructure.ws.model.WsFrame;
+import org.xhy.community.infrastructure.ws.model.ChatMentionPush;
 import org.xhy.community.application.user.dto.UserPublicProfileDTO;
 import org.xhy.community.application.user.service.UserAppService;
+import org.xhy.community.application.chat.service.ChatNotificationAppService;
 
 /**
  * 聊天消息事件监听器（为 WebSocket/SSE 做准备）
@@ -22,10 +24,13 @@ public class ChatMessageEventListener {
 
     private final ChatLiveSessionRegistry registry;
     private final UserAppService userAppService;
+    private final ChatNotificationAppService chatNotificationAppService;
 
-    public ChatMessageEventListener(ChatLiveSessionRegistry registry, UserAppService userAppService) {
+    public ChatMessageEventListener(ChatLiveSessionRegistry registry, UserAppService userAppService,
+                                    ChatNotificationAppService chatNotificationAppService) {
         this.registry = registry;
         this.userAppService = userAppService;
+        this.chatNotificationAppService = chatNotificationAppService;
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -49,5 +54,33 @@ public class ChatMessageEventListener {
         }
         WsFrame<ChatMessagePush> frame = new WsFrame<>("message", payload);
         registry.broadcast(event.getRoomId(), frame);
+
+        // 处理 @提及：房内在线用户推送 mention 事件；其余用户发站内消息
+        if (event.getMentionedUserIds() != null && !event.getMentionedUserIds().isEmpty()) {
+            java.util.Set<String> uids = new java.util.LinkedHashSet<>(event.getMentionedUserIds());
+            for (String uid : uids) {
+                if (uid == null || uid.isBlank()) continue;
+                boolean onlineInRoom = registry.isUserOnlineInRoom(event.getRoomId(), uid);
+                if (onlineInRoom) {
+                    ChatMentionPush mention = new ChatMentionPush(
+                            event.getRoomId(), event.getMessageId(), event.getSenderId(), uid,
+                            event.getContent(), event.getOccurredAt());
+                    // 复用发送者资料，便于前端展示
+                    try {
+                        UserPublicProfileDTO profile = userAppService.getUserPublicProfile(event.getSenderId());
+                        if (profile != null) {
+                            mention.setSenderName(profile.getName());
+                            mention.setSenderAvatar(profile.getAvatar());
+                            mention.setSenderTags(profile.getTags());
+                        }
+                    } catch (Exception ignored) {}
+                    registry.sendToUserInRoom(event.getRoomId(), uid, new WsFrame<>("mention", mention));
+                } else {
+                    // 站内消息（仅提及的接收者）
+                    chatNotificationAppService.sendChatMentionNotification(
+                            uid, event.getRoomId(), event.getMessageId(), event.getSenderId(), event.getContent());
+                }
+            }
+        }
     }
 }

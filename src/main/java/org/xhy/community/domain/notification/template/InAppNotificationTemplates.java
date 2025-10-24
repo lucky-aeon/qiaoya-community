@@ -177,4 +177,35 @@ public class InAppNotificationTemplates {
             return ContentType.UPDATE_LOG;
         }
     }
+
+    /**
+     * 聊天室 @ 提及 - 站内消息模板
+     */
+    public static class ChatMentionTemplate implements NotificationTemplate<ChatMentionNotificationData> {
+        @Override
+        public String renderTitle(ChatMentionNotificationData data) {
+            return "你被提及";
+        }
+
+        @Override
+        public String renderContent(ChatMentionNotificationData data) {
+            String sender = data.getSenderName() == null ? "有人" : data.getSenderName();
+            String room = (data.getRoomName() == null || data.getRoomName().isBlank()) ? "聊天室" : data.getRoomName();
+            String preview = data.getContent();
+            if (preview != null && preview.length() > 120) {
+                preview = preview.substring(0, 120) + "...";
+            }
+            return sender + " 在《" + room + "》提及了你：" + (preview == null ? "" : preview);
+        }
+
+        @Override
+        public Class<ChatMentionNotificationData> getSupportedDataType() {
+            return ChatMentionNotificationData.class;
+        }
+
+        @Override
+        public ContentType getContentType() {
+            return ContentType.CHAT_MESSAGE;
+        }
+    }
 }

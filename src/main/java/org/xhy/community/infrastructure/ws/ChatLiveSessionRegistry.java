@@ -85,6 +85,32 @@ public class ChatLiveSessionRegistry {
         log.info("[WS] broadcast: room={}, targets={}, sent={}, failed={}", roomId, set.size(), ok, fail);
     }
 
+    /**
+     * 向房间内指定用户的所有在线会话发送消息。
+     */
+    public void sendToUserInRoom(String roomId, String userId, Object frame) {
+        Set<WebSocketSession> set = roomSessions.get(roomId);
+        if (set == null || set.isEmpty()) return;
+        int ok = 0, fail = 0, total = 0;
+        for (WebSocketSession s : set) {
+            Object uid = s.getAttributes().get(JwtHandshakeInterceptor.ATTR_USER_ID);
+            if (uid != null && userId.equals(uid.toString())) {
+                total++;
+                if (s.isOpen()) {
+                    try {
+                        String json = (frame instanceof String) ? (String) frame : objectMapper.writeValueAsString(frame);
+                        s.sendMessage(new TextMessage(json));
+                        ok++;
+                    } catch (IOException e) {
+                        fail++;
+                        log.warn("[WS] sendToUser failed: session={}, room={}, userId={}", s.getId(), roomId, userId, e);
+                    }
+                }
+            }
+        }
+        log.info("[WS] sendToUser: room={}, userId={}, targets={}, sent={}, failed={}", roomId, userId, total, ok, fail);
+    }
+
     /** 返回某个 session 当前订阅的房间集合（拷贝）。 */
     public java.util.Set<String> getRoomsForSession(String sessionId) {
         Set<String> rooms = sessionRooms.get(sessionId);

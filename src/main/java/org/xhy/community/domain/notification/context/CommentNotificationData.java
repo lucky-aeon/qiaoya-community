@@ -39,12 +39,12 @@ public class CommentNotificationData extends NotificationData {
      */
     @Deprecated
     public String getTargetUrl() {
-        if (targetType == null || targetId == null) return "https://qiaoya.com/";
+        if (targetType == null || targetId == null) return "https://code.xhyovo.cn/";
         return switch (targetType) {
-            case POST -> "https://qiaoya.com/dashboard/discussions/" + targetId;
-            case COURSE -> "https://qiaoya.com/dashboard/courses/" + targetId;
-            case CHAPTER -> "https://qiaoya.com/dashboard/chapters/" + targetId;
-            default -> "https://qiaoya.com/dashboard/" + targetId;
+            case POST -> "https://code.xhyovo.cn/dashboard/discussions/" + targetId;
+            case COURSE -> "https://code.xhyovo.cn/dashboard/courses/" + targetId;
+            case CHAPTER -> "https://code.xhyovo.cn/dashboard/chapters/" + targetId;
+            default -> "https://code.xhyovo.cn/dashboard/" + targetId;
         };
     }
 
