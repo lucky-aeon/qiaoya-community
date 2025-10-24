@@ -61,6 +61,7 @@ public class NotificationTemplateRegistry {
         registerInAppTemplate(new InAppNotificationTemplates.CommentTemplate());
         registerInAppTemplate(new InAppNotificationTemplates.ChapterUpdatedTemplate());
         registerInAppTemplate(new InAppNotificationTemplates.UpdateLogPublishedTemplate());
+        registerInAppTemplate(new InAppNotificationTemplates.ChatMentionTemplate());
 
         // 注册站外消息模板
         registerFileBasedOutAppTemplates();

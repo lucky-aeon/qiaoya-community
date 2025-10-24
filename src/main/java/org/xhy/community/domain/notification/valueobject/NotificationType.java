@@ -14,7 +14,8 @@ public enum NotificationType {
     CHAPTER_UPDATED("章节被更新"),
     CHAPTER_COMMENT("章节被评论"),
     INTERVIEW_QUESTION_COMMENT("题目被评论"),
-    UPDATE_LOG_PUBLISHED("更新日志发布");
+    UPDATE_LOG_PUBLISHED("更新日志发布"),
+    CHAT_MENTION("聊天室@提及");
     
     private final String description;
     

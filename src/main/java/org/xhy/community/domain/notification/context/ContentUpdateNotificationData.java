@@ -30,15 +30,16 @@ public class ContentUpdateNotificationData extends NotificationData {
      */
     @Deprecated
     public String getContentUrl() {
-        if (contentType == null || contentId == null) return "https://qiaoya.com/";
+        if (contentType == null || contentId == null) return "https://code.xhyovo.cn/";
         return switch (contentType) {
-            case POST -> "https://qiaoya.com/dashboard/discussions/" + contentId;
-            case COURSE -> "https://qiaoya.com/dashboard/courses/" + contentId;
-            case CHAPTER -> "https://qiaoya.com/dashboard/chapters/" + contentId;
-            case COMMENT -> "https://qiaoya.com/dashboard/discussions/" + contentId;
+            case POST -> "https://code.xhyovo.cn/dashboard/discussions/" + contentId;
+            case COURSE -> "https://code.xhyovo.cn/dashboard/courses/" + contentId;
+            case CHAPTER -> "https://code.xhyovo.cn/dashboard/chapters/" + contentId;
+            case COMMENT -> "https://code.xhyovo.cn/dashboard/discussions/" + contentId;
             case UPDATE_LOG -> null;
-            case INTERVIEW_QUESTION -> "https://qiaoya.com/dashboard/interviews/" + contentId;
+            case INTERVIEW_QUESTION -> "https://code.xhyovo.cn/dashboard/interviews/" + contentId;
             case PUBLISH_CONTENT -> null;
+            case CHAT_MESSAGE -> null;
         };
     }
 }

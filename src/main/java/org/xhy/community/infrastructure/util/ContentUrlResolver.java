@@ -24,6 +24,7 @@ public class ContentUrlResolver {
             case UPDATE_LOG -> null;
             case INTERVIEW_QUESTION -> "/dashboard/interviews/" + id;
             case PUBLISH_CONTENT -> null;
+            case CHAT_MESSAGE -> null;
         };
     }
 
