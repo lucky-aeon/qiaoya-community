@@ -39,7 +39,8 @@ public class AdminSubscriptionPlanMenuAppService {
             new MenuOptionDTO("MENU_MEMBERSHIP", "会员与套餐", "公开入口", "/dashboard/membership"),
             new MenuOptionDTO("MENU_REDEEM_CDK", "CDK 激活", "公开入口", "/dashboard/redeem"),
             new MenuOptionDTO("MENU_DASHBOARD_INTERVIEWS", "题库", "公开入口", "/dashboard/interviews"),
-            new MenuOptionDTO("MENU_USER_INTERVIEWS", "用户题库管理", "用户中心", "/dashboard/user-backend/interviews")
+            new MenuOptionDTO("MENU_USER_INTERVIEWS", "用户题库管理", "用户中心", "/dashboard/user-backend/interviews"),
+            new MenuOptionDTO("MENU_DASHBOARD_CHAT", "聊天室", "导航", "/dashboard/chat")
         );
     }
 

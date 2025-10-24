@@ -145,6 +145,12 @@ public class MyBatisTypeHandlerConfig {
         // 面试题库相关
         typeHandlerRegistry.register(ProblemStatus.class, new ProblemStatusConverter());
 
+        // Chat 相关
+        typeHandlerRegistry.register(org.xhy.community.domain.chat.valueobject.ChatRoomRole.class,
+                new org.xhy.community.infrastructure.converter.ChatRoomRoleConverter());
+        typeHandlerRegistry.register(org.xhy.community.domain.chat.valueobject.ChatRoomAudience.class,
+                new org.xhy.community.infrastructure.converter.ChatRoomAudienceConverter());
+
         // OAuth2 相关
         typeHandlerRegistry.register(OAuth2ClientStatus.class, new OAuth2ClientStatusConverter());
 
