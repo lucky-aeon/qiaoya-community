@@ -66,7 +66,7 @@ public class ResourceAssembler {
         
         // 设置兼容性字段
         dto.setFileKey((String) credentials.get("key"));
-        dto.setMaxFileSize(100 * 1024 * 1024L); // 默认100MB限制
+        dto.setMaxFileSize(2000 * 1024 * 1024L); // 默认100MB限制
         
         return dto;
     }
