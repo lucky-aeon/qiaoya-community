@@ -38,7 +38,6 @@ public class ChatRoomAppService {
     private final UserDomainService userDomainService;
     private final ChatLiveSessionRegistry liveSessionRegistry;
     private final TagDomainService tagDomainService;
-    private final ChatUnreadAppService chatUnreadAppService;
     private final ChatRoomReadDomainService chatRoomReadDomainService;
     private final ChatMessageDomainService chatMessageDomainService;
     private final SubscriptionDomainService subscriptionDomainService;
@@ -50,7 +49,6 @@ public class ChatRoomAppService {
                               UserDomainService userDomainService,
                               ChatLiveSessionRegistry liveSessionRegistry,
                               TagDomainService tagDomainService,
-                              ChatUnreadAppService chatUnreadAppService,
                               ChatRoomReadDomainService chatRoomReadDomainService,
                               ChatMessageDomainService chatMessageDomainService,
                               SubscriptionDomainService subscriptionDomainService,
@@ -60,7 +58,6 @@ public class ChatRoomAppService {
         this.userDomainService = userDomainService;
         this.liveSessionRegistry = liveSessionRegistry;
         this.tagDomainService = tagDomainService;
-        this.chatUnreadAppService = chatUnreadAppService;
         this.chatRoomReadDomainService = chatRoomReadDomainService;
         this.chatMessageDomainService = chatMessageDomainService;
         this.subscriptionDomainService = subscriptionDomainService;

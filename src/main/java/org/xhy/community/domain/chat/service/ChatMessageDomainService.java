@@ -110,7 +110,7 @@ public class ChatMessageDomainService {
         Page<ChatMessageEntity> page = new Page<>(query.getPageNum(), query.getPageSize());
         LambdaQueryWrapper<ChatMessageEntity> wrapper = new LambdaQueryWrapper<ChatMessageEntity>()
                 .eq(ChatMessageEntity::getRoomId, query.getRoomId())
-                .orderByAsc(ChatMessageEntity::getCreateTime);
+                .orderByDesc(ChatMessageEntity::getCreateTime);
         return chatMessageRepository.selectPage(page, wrapper);
     }
 
