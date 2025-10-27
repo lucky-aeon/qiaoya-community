@@ -22,7 +22,6 @@ public class ChatMessageController {
     }
 
     @PostMapping("/{roomId}/messages")
-    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "CHAT_MESSAGE_SEND", name = "发送聊天室消息")})
     public ApiResponse<ChatMessageDTO> sendMessage(@PathVariable String roomId,
                                                    @Valid @RequestBody SendMessageRequest request) {
         String userId = UserContext.getCurrentUserId();
