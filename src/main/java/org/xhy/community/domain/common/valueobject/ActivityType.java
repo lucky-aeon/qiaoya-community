@@ -250,6 +250,10 @@ public enum ActivityType {
      * 解除IP封禁
      */
     ADMIN_IP_UNBAN("解除IP封禁"),
+    /**
+     * 封禁IP
+     */
+    ADMIN_IP_BAN("封禁IP"),
     
     /**
      * 更新系统配置
@@ -512,6 +516,7 @@ public enum ActivityType {
             case ADMIN_OAUTH2_CLIENT_ACTIVATE:
             case ADMIN_OAUTH2_CLIENT_SUSPEND:
             case ADMIN_OAUTH2_CLIENT_REVOKE:
+            case ADMIN_IP_BAN:
                 return ActivityCategory.ADMINISTRATION;
                 
             default:

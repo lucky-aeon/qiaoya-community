@@ -1,15 +1,13 @@
 package org.xhy.community.interfaces.user.controller;
 
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.*;
 import org.xhy.community.application.security.dto.BannedIpDTO;
 import org.xhy.community.application.security.service.AdminIpAppService;
 import org.xhy.community.infrastructure.config.ApiResponse;
 import org.xhy.community.infrastructure.annotation.ActivityLog;
 import org.xhy.community.domain.common.valueobject.ActivityType;
+import org.xhy.community.interfaces.user.request.BanIpRequest;
 
 import java.util.List;
 
@@ -34,6 +32,16 @@ public class AdminIpController {
     public ApiResponse<List<BannedIpDTO>> listBannedIps() {
         List<BannedIpDTO> list = adminIpAppService.listBannedIps();
         return ApiResponse.success(list);
+    }
+
+    /**
+     * 管理员封禁指定IP
+     */
+    @PostMapping
+    @ActivityLog(ActivityType.ADMIN_IP_BAN)
+    public ApiResponse<Void> banIp(@Valid @RequestBody BanIpRequest request) {
+        adminIpAppService.banIp(request);
+        return ApiResponse.success("IP已封禁");
     }
 
     /**

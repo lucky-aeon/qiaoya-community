@@ -174,6 +174,25 @@ public class EmailVerificationDomainService {
         log.info("【注册验证码】已解除封禁：ip={}", ip);
     }
 
+    /**
+     * 管理员手动封禁指定IP，按天设置封禁时长。
+     * @param ip IP地址
+     * @param ttlDays 封禁天数（>=1）
+     */
+    public void banIp(String ip, long ttlDays) {
+        if (!StringUtils.hasText(ip) || ttlDays < 1) {
+            return;
+        }
+        Duration ttl = Duration.ofDays(ttlDays);
+        String banKey = keyIpBan(ip);
+        redis.opsForValue().set(banKey, "1", ttl);
+        long expireAt = System.currentTimeMillis() + ttl.toMillis();
+        redis.opsForZSet().add(KEY_IP_BAN_SET, ip, expireAt);
+        // 同时重置当日计数，避免解除后马上再次触发
+        redis.delete(keyIpDaily(ip));
+        log.info("【管理员封禁IP】ip={} 天数={} (expireAt={})", ip, ttlDays, expireAt);
+    }
+
     private String generate6DigitCode() {
         Random r = new Random();
         int num = 100000 + r.nextInt(900000);
