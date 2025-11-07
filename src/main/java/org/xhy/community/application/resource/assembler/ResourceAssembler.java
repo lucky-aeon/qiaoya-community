@@ -66,7 +66,8 @@ public class ResourceAssembler {
         
         // 设置兼容性字段
         dto.setFileKey((String) credentials.get("key"));
-        dto.setMaxFileSize(2000 * 1024 * 1024L); // 默认100MB限制
+        // 与策略中的 content-length-range 保持一致（默认 2GB，可通过配置覆盖）
+        dto.setMaxFileSize(ossProperties.getUploadMaxSize());
         
         return dto;
     }

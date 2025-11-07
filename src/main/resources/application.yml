@@ -80,6 +80,8 @@ aliyun:
     role-arn: ${ALIYUN_STS_ROLE_ARN:acs:ram::your-account-id:role/your-role-name}
     custom-domain: ${ALIYUN_OSS_CUSTOM_DOMAIN:https://oss.xhyovo.cn}
     presigned-url-expiration: 3600
+    # 直传表单策略最大上传大小，默认 2GB，可由环境变量覆盖
+    upload-max-size: ${ALIYUN_OSS_UPLOAD_MAX_SIZE:2147483648}
     callback:
       url: ${ALIYUN_OSS_CALLBACK_URL:https://45453734.r2.cpolar.top/api/public/oss-callback}
       body: filename=${object}&size=${size}&mimeType=${mimeType}&height=${imageInfo.height}&width=${imageInfo.width}

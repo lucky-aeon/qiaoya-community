@@ -196,12 +196,13 @@ public class AliyunOssService {
                 "  \"conditions\": [\n" +
                 "    {\"bucket\": \"%s\"},\n" +
                 "    [\"eq\", \"$key\", \"%s\"],\n" +
-                "    [\"content-length-range\", 0, 104857600]\n" +
+                "    [\"content-length-range\", 0, %d]\n" +
                 "  ]\n" +
                 "}",
                 expirationString,
                 ossProperties.getBucketName(),
-                sanitizedKey
+                sanitizedKey,
+                ossProperties.getUploadMaxSize()
             );
             
             String encodedPolicy = Base64.getEncoder().encodeToString(policyDocument.getBytes("UTF-8"));

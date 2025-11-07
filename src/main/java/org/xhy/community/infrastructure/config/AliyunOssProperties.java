@@ -16,6 +16,8 @@ public class AliyunOssProperties {
     private String customDomain; // 自定义域名，如 https://oss.xhyovo.cn
     private Callback callback = new Callback();
     private Long presignedUrlExpiration = 3600L; // 默认1小时
+    // 直传表单策略的最大上传大小，默认 2GB
+    private Long uploadMaxSize = 2147483648L;
     
     public String getEndpoint() {
         return endpoint;
@@ -87,6 +89,14 @@ public class AliyunOssProperties {
 
     public void setCustomDomain(String customDomain) {
         this.customDomain = customDomain;
+    }
+
+    public Long getUploadMaxSize() {
+        return uploadMaxSize;
+    }
+
+    public void setUploadMaxSize(Long uploadMaxSize) {
+        this.uploadMaxSize = uploadMaxSize;
     }
 
     public static class Callback {
