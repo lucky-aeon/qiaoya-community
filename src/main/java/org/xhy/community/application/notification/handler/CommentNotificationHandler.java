@@ -123,8 +123,10 @@ public class CommentNotificationHandler implements NotificationHandler {
             if (isReply && !authorId.equals(comment.getReplyUserId())) {
                 UserEntity replyTarget = userDomainService.getUserById(comment.getReplyUserId());
                 if (replyTarget != null) {
+                    // 站外（邮件）仅对 ACTIVE 用户开启
+                    boolean emailEnabled = Boolean.TRUE.equals(replyTarget.getEmailNotificationEnabled()) && replyTarget.isActive();
                     List<NotificationData.Recipient> recipientsA = List.of(
-                            new NotificationData.Recipient(replyTarget.getId(), replyTarget.getEmail(), replyTarget.getEmailNotificationEnabled())
+                            new NotificationData.Recipient(replyTarget.getId(), replyTarget.getEmail(), emailEnabled)
                     );
                     CommentNotificationData dataA = new CommentNotificationData(
                             recipientsA,
@@ -145,8 +147,10 @@ public class CommentNotificationHandler implements NotificationHandler {
             if (!authorId.equals(targetAuthorId)) {
                 UserEntity targetAuthor = userDomainService.getUserById(targetAuthorId);
                 if (targetAuthor != null && (comment.getReplyUserId() == null || !targetAuthor.getId().equals(comment.getReplyUserId()))) {
+                    // 站外（邮件）仅对 ACTIVE 用户开启
+                    boolean emailEnabled = Boolean.TRUE.equals(targetAuthor.getEmailNotificationEnabled()) && targetAuthor.isActive();
                     List<NotificationData.Recipient> recipientsB = List.of(
-                            new NotificationData.Recipient(targetAuthor.getId(), targetAuthor.getEmail(), targetAuthor.getEmailNotificationEnabled())
+                            new NotificationData.Recipient(targetAuthor.getId(), targetAuthor.getEmail(), emailEnabled)
                     );
                     CommentNotificationData dataB = new CommentNotificationData(
                             recipientsB,

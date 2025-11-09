@@ -95,11 +95,13 @@ public class ContentNotificationService {
     private NotificationRecipient buildNotificationRecipient(String userId) {
         try {
             UserEntity user = userDomainService.getUserById(userId);
+            // 站外（邮件）仅对 ACTIVE 用户开启
+            boolean emailEnabled = Boolean.TRUE.equals(user.getEmailNotificationEnabled()) && user.isActive();
             return new NotificationRecipient(
                     user.getId(),
                     user.getName(),
                     user.getEmail(),
-                    user.getEmailNotificationEnabled()
+                    emailEnabled
             );
         } catch (Exception e) {
             log.debug("[通知关注者] 构建接收者失败，userId={}，原因={}", userId, e.getMessage());

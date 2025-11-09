@@ -42,7 +42,8 @@ public class ChatNotificationAppService {
         try {
             UserEntity u = userDomainService.getUserById(recipientId);
             String email = u != null ? u.getEmail() : null;
-            Boolean emailEnabled = u != null && Boolean.TRUE.equals(u.getEmailNotificationEnabled());
+            // 站外（邮件）仅对 ACTIVE 用户开启
+            Boolean emailEnabled = u != null && u.isActive() && Boolean.TRUE.equals(u.getEmailNotificationEnabled());
             recipients.add(new NotificationData.Recipient(recipientId, email, emailEnabled));
         } catch (Exception e) {
             // 降级：即使用户查询异常，也至少推送站内消息
