@@ -3,6 +3,7 @@ package org.xhy.community.interfaces.oauth2.controller;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.xhy.community.application.oauth2.dto.OAuth2TokenDTO;
 import org.xhy.community.application.oauth2.service.OAuth2AuthorizationAppService;
@@ -171,8 +172,18 @@ public class PublicOAuth2AuthorizationController {
      * @param request Token 请求参数
      * @return Token 响应
      */
-    @PostMapping("/token")
-    public ApiResponse<OAuth2TokenDTO> token(@Valid @RequestBody OAuth2TokenRequest request) {
+    @PostMapping(value = "/token", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    public ApiResponse<OAuth2TokenDTO> token(@Valid @ModelAttribute OAuth2TokenRequest request) {
+        OAuth2TokenDTO token = authorizationAppService.getToken(request);
+        return ApiResponse.success(token);
+    }
+
+    /**
+     * 令牌端点（JSON 兼容版）
+     * 保留对旧客户端的兼容，接受 application/json
+     */
+    @PostMapping(value = "/token", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ApiResponse<OAuth2TokenDTO> tokenJson(@Valid @RequestBody OAuth2TokenRequest request) {
         OAuth2TokenDTO token = authorizationAppService.getToken(request);
         return ApiResponse.success(token);
     }
@@ -191,12 +202,12 @@ public class PublicOAuth2AuthorizationController {
         // 只返回公开信息，不包含密钥
         Map<String, Object> clientInfo = new HashMap<>();
         clientInfo.put("id", client.getId());
-        clientInfo.put("clientId", client.getClientId());
-        clientInfo.put("clientName", client.getClientName());
-        clientInfo.put("redirectUris", client.getRedirectUris());
+        clientInfo.put("client_id", client.getClientId());
+        clientInfo.put("client_name", client.getClientName());
+        clientInfo.put("redirect_uris", client.getRedirectUris());
         clientInfo.put("scopes", client.getScopes());
-        clientInfo.put("requireAuthorizationConsent", client.getRequireAuthorizationConsent());
-        clientInfo.put("createTime", client.getCreateTime());
+        clientInfo.put("require_authorization_consent", client.getRequireAuthorizationConsent());
+        clientInfo.put("create_time", client.getCreateTime());
 
         return ApiResponse.success(clientInfo);
     }
