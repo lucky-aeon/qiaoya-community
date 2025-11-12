@@ -412,6 +412,30 @@ public class OAuth2AuthorizationDomainService {
     }
 
     /**
+     * 根据 Access Token 获取有效的授权记录
+     * 用于需要根据 Token 获取用户与 scope 的场景（如 /userinfo）
+     *
+     * @param accessToken Access Token 值
+     * @return 有效的授权记录
+     */
+    public OAuth2AuthorizationEntity getByValidAccessToken(String accessToken) {
+        LambdaQueryWrapper<OAuth2AuthorizationEntity> queryWrapper =
+            new LambdaQueryWrapper<OAuth2AuthorizationEntity>()
+                .eq(OAuth2AuthorizationEntity::getAccessTokenValue, accessToken)
+                .orderByDesc(OAuth2AuthorizationEntity::getCreateTime)
+                .last("LIMIT 1");
+
+        OAuth2AuthorizationEntity authorization = authorizationRepository.selectOne(queryWrapper);
+        if (authorization == null) {
+            throw new BusinessException(OAuth2ErrorCode.INVALID_ACCESS_TOKEN);
+        }
+        if (!authorization.isAccessTokenValid()) {
+            throw new BusinessException(OAuth2ErrorCode.EXPIRED_ACCESS_TOKEN);
+        }
+        return authorization;
+    }
+
+    /**
      * 验证客户端是否处于激活状态
      */
     private void validateClientActive(OAuth2ClientEntity client) {

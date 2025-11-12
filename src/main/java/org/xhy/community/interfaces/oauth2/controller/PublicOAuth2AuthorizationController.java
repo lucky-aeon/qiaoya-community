@@ -3,9 +3,13 @@ package org.xhy.community.interfaces.oauth2.controller;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.xhy.community.application.oauth2.dto.OAuth2TokenDTO;
+import org.xhy.community.application.oauth2.dto.OIDCUserInfoDTO;
 import org.xhy.community.application.oauth2.service.OAuth2AuthorizationAppService;
 import org.xhy.community.domain.oauth2.entity.OAuth2ClientEntity;
 import org.xhy.community.domain.oauth2.service.OAuth2ClientDomainService;
@@ -60,12 +64,28 @@ public class PublicOAuth2AuthorizationController {
      * 3. 如果用户已登录但未授权 → 重定向到前端授权页面
      * 4. 如果用户已登录且已授权 → 直接生成授权码并重定向回第三方应用
      *
-     * @param request 授权请求参数
      * @param response HTTP响应
      */
     @GetMapping("/authorize")
-    public void authorize(@Valid @ModelAttribute OAuth2AuthorizeRequest request,
-                         HttpServletResponse response) throws IOException {
+    public void authorize(
+            @RequestParam(name = "client_id") String clientId,
+            @RequestParam(name = "redirect_uri") String redirectUri,
+            @RequestParam(name = "response_type") String responseType,
+            @RequestParam(name = "scope", required = false) String scope,
+            @RequestParam(name = "state", required = false) String state,
+            @RequestParam(name = "code_challenge", required = false) String codeChallenge,
+            @RequestParam(name = "code_challenge_method", required = false) String codeChallengeMethod,
+            HttpServletResponse response) throws IOException {
+
+        // 组装规范请求对象（内部仍使用统一的 DTO）
+        OAuth2AuthorizeRequest request = new OAuth2AuthorizeRequest();
+        request.setClientId(clientId);
+        request.setRedirectUri(redirectUri);
+        request.setResponseType(responseType);
+        request.setScope(scope);
+        request.setState(state);
+        request.setCodeChallenge(codeChallenge);
+        request.setCodeChallengeMethod(codeChallengeMethod);
         // 验证 response_type 必须是 "code"
         if (!"code".equals(request.getResponseType())) {
             throw new BusinessException(OAuth2ErrorCode.INVALID_GRANT_TYPE, "仅支持 response_type=code");
@@ -173,9 +193,9 @@ public class PublicOAuth2AuthorizationController {
      * @return Token 响应
      */
     @PostMapping(value = "/token", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-    public ApiResponse<OAuth2TokenDTO> token(@Valid @ModelAttribute OAuth2TokenRequest request) {
+    public OAuth2TokenDTO token(@Valid @ModelAttribute OAuth2TokenRequest request) {
         OAuth2TokenDTO token = authorizationAppService.getToken(request);
-        return ApiResponse.success(token);
+        return token;
     }
 
     /**
@@ -280,5 +300,42 @@ public class PublicOAuth2AuthorizationController {
             }
         }
         return null;
+    }
+
+    /**
+     * OIDC UserInfo 端点
+     * 返回原生 JSON（不使用全局 ApiResponse 包装）
+     * 认证：Authorization: Bearer <access_token>
+     */
+    @GetMapping("/userinfo")
+    public ResponseEntity<?> userinfo(jakarta.servlet.http.HttpServletRequest request) {
+        String authorization = request.getHeader("Authorization");
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .header(HttpHeaders.WWW_AUTHENTICATE, "Bearer error=\"invalid_token\", error_description=\"Missing access token\"")
+                    .build();
+        }
+        String accessToken = authorization.substring(7);
+        try {
+            OIDCUserInfoDTO userInfo = authorizationAppService.getUserInfo(accessToken);
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CACHE_CONTROL, "no-store")
+                    .header("Pragma", "no-cache")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(userInfo);
+        } catch (BusinessException ex) {
+            if (ex.getCode() == OAuth2ErrorCode.INVALID_ACCESS_TOKEN.getCode() ||
+                ex.getCode() == OAuth2ErrorCode.EXPIRED_ACCESS_TOKEN.getCode()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .header(HttpHeaders.WWW_AUTHENTICATE, "Bearer error=\"invalid_token\", error_description=\"" + ex.getMessage() + "\"")
+                        .build();
+            }
+            if (ex.getCode() == OAuth2ErrorCode.INVALID_SCOPE.getCode()) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .header(HttpHeaders.WWW_AUTHENTICATE, "Bearer error=\"insufficient_scope\", scope=\"openid\"")
+                        .build();
+            }
+            throw ex;
+        }
     }
 }
