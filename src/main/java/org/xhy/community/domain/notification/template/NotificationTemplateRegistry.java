@@ -85,9 +85,15 @@ public class NotificationTemplateRegistry {
             data -> {
                 java.util.Map<String, String> m = new java.util.HashMap<>();
                 m.put("AUTHOR_NAME", data.getAuthorName());
-                m.put("CONTENT_TYPE", data.getContentType() == null ? "" : data.getContentType().getDescription());
+                // 当 contentType= PUBLISH_CONTENT（用于站内消息键）时，邮件中的跳转链接会构建失败，且文案不够准确。
+                // 这里对站外邮件做兜底，将 PUBLISH_CONTENT 视为 POST 内容处理，确保能正确生成文章链接与文案。
+                org.xhy.community.domain.common.valueobject.ContentType typeForUrl =
+                        data.getContentType() == org.xhy.community.domain.common.valueobject.ContentType.PUBLISH_CONTENT
+                                ? org.xhy.community.domain.common.valueobject.ContentType.POST
+                                : data.getContentType();
+                m.put("CONTENT_TYPE", typeForUrl == null ? "" : typeForUrl.getDescription());
                 m.put("CONTENT_TITLE", data.getContentTitle());
-                m.put("CONTENT_URL", resolveUrl(contentUrlResolver.contentPath(data.getContentType(), data.getContentId())));
+                m.put("CONTENT_URL", resolveUrl(contentUrlResolver.contentPath(typeForUrl, data.getContentId())));
                 return m;
             },
             webUrlConfig
