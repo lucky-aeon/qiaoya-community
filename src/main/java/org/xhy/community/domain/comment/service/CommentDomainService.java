@@ -208,6 +208,23 @@ public class CommentDomainService {
         return commentRepository.selectPage(page, queryWrapper);
     }
 
+    /**
+     * 分页查询用户发布的评论（仅本人发表，包含根评论与回复）。
+     * @param userId 用户ID
+     * @param pageNum 页码
+     * @param pageSize 每页数量
+     * @return 分页评论列表
+     */
+    public IPage<CommentEntity> getPublishedCommentsByUser(String userId, Integer pageNum, Integer pageSize) {
+        Page<CommentEntity> page = new Page<>(pageNum, pageSize);
+
+        LambdaQueryWrapper<CommentEntity> queryWrapper = new LambdaQueryWrapper<CommentEntity>()
+                .eq(CommentEntity::getCommentUserId, userId)
+                .orderByDesc(CommentEntity::getCreateTime);
+
+        return commentRepository.selectPage(page, queryWrapper);
+    }
+
     public List<CommentEntity> getLatestComments() {
         return commentRepository.selectList(
             new LambdaQueryWrapper<CommentEntity>()

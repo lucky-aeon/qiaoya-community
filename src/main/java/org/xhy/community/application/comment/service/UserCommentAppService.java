@@ -147,6 +147,29 @@ public class UserCommentAppService {
         }
         return dtoPage;
     }
+
+    /**
+     * 分页查询指定用户发布的评论（仅本人发表，包含根评论与回复）。
+     * API 层已负责参数格式校验，这里仅做业务查询编排。
+     */
+    public IPage<CommentDTO> getUserPublishedComments(org.xhy.community.interfaces.comment.request.CommentQueryRequest request,
+                                                      String userId) {
+        IPage<CommentEntity> commentPage = commentDomainService.getPublishedCommentsByUser(
+                userId,
+                request.getPageNum(),
+                request.getPageSize()
+        );
+
+        Map<String, UserEntity> userMap = buildUserMapFromComments(commentPage.getRecords());
+        TitleMaps titleMaps = buildTitleMapsFromComments(commentPage.getRecords());
+        IPage<CommentDTO> dtoPage = commentPage.convert(entity -> toCommentDTOEnriched(entity, userMap, titleMaps));
+
+        // 批量填充点赞数
+        if (dtoPage.getRecords() != null && !dtoPage.getRecords().isEmpty()) {
+            LikeCountHelper.fillLikeCount(dtoPage.getRecords(), CommentDTO::getId, LikeTargetType.COMMENT, CommentDTO::setLikeCount, likeDomainService);
+        }
+        return dtoPage;
+    }
     
     private CommentDTO toCommentDTOEnriched(CommentEntity entity,
                                             Map<String, UserEntity> userMap,

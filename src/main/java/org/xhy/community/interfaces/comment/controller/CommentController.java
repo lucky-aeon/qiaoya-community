@@ -7,6 +7,7 @@ import org.xhy.community.application.comment.dto.CommentDTO;
 import org.xhy.community.application.comment.service.UserCommentAppService;
 import org.xhy.community.infrastructure.config.ApiResponse;
 import org.xhy.community.interfaces.comment.request.BusinessCommentQueryRequest;
+import org.xhy.community.interfaces.comment.request.CommentQueryRequest;
 import org.xhy.community.infrastructure.annotation.RequiresPlanPermissions;
 
 /**
@@ -35,6 +36,22 @@ public class CommentController {
     @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "COMMENT_APP_LIST", name = "查看业务评论列表")})
     public ApiResponse<IPage<CommentDTO>> getBusinessComments(@Valid BusinessCommentQueryRequest request) {
         IPage<CommentDTO> comments = userCommentAppService.getBusinessComments(request);
+        return ApiResponse.success(comments);
+    }
+
+    /**
+     * 根据用户ID分页查询该用户发布的评论
+     * 仅返回该用户本人发表的评论（包含根评论与回复），不包含他人回复给该用户的评论
+     *
+     * @param userId 目标用户ID
+     * @param request 分页请求参数
+     * @return 分页评论列表
+     */
+    @GetMapping("/user/{userId}")
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "COMMENT_APP_USER_PUBLISHED_LIST", name = "查看用户发布的评论列表")})
+    public ApiResponse<IPage<CommentDTO>> getUserPublishedComments(@PathVariable String userId,
+                                                                   @Valid CommentQueryRequest request) {
+        IPage<CommentDTO> comments = userCommentAppService.getUserPublishedComments(request, userId);
         return ApiResponse.success(comments);
     }
 }
