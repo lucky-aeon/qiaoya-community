@@ -2,14 +2,12 @@ package org.xhy.community.application.updatelog.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import org.springframework.stereotype.Service;
-import org.xhy.community.application.notification.service.ContentNotificationService;
 import org.xhy.community.application.updatelog.assembler.UpdateLogAssembler;
 import org.springframework.transaction.annotation.Transactional;
 import org.xhy.community.application.updatelog.dto.UpdateLogDTO;
 import org.xhy.community.domain.common.valueobject.ContentType;
 import org.xhy.community.domain.notification.context.NotificationData;
 import org.xhy.community.domain.notification.context.UpdateLogPublishedNotificationData;
-import org.xhy.community.domain.notification.valueobject.BatchSendConfig;
 import org.xhy.community.domain.notification.valueobject.NotificationType;
 import org.xhy.community.domain.updatelog.entity.UpdateLogEntity;
 import org.xhy.community.domain.updatelog.entity.UpdateLogChangeEntity;
@@ -21,6 +19,10 @@ import org.xhy.community.domain.user.valueobject.UserStatus;
 import org.xhy.community.interfaces.updatelog.request.CreateUpdateLogRequest;
 import org.xhy.community.interfaces.updatelog.request.UpdateUpdateLogRequest;
 import org.xhy.community.interfaces.updatelog.request.AdminUpdateLogQueryRequest;
+import org.xhy.community.domain.subscription.service.SubscriptionDomainService;
+import org.xhy.community.domain.subscription.service.SubscriptionPlanDomainService;
+import org.xhy.community.domain.subscription.entity.UserSubscriptionEntity;
+import org.xhy.community.domain.subscription.entity.SubscriptionPlanEntity;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -31,13 +33,20 @@ public class AdminUpdateLogAppService {
     private final UpdateLogDomainService updateLogDomainService;
     private final UserDomainService userDomainService;
     private final org.xhy.community.domain.notification.service.NotificationDomainService notificationDomainService;
+    // 仅向付费订阅用户广播公告所需的服务
+    private final SubscriptionDomainService subscriptionDomainService;
+    private final SubscriptionPlanDomainService subscriptionPlanDomainService;
 
     public AdminUpdateLogAppService(UpdateLogDomainService updateLogDomainService,
                                    UserDomainService userDomainService,
-                                   org.xhy.community.domain.notification.service.NotificationDomainService notificationDomainService) {
+                                   org.xhy.community.domain.notification.service.NotificationDomainService notificationDomainService,
+                                   SubscriptionDomainService subscriptionDomainService,
+                                   SubscriptionPlanDomainService subscriptionPlanDomainService) {
         this.updateLogDomainService = updateLogDomainService;
         this.userDomainService = userDomainService;
         this.notificationDomainService = notificationDomainService;
+        this.subscriptionDomainService = subscriptionDomainService;
+        this.subscriptionPlanDomainService = subscriptionPlanDomainService;
     }
 
     /**
@@ -166,23 +175,51 @@ public class AdminUpdateLogAppService {
      * Application层负责编排：分页获取活跃用户 -> 组装通知数据 -> 批量发送
      */
     private void broadcastUpdateLogPublished(UpdateLogEntity updateLog) {
-        new Thread(()->{
-            // 分页遍历活跃用户
-            final int pageSize = Integer.MAX_VALUE;
-            int pageNum = 1;
-            var query = new UserQuery(pageNum, pageSize);
-            query.setStatus(UserStatus.ACTIVE);
+        new Thread(() -> {
+            // 方案A：先锁定“付费套餐” → 在这些套餐中找“当前有效订阅的用户” → 再按 userId 拉用户并过滤 ACTIVE
+            // 1) 付费套餐（price>0 且 ACTIVE）
+            List<SubscriptionPlanEntity> paidPlans = subscriptionPlanDomainService.getActivePaidSubscriptionPlans();
+            if (paidPlans == null || paidPlans.isEmpty()) {
+                return;
+            }
+            Set<String> paidPlanIds = paidPlans.stream().map(SubscriptionPlanEntity::getId).collect(Collectors.toSet());
 
-            IPage<UserEntity> page = userDomainService.queryUsers(query);
-
-            List<UserEntity> users = page.getRecords();
-
-            ArrayList<NotificationData.Recipient> recipients = new ArrayList<>();
-            for (var user : users) {
-                recipients.add(new NotificationData.Recipient(user.getId(),user.getEmail(),user.getEmailNotificationEnabled()));
+            // 2) 在付费套餐集合内查当前有效订阅（只取 userId、planId）
+            List<UserSubscriptionEntity> subs = subscriptionDomainService.getActiveSubscriptionsByPlanIds(paidPlanIds);
+            if (subs == null || subs.isEmpty()) {
+                return;
+            }
+            Set<String> userIds = subs.stream().map(UserSubscriptionEntity::getUserId).collect(Collectors.toSet());
+            if (userIds.isEmpty()) {
+                return;
             }
 
-            NotificationData notificationData = new UpdateLogPublishedNotificationData(recipients, NotificationType.UPDATE_LOG_PUBLISHED, ContentType.UPDATE_LOG,updateLog.getTitle());
+            // 3) 批量查用户，并仅保留 ACTIVE 用户
+            List<UserEntity> paidUsers = userDomainService.getUsersByIds(userIds).stream()
+                    .filter(Objects::nonNull)
+                    .filter(UserEntity::isActive)
+                    // 仅保留邮箱非空用户，避免无效邮件目标
+                    .filter(u -> u.getEmail() != null && !u.getEmail().isBlank())
+                    .collect(Collectors.toList());
+            if (paidUsers.isEmpty()) {
+                return;
+            }
+
+            ArrayList<NotificationData.Recipient> recipients = new ArrayList<>(paidUsers.size());
+            for (UserEntity user : paidUsers) {
+                recipients.add(new NotificationData.Recipient(
+                        user.getId(),
+                        user.getEmail(),
+                        user.getEmailNotificationEnabled()
+                ));
+            }
+
+            NotificationData notificationData = new UpdateLogPublishedNotificationData(
+                    recipients,
+                    NotificationType.UPDATE_LOG_PUBLISHED,
+                    ContentType.UPDATE_LOG,
+                    updateLog.getTitle()
+            );
             notificationDomainService.send(notificationData);
         }).start();
     }

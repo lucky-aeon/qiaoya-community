@@ -197,6 +197,27 @@ public class SubscriptionDomainService {
         }
         return subscription;
     }
+
+    /**
+     * 批量查询：在给定套餐集合中，获取当前有效的订阅记录
+     * 仅用于上层编排（例如：对“付费套餐”的订阅用户批量通知）
+     */
+    public java.util.List<UserSubscriptionEntity> getActiveSubscriptionsByPlanIds(java.util.Collection<String> planIds) {
+        if (planIds == null || planIds.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+        LambdaQueryWrapper<UserSubscriptionEntity> queryWrapper =
+            new LambdaQueryWrapper<UserSubscriptionEntity>()
+                .in(UserSubscriptionEntity::getSubscriptionPlanId, planIds)
+                .le(UserSubscriptionEntity::getStartTime, now)
+                .gt(UserSubscriptionEntity::getEndTime, now)
+                .select(UserSubscriptionEntity::getUserId, UserSubscriptionEntity::getSubscriptionPlanId)
+                .orderByDesc(UserSubscriptionEntity::getCreateTime);
+
+        return userSubscriptionRepository.selectList(queryWrapper);
+    }
     
     public List<UserSubscriptionEntity> getUserActiveSubscriptions(String userId) {
         LocalDateTime now = LocalDateTime.now();
