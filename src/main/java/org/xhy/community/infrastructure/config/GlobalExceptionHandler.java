@@ -80,6 +80,7 @@ public class GlobalExceptionHandler {
         log.error("基础异常: [{}] {}", ex.getCode(), ex.getMessage(), ex);
         return ApiResponse.error(ex.getCode(), ex.getMessage());
     }
+
     
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
