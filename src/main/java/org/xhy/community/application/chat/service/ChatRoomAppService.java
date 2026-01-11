@@ -137,6 +137,12 @@ public class ChatRoomAppService {
             }
         }
         chatRoomDomainService.joinRoom(roomId, userId);
+        // 首次策略：加入房间即初始化 lastSeen 为当前时间，避免历史消息计入未读
+        try {
+            chatRoomReadDomainService.updateLastSeen(userId, roomId, java.time.LocalDateTime.now());
+        } catch (Exception ignore) {
+            // 容错，不影响加入主流程
+        }
     }
 
     private ChatRoomAudience decideAudienceForUser(String userId) {

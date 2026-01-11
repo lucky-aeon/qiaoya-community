@@ -4,6 +4,8 @@ public class UnreadSummaryDTO {
     private Long postsUnread;
     private Long questionsUnread;
     private Long chaptersUnread;
+    // 新增：聊天室未读（按房间聚合后的总数）
+    private Long chatsUnread;
 
     public Long getPostsUnread() {
         return postsUnread;
@@ -27,5 +29,13 @@ public class UnreadSummaryDTO {
 
     public void setChaptersUnread(Long chaptersUnread) {
         this.chaptersUnread = chaptersUnread;
+    }
+
+    public Long getChatsUnread() {
+        return chatsUnread;
+    }
+
+    public void setChatsUnread(Long chatsUnread) {
+        this.chatsUnread = chatsUnread;
     }
 }

@@ -143,6 +143,22 @@ public class ChatRoomDomainService {
         return members.stream().map(ChatRoomMemberEntity::getRoomId).collect(java.util.stream.Collectors.toSet());
     }
 
+    /**
+     * 列出用户已加入的所有房间ID（仅活跃成员，忽略软删除）。
+     */
+    public java.util.Set<String> listJoinedRoomIdsByUser(String userId) {
+        java.util.List<ChatRoomMemberEntity> members = chatRoomMemberRepository.selectList(
+                new LambdaQueryWrapper<ChatRoomMemberEntity>()
+                        .eq(ChatRoomMemberEntity::getUserId, userId)
+        );
+        if (members == null || members.isEmpty()) return java.util.Collections.emptySet();
+        java.util.Set<String> ids = new java.util.HashSet<>(members.size());
+        for (ChatRoomMemberEntity m : members) {
+            if (m.getRoomId() != null) ids.add(m.getRoomId());
+        }
+        return ids;
+    }
+
     /** 列出房间成员（不分页）。 */
     public java.util.List<ChatRoomMemberEntity> listMembers(String roomId) {
         return chatRoomMemberRepository.selectList(

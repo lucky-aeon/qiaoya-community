@@ -13,4 +13,13 @@ public class UnreadAssembler {
         dto.setChaptersUnread(chaptersUnread == null ? 0L : chaptersUnread);
         return dto;
     }
+
+    /**
+     * 重载：包含聊天室未读聚合（方案A）。
+     */
+    public static UnreadSummaryDTO toDTO(Long postsUnread, Long questionsUnread, Long chaptersUnread, Long chatsUnread) {
+        UnreadSummaryDTO dto = toDTO(postsUnread, questionsUnread, chaptersUnread);
+        dto.setChatsUnread(chatsUnread == null ? 0L : chatsUnread);
+        return dto;
+    }
 }

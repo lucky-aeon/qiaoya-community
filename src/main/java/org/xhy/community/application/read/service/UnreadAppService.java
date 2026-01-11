@@ -9,6 +9,9 @@ import org.xhy.community.domain.post.service.PostDomainService;
 import org.xhy.community.domain.read.entity.UserLastSeenEntity;
 import org.xhy.community.domain.read.service.ReadDomainService;
 import org.xhy.community.domain.course.service.ChapterDomainService;
+import org.xhy.community.domain.chat.service.ChatRoomReadDomainService;
+import org.xhy.community.domain.chat.service.ChatMessageDomainService;
+import org.xhy.community.domain.chat.service.ChatRoomDomainService;
 
 import java.time.LocalDateTime;
 
@@ -19,15 +22,24 @@ public class UnreadAppService {
     private final PostDomainService postDomainService;
     private final InterviewQuestionDomainService interviewQuestionDomainService;
     private final ChapterDomainService chapterDomainService;
+    private final ChatRoomDomainService chatRoomDomainService;
+    private final ChatRoomReadDomainService chatRoomReadDomainService;
+    private final ChatMessageDomainService chatMessageDomainService;
 
     public UnreadAppService(ReadDomainService readDomainService,
                             PostDomainService postDomainService,
                             InterviewQuestionDomainService interviewQuestionDomainService,
-                            ChapterDomainService chapterDomainService) {
+                            ChapterDomainService chapterDomainService,
+                            ChatRoomDomainService chatRoomDomainService,
+                            ChatRoomReadDomainService chatRoomReadDomainService,
+                            ChatMessageDomainService chatMessageDomainService) {
         this.readDomainService = readDomainService;
         this.postDomainService = postDomainService;
         this.interviewQuestionDomainService = interviewQuestionDomainService;
         this.chapterDomainService = chapterDomainService;
+        this.chatRoomDomainService = chatRoomDomainService;
+        this.chatRoomReadDomainService = chatRoomReadDomainService;
+        this.chatMessageDomainService = chatMessageDomainService;
     }
 
     /**
@@ -43,7 +55,27 @@ public class UnreadAppService {
         Long postsUnread = postDomainService.countPublishedSince(postSeen.getLastSeenAt());
         Long questionsUnread = interviewQuestionDomainService.countPublishedSince(questionSeen.getLastSeenAt());
         Long chaptersUnread = chapterDomainService.countSince(chapterSeen.getLastSeenAt());
-        return UnreadAssembler.toDTO(postsUnread, questionsUnread, chaptersUnread);
+
+        // 方案A：聊天室未读聚合（仅统计用户已加入房间，且排除自己发送）
+        Long chatsUnread = 0L;
+        try {
+            java.util.Set<String> joinedRoomIds = chatRoomDomainService.listJoinedRoomIdsByUser(userId);
+            if (joinedRoomIds != null && !joinedRoomIds.isEmpty()) {
+                java.util.Map<String, java.time.LocalDateTime> lastSeens = chatRoomReadDomainService.getLastSeenForRooms(userId, joinedRoomIds);
+                java.util.Map<String, Long> unreadMap = chatMessageDomainService.countUnreadByRoomsForUser(joinedRoomIds, lastSeens, userId);
+                long sum = 0L;
+                if (unreadMap != null && !unreadMap.isEmpty()) {
+                    for (Long v : unreadMap.values()) {
+                        if (v != null) sum += v;
+                    }
+                }
+                chatsUnread = sum;
+            }
+        } catch (Exception ignore) {
+            // 聚合失败不影响其他频道，保持容错
+        }
+
+        return UnreadAssembler.toDTO(postsUnread, questionsUnread, chaptersUnread, chatsUnread);
     }
 
     /**
