@@ -7,6 +7,8 @@ public class CodexPublicInfoDTO {
     private String dailySpentUsd;
     private String dailyBudgetUsd;
     private String usageDocUrl;
+    // 用量拉取失败容错标记（仅用于前端兜底处理）
+    private Boolean usageFetchFailed;
 
     public String getApiKey() { return apiKey; }
     public void setApiKey(String apiKey) { this.apiKey = apiKey; }
@@ -20,4 +22,6 @@ public class CodexPublicInfoDTO {
     public void setDailyBudgetUsd(String dailyBudgetUsd) { this.dailyBudgetUsd = dailyBudgetUsd; }
     public String getUsageDocUrl() { return usageDocUrl; }
     public void setUsageDocUrl(String usageDocUrl) { this.usageDocUrl = usageDocUrl; }
+    public Boolean getUsageFetchFailed() { return usageFetchFailed; }
+    public void setUsageFetchFailed(Boolean usageFetchFailed) { this.usageFetchFailed = usageFetchFailed; }
 }

@@ -27,25 +27,38 @@ public class CodexAppService {
         if (Boolean.FALSE.equals(cfg.getEnabled())) {
             throw new BusinessException(CodexErrorCode.CODEX_DISABLED);
         }
-        // 容错：authorization 为空视为授权失败（前端可据错误码提示重新配置）
+        // 容错：authorization 为空也返回 apiKey，标记 usageFetchFailed
         if (cfg.getAuthorization() == null || cfg.getAuthorization().isBlank()) {
-            throw new BusinessException(CodexErrorCode.CODEX_UNAUTHORIZED);
+            CodexPublicInfoDTO dto = CodexAssembler.toPublicDTO(cfg.getApiKey(), cfg.getUsageDocUrl(), null);
+            dto.setUsageFetchFailed(true);
+            return dto;
         }
-        CodexHttpClient.UserInfoResponse info = codexHttpClient.fetchUserInfo(
-                cfg.getBaseUrl(), cfg.getAuthorization(), cfg.getCookieToken());
-        // 容错：若上游返回体无法解析或关键用量字段为空，返回明确错误码，避免前端拿到 null
-        if (info == null) {
-            throw new BusinessException(CodexErrorCode.CODEX_FETCH_FAILED);
+        CodexPublicInfoDTO dto;
+        try {
+            CodexHttpClient.UserInfoResponse info = codexHttpClient.fetchUserInfo(
+                    cfg.getBaseUrl(), cfg.getAuthorization(), cfg.getCookieToken());
+            if (info == null) {
+                dto = CodexAssembler.toPublicDTO(cfg.getApiKey(), cfg.getUsageDocUrl(), null);
+                dto.setUsageFetchFailed(true);
+                return dto;
+            }
+            boolean allUsageNull = isBlank(info.weeklySpentUsd)
+                    && isBlank(info.weeklyBudgetUsd)
+                    && isBlank(info.dailySpentUsd)
+                    && isBlank(info.dailyBudgetUsd);
+            dto = CodexAssembler.toPublicDTO(cfg.getApiKey(), cfg.getUsageDocUrl(), info);
+            if (allUsageNull) {
+                dto.setUsageFetchFailed(true);
+            } else {
+                dto.setUsageFetchFailed(false);
+            }
+            return dto;
+        } catch (BusinessException ex) {
+            // 只要是用量拉取失败（含授权失败），也返回 apiKey，并在 DTO 上标记兜底
+            CodexPublicInfoDTO fallback = CodexAssembler.toPublicDTO(cfg.getApiKey(), cfg.getUsageDocUrl(), null);
+            fallback.setUsageFetchFailed(true);
+            return fallback;
         }
-        boolean allUsageNull = isBlank(info.weeklySpentUsd)
-                && isBlank(info.weeklyBudgetUsd)
-                && isBlank(info.dailySpentUsd)
-                && isBlank(info.dailyBudgetUsd);
-        if (allUsageNull) {
-            // 极端情况：非401/403但返回空数据，视为拉取失败（可能 token 过期或服务异常）
-            throw new BusinessException(CodexErrorCode.CODEX_FETCH_FAILED);
-        }
-        return CodexAssembler.toPublicDTO(cfg.getApiKey(), cfg.getUsageDocUrl(), info);
     }
 
     private static boolean isBlank(String s) {
