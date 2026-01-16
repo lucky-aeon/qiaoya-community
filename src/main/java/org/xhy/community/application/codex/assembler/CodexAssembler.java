@@ -33,6 +33,8 @@ public class CodexAssembler {
             dto.setWeeklyBudgetUsd(format2(info.weeklyBudgetUsd));
             dto.setDailySpentUsd(format2(info.dailySpentUsd));
             dto.setDailyBudgetUsd(format2(info.dailyBudgetUsd));
+            dto.setWeeklyWindowStart(formatTs(info.weeklyWindowStart));
+            dto.setWeeklyWindowEnd(formatTs(info.weeklyWindowEnd));
         }
         return dto;
     }
@@ -46,6 +48,23 @@ public class CodexAssembler {
             return bd.toPlainString();
         } catch (Exception e) {
             return v; // 保底直接回传原值
+        }
+    }
+
+    // 统一时间格式 -> yyyy-MM-dd HH:mm:ss（去掉 T 与时区）
+    private static String formatTs(String ts) {
+        if (ts == null || ts.isBlank()) return null;
+        try {
+            // 优先按 OffsetDateTime 解析
+            java.time.OffsetDateTime odt = java.time.OffsetDateTime.parse(ts);
+            return odt.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        } catch (Exception e) {
+            try {
+                java.time.LocalDateTime ldt = java.time.LocalDateTime.parse(ts);
+                return ldt.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            } catch (Exception ignore) {
+                return ts;
+            }
         }
     }
 }
