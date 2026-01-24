@@ -1,3 +1,7 @@
+前端仓库：
+
+https://github.com/lucky-aeon/community-front-plus
+
 # 项目文档总览与索引（qiaoya-community）
 
 说明：本索引帮助快速定位各类技术文档，并统一术语与文档状态口径。若遇到术语歧义或跨文档重复，请先查阅术语表与状态说明。
