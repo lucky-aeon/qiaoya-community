@@ -58,6 +58,7 @@ public class AdminSystemConfigAppService {
             case EMAIL_TEMPLATE, SYSTEM_MAINTENANCE -> { validateGeneralConfig(configData); yield configData; }
             case USER_SESSION_LIMIT -> validateAndBuildUserSessionConfig(configData);
             case OAUTH_GITHUB -> { validateAndUpdateGithubOAuthConfig(configData); yield configData; }
+            case CODEX_CONFIGS -> { validateGeneralConfig(configData); yield configData; }
         };
 
         // 使用规范化对象进行持久化，避免未知字段导致后续解析失败

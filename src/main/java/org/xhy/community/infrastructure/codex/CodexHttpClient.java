@@ -1,6 +1,7 @@
 package org.xhy.community.infrastructure.codex;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -39,8 +40,12 @@ public class CodexHttpClient {
         @JsonProperty("monthly_spent_usd") public String monthlySpentUsd;
         @JsonProperty("weekly_spent_usd") public String weeklySpentUsd;
         @JsonProperty("weekly_budget_usd") public String weeklyBudgetUsd;
-        @JsonProperty("weekly_window_start") public String weeklyWindowStart;
-        @JsonProperty("weekly_window_end") public String weeklyWindowEnd;
+        @JsonProperty("weekly_window_start")
+        @JsonAlias({"weeklyWindowStart"})
+        public String weeklyWindowStart;
+        @JsonProperty("weekly_window_end")
+        @JsonAlias({"weeklyWindowEnd"})
+        public String weeklyWindowEnd;
         @JsonProperty("total_quota") public Long totalQuota;
         @JsonProperty("used_quota") public Long usedQuota;
         @JsonProperty("remaining_quota") public Long remainingQuota;
@@ -51,7 +56,10 @@ public class CodexHttpClient {
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.setAccept(java.util.List.of(MediaType.APPLICATION_JSON));
-            headers.set("Authorization", "Bearer "+authorization);
+            String authHeader = buildAuthorizationHeader(authorization);
+            if (authHeader != null) {
+                headers.set("Authorization", authHeader);
+            }
             headers.set("User-Agent", "qiaoya-community/1.0");
             headers.set("Accept-Language", "zh-CN,zh;q=0.9");
             if (cookieToken != null && !cookieToken.isBlank()) {
@@ -90,5 +98,16 @@ public class CodexHttpClient {
         // 否则认为是基础域名，拼接标准路径
         v = v.replaceAll("/+$", "");
         return v + "/api/backend/users/info";
+    }
+
+    // 规范 Authorization 头：既兼容传入已带 Bearer，又支持只传 token
+    private String buildAuthorizationHeader(String authorization) {
+        if (authorization == null) return null;
+        String token = authorization.trim();
+        if (token.isEmpty()) return null;
+        if (token.regionMatches(true, 0, "Bearer ", 0, 7)) {
+            return token; // 已经带 Bearer 前缀
+        }
+        return "Bearer " + token;
     }
 }

@@ -33,8 +33,9 @@ public class CodexAssembler {
             dto.setWeeklyBudgetUsd(format2(info.weeklyBudgetUsd));
             dto.setDailySpentUsd(format2(info.dailySpentUsd));
             dto.setDailyBudgetUsd(format2(info.dailyBudgetUsd));
-            dto.setWeeklyWindowStart(formatTs(info.weeklyWindowStart));
-            dto.setWeeklyWindowEnd(formatTs(info.weeklyWindowEnd));
+            // 有的服务端返回 windowStart/windowEnd 可能为毫秒时间戳（字符串或数字）或 ISO 字符串
+            dto.setWeeklyWindowStart(formatTsFlexible(info.weeklyWindowStart));
+            dto.setWeeklyWindowEnd(formatTsFlexible(info.weeklyWindowEnd));
         }
         return dto;
     }
@@ -66,5 +67,20 @@ public class CodexAssembler {
                 return ts;
             }
         }
+    }
+
+    // 既兼容 ISO-8601 字符串，也兼容毫秒时间戳（字符串或纯数字）
+    private static String formatTsFlexible(String v) {
+        if (v == null || v.isBlank()) return null;
+        // 尝试当作数字毫秒
+        try {
+            long ms = Long.parseLong(v.trim());
+            java.time.Instant instant = java.time.Instant.ofEpochMilli(ms);
+            java.time.ZonedDateTime zdt = java.time.ZonedDateTime.ofInstant(instant, java.time.ZoneId.systemDefault());
+            return zdt.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        } catch (Exception ignore) {
+            // fall through
+        }
+        return formatTs(v);
     }
 }
