@@ -1,5 +1,10 @@
 package org.xhy.community.infrastructure.ws.model;
 
+/**
+ * 在线态变更推送
+ * - online=true：某用户进入了房间（该用户在该房间至少有一个会话在线）
+ * - online=false：该用户离开了房间（该用户在该房间无会话在线）
+ */
 public class WsPresence {
     private String roomId;
     private String userId;
@@ -20,4 +25,3 @@ public class WsPresence {
     public boolean isOnline() { return online; }
     public void setOnline(boolean online) { this.online = online; }
 }
-

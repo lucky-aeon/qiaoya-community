@@ -2,6 +2,11 @@ package org.xhy.community.infrastructure.ws.model;
 
 import java.time.LocalDateTime;
 
+/**
+ * @ 提及推送负载
+ * - 在线于房间内的被提及用户将收到 type=mention 的 WsFrame
+ * - 离线用户由应用层触发站内消息通知（非 WS）
+ */
 public class ChatMentionPush {
     private String roomId;
     private String messageId;
@@ -43,4 +48,3 @@ public class ChatMentionPush {
     public LocalDateTime getOccurredAt() { return occurredAt; }
     public void setOccurredAt(LocalDateTime occurredAt) { this.occurredAt = occurredAt; }
 }
-

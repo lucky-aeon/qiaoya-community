@@ -40,7 +40,7 @@ public class ReadDomainService {
             return record;
         }
 
-        // 不存在则初始化；并发下以唯一键兜底（Flyway 建议加唯一约束 user_id+channel）
+        // 不存在则初始化；并发下以唯一键兜底（Flyway 建议加唯一约束 user_id+channel） 最好的时间采取是文章/题库/章节的最早的发布时间
         UserLastSeenEntity init = new UserLastSeenEntity(userId, channel, LocalDateTime.now());
         try {
             userLastSeenRepository.insert(init);

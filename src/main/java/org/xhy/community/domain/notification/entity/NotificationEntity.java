@@ -36,6 +36,7 @@ public class NotificationEntity extends BaseEntity {
     /** 通知状态 */
     @TableField(typeHandler = NotificationStatusConverter.class)
     private NotificationStatus status;
+
     
     // Getters and Setters
     public String getRecipientId() { return recipientId; }
@@ -55,6 +56,7 @@ public class NotificationEntity extends BaseEntity {
     
     public NotificationStatus getStatus() { return status; }
     public void setStatus(NotificationStatus status) { this.status = status; }
+    
     
     // 业务方法
     public void markAsSent() {

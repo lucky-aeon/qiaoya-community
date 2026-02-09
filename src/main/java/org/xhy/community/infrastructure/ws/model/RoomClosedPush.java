@@ -2,6 +2,7 @@ package org.xhy.community.infrastructure.ws.model;
 
 /**
  * WS 推送：房间被删除/解散
+ * - 由 ChatRoomEventListener 在事务提交后广播给订阅该房间的在线会话
  */
 public class RoomClosedPush {
     private String roomId;
@@ -25,4 +26,3 @@ public class RoomClosedPush {
     public String getOperatorId() { return operatorId; }
     public void setOperatorId(String operatorId) { this.operatorId = operatorId; }
 }
-

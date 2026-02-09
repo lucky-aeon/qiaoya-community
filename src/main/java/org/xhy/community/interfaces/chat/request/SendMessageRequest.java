@@ -9,7 +9,7 @@ public class SendMessageRequest {
     @NotBlank(message = "消息内容不能为空")
     private String content;
 
-    private String quotedMessageId;
+    private String quotedMessageId; // 废弃
 
     private List<String> mentionedUserIds;
 

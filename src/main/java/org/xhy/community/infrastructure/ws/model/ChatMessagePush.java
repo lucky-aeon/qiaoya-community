@@ -3,6 +3,11 @@ package org.xhy.community.infrastructure.ws.model;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * 聊天消息推送负载
+ * - 被 ChatMessageEventListener 构造后包装到 WsFrame<message> 广播
+ * - 包含消息基础信息 + 可选的发送者公开资料（名称/头像/标签）
+ */
 public class ChatMessagePush {
     private String id;
     private String roomId;

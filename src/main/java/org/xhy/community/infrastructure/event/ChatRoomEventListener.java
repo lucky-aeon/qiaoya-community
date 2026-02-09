@@ -12,6 +12,9 @@ import org.xhy.community.infrastructure.ws.model.WsFrame;
 
 /**
  * 房间相关事件监听器
+ *
+ * 当前处理：
+ * - ChatRoomDeletedEvent：事务提交后广播房间被解散（WS 帧 type=room_closed）
  */
 @Component
 public class ChatRoomEventListener {
@@ -38,4 +41,3 @@ public class ChatRoomEventListener {
         registry.broadcast(event.getRoomId(), frame);
     }
 }
-

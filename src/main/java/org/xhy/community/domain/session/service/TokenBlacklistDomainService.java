@@ -49,35 +49,7 @@ public class TokenBlacklistDomainService {
         redis.opsForValue().set(key, "blacklisted", actualTtl);
     }
 
-    /**
-     * 将token加入黑名单（使用默认过期时间）
-     *
-     * @param token JWT token
-     */
-    public void addToBlacklist(String token) {
-        addToBlacklist(token, null);
-    }
 
-    /**
-     * 批量将tokens加入黑名单
-     *
-     * @param tokens JWT tokens集合
-     * @param ttl 黑名单过期时间，如果为null则使用默认值
-     */
-    public void addToBlacklist(Set<String> tokens, Duration ttl) {
-        if (tokens == null || tokens.isEmpty()) {
-            return;
-        }
-
-        Duration actualTtl = ttl != null ? ttl : DEFAULT_BLACKLIST_TTL;
-
-        for (String token : tokens) {
-            if (token != null && !token.trim().isEmpty()) {
-                String key = BLACKLIST_KEY_PREFIX + token;
-                redis.opsForValue().set(key, "blacklisted", actualTtl);
-            }
-        }
-    }
 
     /**
      * 检查token是否在黑名单中
@@ -94,20 +66,7 @@ public class TokenBlacklistDomainService {
         return Boolean.TRUE.equals(redis.hasKey(key));
     }
 
-    /**
-     * 将token从黑名单中移除
-     * 用于管理员手动恢复被误下线的用户
-     *
-     * @param token JWT token
-     */
-    public void removeFromBlacklist(String token) {
-        if (token == null || token.trim().isEmpty()) {
-            return;
-        }
 
-        String key = BLACKLIST_KEY_PREFIX + token;
-        redis.delete(key);
-    }
 
     /**
      * 批量将tokens从黑名单中移除

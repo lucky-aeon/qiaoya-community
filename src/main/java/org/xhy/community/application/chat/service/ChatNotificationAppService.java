@@ -31,7 +31,7 @@ public class ChatNotificationAppService {
     }
 
     /**
-     * 向被 @ 的用户发送站内通知（不发送邮件）
+     * 向被 @ 的用户发送站内通知
      */
     public void sendChatMentionNotification(String recipientId, String roomId, String messageId,
                                             String senderId, String content) {
