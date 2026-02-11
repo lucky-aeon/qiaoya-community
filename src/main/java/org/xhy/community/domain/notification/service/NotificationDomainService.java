@@ -82,6 +82,8 @@ public class NotificationDomainService {
 
             ArrayList<String> notificationEmails = new ArrayList<>();
 
+            NotificationTarget target = resolveNotificationTarget(notificationData);
+
             for (NotificationData.Recipient recipient : recipients) {
                 // 3. 创建通知记录
                 NotificationEntity notification = new NotificationEntity();
@@ -90,6 +92,8 @@ public class NotificationDomainService {
                 notification.setChannelType(channelType);
                 notification.setTitle(title);
                 notification.setContent(content);
+                notification.setContentType(target.contentType());
+                notification.setContentId(target.contentId());
                 notification.setStatus(NotificationStatus.SENT);
                 notificationEntities.add(notification);
                 if (recipient.getEmailNotificationEnabled()){
@@ -109,6 +113,58 @@ public class NotificationDomainService {
             log.error("发送通知异常: dataType={}, channel={}",
                     notificationData.getClass().getSimpleName(), channelType, e);
         }
+    }
+
+    private NotificationTarget resolveNotificationTarget(NotificationData notificationData) {
+        if (notificationData == null) {
+            return new NotificationTarget(null, null);
+        }
+
+        if (notificationData instanceof org.xhy.community.domain.notification.context.CommentNotificationData commentData) {
+            return new NotificationTarget(resolveCommentContentType(commentData.getType()), commentData.getTargetId());
+        }
+
+        if (notificationData instanceof org.xhy.community.domain.notification.context.ContentUpdateNotificationData updateData) {
+            ContentType normalized = normalizeContentType(updateData.getContentType());
+            return new NotificationTarget(normalized, updateData.getContentId());
+        }
+
+        if (notificationData instanceof org.xhy.community.domain.notification.context.ChapterUpdatedNotificationData chapterData) {
+            return new NotificationTarget(ContentType.CHAPTER, chapterData.getChapterId());
+        }
+
+        if (notificationData instanceof org.xhy.community.domain.notification.context.UpdateLogPublishedNotificationData updateLogData) {
+            return new NotificationTarget(ContentType.UPDATE_LOG, updateLogData.getUpdateLogId());
+        }
+
+        if (notificationData instanceof org.xhy.community.domain.notification.context.ChatMentionNotificationData chatData) {
+            return new NotificationTarget(ContentType.CHAT_MESSAGE, chatData.getRoomId());
+        }
+
+        return new NotificationTarget(notificationData.getContentType(), null);
+    }
+
+    private ContentType resolveCommentContentType(NotificationType notificationType) {
+        if (notificationType == null) {
+            return null;
+        }
+        return switch (notificationType) {
+            case POST_COMMENT -> ContentType.POST;
+            case COURSE_COMMENT -> ContentType.COURSE;
+            case CHAPTER_COMMENT -> ContentType.CHAPTER;
+            case INTERVIEW_QUESTION_COMMENT -> ContentType.INTERVIEW_QUESTION;
+            default -> null;
+        };
+    }
+
+    private ContentType normalizeContentType(ContentType contentType) {
+        if (contentType == null) {
+            return null;
+        }
+        return contentType == ContentType.PUBLISH_CONTENT ? ContentType.POST : contentType;
+    }
+
+    private record NotificationTarget(ContentType contentType, String contentId) {
     }
 
 

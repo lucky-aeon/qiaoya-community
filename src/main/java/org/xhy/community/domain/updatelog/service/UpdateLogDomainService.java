@@ -43,6 +43,23 @@ public class UpdateLogDomainService {
         return updateLogRepository.selectById(updateLogId);
     }
 
+    /**
+     * 根据ID获取已发布的更新日志
+     */
+    public UpdateLogEntity getPublishedUpdateLogById(String updateLogId) {
+        UpdateLogEntity updateLog = updateLogRepository.selectOne(
+            new LambdaQueryWrapper<UpdateLogEntity>()
+                .eq(UpdateLogEntity::getId, updateLogId)
+                .eq(UpdateLogEntity::getStatus, UpdateLogStatus.PUBLISHED)
+        );
+
+        if (updateLog == null) {
+            throw new BusinessException(ValidationErrorCode.PARAM_INVALID, "更新日志不存在或未发布");
+        }
+
+        return updateLog;
+    }
+
     public boolean isVersionExists(String version, String excludeId) {
         LambdaQueryWrapper<UpdateLogEntity> queryWrapper = new LambdaQueryWrapper<UpdateLogEntity>()
                 .eq(UpdateLogEntity::getVersion, version);

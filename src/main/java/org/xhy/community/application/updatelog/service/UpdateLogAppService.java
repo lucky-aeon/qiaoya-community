@@ -78,4 +78,28 @@ public class UpdateLogAppService {
                 })
                 .collect(Collectors.toList());
     }
+
+    /**
+     * 获取已发布的更新日志详情
+     * 仅返回已发布状态的更新日志聚合根
+     *
+     * @param updateLogId 更新日志ID
+     * @return 更新日志详情
+     */
+    public UpdateLogDTO getPublishedUpdateLogDetail(String updateLogId) {
+        UpdateLogEntity updateLog = updateLogDomainService.getPublishedUpdateLogById(updateLogId);
+
+        List<UpdateLogChangeEntity> changes = updateLogDomainService.getChangesByUpdateLogId(updateLogId);
+        UpdateLogDTO dto = UpdateLogAssembler.toDTOWithChanges(updateLog, changes);
+
+        if (updateLog.getAuthorId() != null) {
+            Map<String, UserEntity> authorMap = userDomainService.getUserEntityMapByIds(Set.of(updateLog.getAuthorId()));
+            UserEntity author = authorMap.get(updateLog.getAuthorId());
+            if (author != null) {
+                dto.setAuthorName(author.getName());
+            }
+        }
+
+        return dto;
+    }
 }

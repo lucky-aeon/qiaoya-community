@@ -103,11 +103,14 @@ public class InAppNotificationTemplates {
         
         @Override
         public String renderContent(CommentNotificationData data) {
+            String preview = data.getTruncatedCommentContent();
+            String previewPart = (preview == null || preview.isBlank()) ? "" : "：" + preview;
             if (data.isReply()) {
-                return data.getCommenterName() + " 回复了你的评论";
+                return data.getCommenterName() + " 回复了你的评论" + previewPart;
             } else {
                 String targetLabel = data.getTargetType() == null ? "内容" : data.getTargetType().getDescription();
-                return data.getCommenterName() + " 评论了你的" + targetLabel + "：" + data.getTargetTitle();
+                String base = data.getCommenterName() + " 评论了你的" + targetLabel + "：" + data.getTargetTitle();
+                return previewPart.isBlank() ? base : base + "，评论内容" + previewPart;
             }
         }
         

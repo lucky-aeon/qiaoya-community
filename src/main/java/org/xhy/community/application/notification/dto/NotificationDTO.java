@@ -1,5 +1,7 @@
 package org.xhy.community.application.notification.dto;
 
+import org.xhy.community.domain.common.valueobject.ContentType;
+
 import java.time.LocalDateTime;
 
 /**
@@ -13,6 +15,8 @@ public class NotificationDTO {
     private String channelType;         // 渠道类型
     private String title;               // 通知标题
     private String content;             // 通知内容
+    private ContentType contentType;    // 业务内容类型
+    private String contentId;           // 业务内容ID
     private String status;              // 通知状态
     private LocalDateTime createTime;   // 创建时间
     private LocalDateTime updateTime;   // 更新时间
@@ -35,6 +39,12 @@ public class NotificationDTO {
     
     public String getContent() { return content; }
     public void setContent(String content) { this.content = content; }
+
+    public ContentType getContentType() { return contentType; }
+    public void setContentType(ContentType contentType) { this.contentType = contentType; }
+
+    public String getContentId() { return contentId; }
+    public void setContentId(String contentId) { this.contentId = contentId; }
     
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }

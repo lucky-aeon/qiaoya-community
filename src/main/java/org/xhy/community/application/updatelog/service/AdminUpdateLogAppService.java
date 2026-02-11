@@ -218,7 +218,8 @@ public class AdminUpdateLogAppService {
                     recipients,
                     NotificationType.UPDATE_LOG_PUBLISHED,
                     ContentType.UPDATE_LOG,
-                    updateLog.getTitle()
+                    updateLog.getTitle(),
+                    updateLog.getId()
             );
             notificationDomainService.send(notificationData);
         }).start();

@@ -1,5 +1,7 @@
 package org.xhy.community.interfaces.updatelog.controller;
 
+import jakarta.validation.constraints.NotBlank;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.xhy.community.application.updatelog.dto.UpdateLogDTO;
 import org.xhy.community.application.updatelog.service.UpdateLogAppService;
@@ -15,6 +17,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/app/update-logs")
+@Validated
 public class AppUpdateLogController {
 
     private final UpdateLogAppService updateLogAppService;
@@ -35,5 +38,19 @@ public class AppUpdateLogController {
     public ApiResponse<List<UpdateLogDTO>> getPublishedUpdateLogs() {
         List<UpdateLogDTO> updateLogs = updateLogAppService.getPublishedUpdateLogs();
         return ApiResponse.success(updateLogs);
+    }
+
+    /**
+     * 根据ID获取已发布的更新日志详情
+     *
+     * @param updateLogId 更新日志ID
+     * @return 更新日志详情
+     */
+    @GetMapping("/{updateLogId}")
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "UPDATE_LOG_BROWSE", name = "查看更新日志")})
+    public ApiResponse<UpdateLogDTO> getPublishedUpdateLogDetail(
+            @PathVariable @NotBlank(message = "更新日志ID不能为空") String updateLogId) {
+        UpdateLogDTO updateLog = updateLogAppService.getPublishedUpdateLogDetail(updateLogId);
+        return ApiResponse.success(updateLog);
     }
 }

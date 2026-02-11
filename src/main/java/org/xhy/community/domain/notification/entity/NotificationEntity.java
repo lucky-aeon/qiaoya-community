@@ -3,12 +3,14 @@ package org.xhy.community.domain.notification.entity;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import org.xhy.community.domain.common.entity.BaseEntity;
+import org.xhy.community.domain.common.valueobject.ContentType;
 import org.xhy.community.domain.notification.valueobject.ChannelType;
 import org.xhy.community.domain.notification.valueobject.NotificationStatus;
 import org.xhy.community.domain.notification.valueobject.NotificationType;
-import org.xhy.community.infrastructure.converter.NotificationTypeConverter;
 import org.xhy.community.infrastructure.converter.ChannelTypeConverter;
+import org.xhy.community.infrastructure.converter.ContentTypeConverter;
 import org.xhy.community.infrastructure.converter.NotificationStatusConverter;
+import org.xhy.community.infrastructure.converter.NotificationTypeConverter;
 
 /**
  * 通知实体
@@ -32,6 +34,14 @@ public class NotificationEntity extends BaseEntity {
     
     /** 通知内容 */
     private String content;
+
+    /** 业务内容类型 */
+    @TableField(typeHandler = ContentTypeConverter.class)
+    private ContentType contentType;
+
+    /** 业务内容ID */
+    private String contentId;
+
     
     /** 通知状态 */
     @TableField(typeHandler = NotificationStatusConverter.class)
@@ -53,6 +63,13 @@ public class NotificationEntity extends BaseEntity {
     
     public String getContent() { return content; }
     public void setContent(String content) { this.content = content; }
+
+    public ContentType getContentType() { return contentType; }
+    public void setContentType(ContentType contentType) { this.contentType = contentType; }
+
+    public String getContentId() { return contentId; }
+    public void setContentId(String contentId) { this.contentId = contentId; }
+
     
     public NotificationStatus getStatus() { return status; }
     public void setStatus(NotificationStatus status) { this.status = status; }

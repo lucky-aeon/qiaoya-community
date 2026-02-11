@@ -11,12 +11,14 @@ import java.util.List;
 public class UpdateLogPublishedNotificationData extends NotificationData {
 
     private final String title;         // 更新标题
+    private final String updateLogId;   // 更新日志ID
 
-    public UpdateLogPublishedNotificationData(List<Recipient> recipients, NotificationType type, ContentType contentType, String title) {
+    public UpdateLogPublishedNotificationData(List<Recipient> recipients, NotificationType type, ContentType contentType, String title, String updateLogId) {
         super(recipients, type, contentType);
         this.title = title;
+        this.updateLogId = updateLogId;
     }
 
     public String getTitle() { return title; }
+    public String getUpdateLogId() { return updateLogId; }
 }
-

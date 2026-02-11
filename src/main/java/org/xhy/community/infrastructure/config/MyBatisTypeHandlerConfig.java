@@ -20,6 +20,7 @@ import org.xhy.community.domain.cdk.valueobject.CDKAcquisitionType;
 import org.xhy.community.domain.cdk.valueobject.CDKSubscriptionStrategy;
 import org.xhy.community.domain.order.valueobject.OrderType;
 import org.xhy.community.domain.common.valueobject.ActivityType;
+import org.xhy.community.domain.common.valueobject.ContentType;
 import org.xhy.community.domain.follow.valueobject.FollowTargetType;
 import org.xhy.community.domain.follow.valueobject.FollowStatus;
 import org.xhy.community.domain.notification.valueobject.NotificationType;
@@ -44,6 +45,7 @@ import org.xhy.community.infrastructure.converter.CDKAcquisitionTypeConverter;
 import org.xhy.community.infrastructure.converter.CDKSubscriptionStrategyConverter;
 import org.xhy.community.infrastructure.converter.OrderTypeConverter;
 import org.xhy.community.infrastructure.converter.ActivityTypeConverter;
+import org.xhy.community.infrastructure.converter.ContentTypeConverter;
 import org.xhy.community.infrastructure.converter.FollowTargetTypeConverter;
 import org.xhy.community.infrastructure.converter.FollowStatusConverter;
 import org.xhy.community.infrastructure.converter.NotificationTypeConverter;
@@ -120,6 +122,7 @@ public class MyBatisTypeHandlerConfig {
         typeHandlerRegistry.register(CDKSubscriptionStrategy.class, new CDKSubscriptionStrategyConverter());
         typeHandlerRegistry.register(OrderType.class, new OrderTypeConverter());
         typeHandlerRegistry.register(ActivityType.class, new ActivityTypeConverter());
+        typeHandlerRegistry.register(ContentType.class, new ContentTypeConverter());
         typeHandlerRegistry.register(FollowTargetType.class, new FollowTargetTypeConverter());
         typeHandlerRegistry.register(FollowStatus.class, new FollowStatusConverter());
 
@@ -161,7 +164,7 @@ public class MyBatisTypeHandlerConfig {
         // 依赖@TableField(typeHandler = XxxConverter.class)注解来指定具体的转换器
         // CourseEntity中的字段会根据@TableField注解自动选择对应的转换器
 
-        log.info("手动注册类型处理器：UserStatusConverter, UserRoleConverter, PostStatusConverter, CategoryTypeConverter, CourseStatusConverter, BusinessTypeConverter, QAResolveStatusConverter, ResourceTypeConverter, SubscriptionPlanStatusConverter, SubscriptionStatusConverter, CDKTypeConverter, CDKStatusConverter, CDKAcquisitionTypeConverter, OrderTypeConverter, ActivityTypeConverter, FollowTargetTypeConverter, FollowStatusConverter, NotificationTypeConverter, ChannelTypeConverter, NotificationStatusConverter, UpdateLogStatusConverter, ChangeTypeConverter, TestimonialStatusConverter, ResourceTargetTypeConverter, DailySourceConverter, DailyItemStatusConverter, LikeTargetTypeConverter, FavoriteTargetTypeConverter, TagAssignmentStatusConverter, TagTargetTypeConverter, TagSourceTypeConverter, SummaryTargetTypeConverter, ProblemStatusConverter, MapJsonTypeHandler");
+        log.info("手动注册类型处理器：UserStatusConverter, UserRoleConverter, PostStatusConverter, CategoryTypeConverter, CourseStatusConverter, BusinessTypeConverter, QAResolveStatusConverter, ResourceTypeConverter, SubscriptionPlanStatusConverter, SubscriptionStatusConverter, CDKTypeConverter, CDKStatusConverter, CDKAcquisitionTypeConverter, OrderTypeConverter, ActivityTypeConverter, ContentTypeConverter, FollowTargetTypeConverter, FollowStatusConverter, NotificationTypeConverter, ChannelTypeConverter, NotificationStatusConverter, UpdateLogStatusConverter, ChangeTypeConverter, TestimonialStatusConverter, ResourceTargetTypeConverter, DailySourceConverter, DailyItemStatusConverter, LikeTargetTypeConverter, FavoriteTargetTypeConverter, TagAssignmentStatusConverter, TagTargetTypeConverter, TagSourceTypeConverter, SummaryTargetTypeConverter, ProblemStatusConverter, MapJsonTypeHandler");
         log.info("已注册的类型处理器总数: {}", typeHandlerRegistry.getTypeHandlers().size());
     }
 }
