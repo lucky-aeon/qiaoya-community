@@ -24,10 +24,12 @@ public class AdminSubscriptionPlanMenuAppService {
             new MenuOptionDTO("MENU_DASHBOARD_HOME", "首页", "导航", "/dashboard/home"),
             new MenuOptionDTO("MENU_DASHBOARD_DISCUSSIONS", "讨论", "导航", "/dashboard/discussions"),
             new MenuOptionDTO("MENU_DASHBOARD_COURSES", "课程", "导航", "/dashboard/courses"),
+            new MenuOptionDTO("MENU_DASHBOARD_SKILLS", "技能市场", "导航", "/dashboard/skills"),
             // 新增：AI 日报
             new MenuOptionDTO("MENU_DASHBOARD_AI_NEWS", "AI 日报", "导航", "/dashboard/ai-news"),
             new MenuOptionDTO("MENU_DASHBOARD_CHANGELOG", "更新日志", "导航", "/dashboard/changelog"),
             new MenuOptionDTO("MENU_USER_BACKEND", "用户中心", "入口", "/dashboard/user-backend"),
+            new MenuOptionDTO("MENU_USER_SKILLS", "我的技能", "用户中心", "/dashboard/user-backend/skills"),
             new MenuOptionDTO("MENU_USER_ARTICLES", "我的文章", "用户中心", "/dashboard/user-backend/articles"),
             new MenuOptionDTO("MENU_USER_COMMENTS", "我的评论", "用户中心", "/dashboard/user-backend/comments"),
             new MenuOptionDTO("MENU_USER_TESTIMONIAL", "我的评价", "用户中心", "/dashboard/user-backend/testimonial"),
