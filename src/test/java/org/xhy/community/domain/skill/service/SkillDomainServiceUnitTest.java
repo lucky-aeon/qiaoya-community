@@ -1,30 +1,21 @@
 package org.xhy.community.domain.skill.service;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.xhy.community.domain.skill.entity.SkillEntity;
 import org.xhy.community.domain.skill.repository.SkillRepository;
 
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyCollection;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.verifyNoInteractions;
 
-@ExtendWith(MockitoExtension.class)
 class SkillDomainServiceUnitTest {
-
-    @Mock
-    private SkillRepository skillRepository;
-
-    @InjectMocks
-    private SkillDomainService skillDomainService;
 
     @Test
     void getSkillTitleMapByIdsShouldReturnExistingTitlesAndIgnoreMissingIds() {
@@ -35,7 +26,8 @@ class SkillDomainServiceUnitTest {
         skill2.setId("skill-2");
         skill2.setName("CLI Skill");
 
-        doReturn(List.of(skill1, skill2)).when(skillRepository).selectBatchIds(anyCollection());
+        RecordingSkillRepository skillRepository = new RecordingSkillRepository(List.of(skill1, skill2));
+        SkillDomainService skillDomainService = new SkillDomainService(skillRepository.createProxy());
 
         Map<String, String> result = skillDomainService.getSkillTitleMapByIds(List.of("skill-1", "missing", "skill-2"));
 
@@ -47,9 +39,52 @@ class SkillDomainServiceUnitTest {
 
     @Test
     void getSkillEntityMapByIdsShouldReturnEmptyMapWhenIdsMissing() {
+        RecordingSkillRepository skillRepository = new RecordingSkillRepository(List.of());
+        SkillDomainService skillDomainService = new SkillDomainService(skillRepository.createProxy());
+
         Map<String, SkillEntity> result = skillDomainService.getSkillEntityMapByIds(List.of());
 
         assertTrue(result.isEmpty());
-        verifyNoInteractions(skillRepository);
+        assertFalse(skillRepository.wasInvoked());
+    }
+
+    private static final class RecordingSkillRepository implements InvocationHandler {
+
+        private final List<SkillEntity> selectBatchIdsResult;
+        private final AtomicInteger invocationCount = new AtomicInteger();
+
+        private RecordingSkillRepository(List<SkillEntity> selectBatchIdsResult) {
+            this.selectBatchIdsResult = selectBatchIdsResult;
+        }
+
+        private SkillRepository createProxy() {
+            return (SkillRepository) Proxy.newProxyInstance(
+                    SkillRepository.class.getClassLoader(),
+                    new Class<?>[]{SkillRepository.class},
+                    this
+            );
+        }
+
+        private boolean wasInvoked() {
+            return invocationCount.get() > 0;
+        }
+
+        @Override
+        public Object invoke(Object proxy, Method method, Object[] args) {
+            if ("selectBatchIds".equals(method.getName())) {
+                invocationCount.incrementAndGet();
+                return selectBatchIdsResult;
+            }
+            if ("toString".equals(method.getName())) {
+                return "RecordingSkillRepository";
+            }
+            if ("hashCode".equals(method.getName())) {
+                return System.identityHashCode(proxy);
+            }
+            if ("equals".equals(method.getName())) {
+                return proxy == args[0];
+            }
+            throw new AssertionError("Unexpected repository method call: " + method.getName());
+        }
     }
 }
