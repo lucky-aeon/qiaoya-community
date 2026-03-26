@@ -15,6 +15,8 @@ import org.xhy.community.domain.favorite.service.FavoriteDomainService;
 import org.xhy.community.domain.favorite.valueobject.FavoriteTargetType;
 import org.xhy.community.domain.interview.service.InterviewQuestionDomainService;
 import org.xhy.community.domain.post.service.PostDomainService;
+import org.xhy.community.domain.skill.entity.SkillEntity;
+import org.xhy.community.domain.skill.service.SkillDomainService;
 import org.xhy.community.domain.user.entity.UserEntity;
 import org.xhy.community.domain.user.service.UserDomainService;
 import org.xhy.community.infrastructure.config.UserContext;
@@ -35,6 +37,7 @@ public class FavoriteAppService {
     private final ChapterDomainService chapterDomainService;
     private final CommentDomainService commentDomainService;
     private final InterviewQuestionDomainService interviewQuestionDomainService;
+    private final SkillDomainService skillDomainService;
     private final UserDomainService userDomainService;
 
     public FavoriteAppService(FavoriteDomainService favoriteDomainService,
@@ -42,12 +45,14 @@ public class FavoriteAppService {
                               ChapterDomainService chapterDomainService,
                               CommentDomainService commentDomainService,
                               InterviewQuestionDomainService interviewQuestionDomainService,
+                              SkillDomainService skillDomainService,
                               UserDomainService userDomainService) {
         this.favoriteDomainService = favoriteDomainService;
         this.postDomainService = postDomainService;
         this.chapterDomainService = chapterDomainService;
         this.commentDomainService = commentDomainService;
         this.interviewQuestionDomainService = interviewQuestionDomainService;
+        this.skillDomainService = skillDomainService;
         this.userDomainService = userDomainService;
     }
 
@@ -125,6 +130,7 @@ public class FavoriteAppService {
         Set<String> chapterIds = new HashSet<>();
         Set<String> commentIds = new HashSet<>();
         Set<String> questionIds = new HashSet<>();
+        Set<String> skillIds = new HashSet<>();
 
         for (FavoriteEntity entity : entities) {
             switch (entity.getTargetType()) {
@@ -132,6 +138,7 @@ public class FavoriteAppService {
                 case CHAPTER -> chapterIds.add(entity.getTargetId());
                 case COMMENT -> commentIds.add(entity.getTargetId());
                 case INTERVIEW_QUESTION -> questionIds.add(entity.getTargetId());
+                case SKILL -> skillIds.add(entity.getTargetId());
             }
         }
 
@@ -140,12 +147,14 @@ public class FavoriteAppService {
         Map<String, org.xhy.community.domain.course.entity.ChapterEntity> chapterMap = chapterDomainService.getChapterEntityMapByIds(chapterIds);
         Map<String, CommentEntity> commentMap = commentDomainService.getCommentEntityMapByIds(commentIds);
         Map<String, org.xhy.community.domain.interview.entity.InterviewQuestionEntity> questionMap = interviewQuestionDomainService.getQuestionEntityMapByIds(questionIds);
+        Map<String, SkillEntity> skillMap = skillDomainService.getSkillEntityMapByIds(skillIds);
 
         // 收集所有作者ID
         Set<String> authorIds = new HashSet<>();
         postMap.values().forEach(post -> authorIds.add(post.getAuthorId()));
         commentMap.values().forEach(comment -> authorIds.add(comment.getCommentUserId()));
         questionMap.values().forEach(question -> authorIds.add(question.getAuthorId()));
+        skillMap.values().forEach(skill -> authorIds.add(skill.getUserId()));
 
         // 对于章节，需要查询课程获取作者
         if (!chapterMap.isEmpty()) {
@@ -208,6 +217,18 @@ public class FavoriteAppService {
                         dto.setTitle(question.getTitle());
                         dto.setAuthorId(question.getAuthorId());
                         UserEntity author = authorMap.get(question.getAuthorId());
+                        if (author != null) {
+                            dto.setAuthorName(author.getName());
+                        }
+                    }
+                }
+                case SKILL -> {
+                    SkillEntity skill = skillMap.get(entity.getTargetId());
+                    if (skill != null) {
+                        dto.setTitle(skill.getName());
+                        dto.setSnippet(skill.getSummary());
+                        dto.setAuthorId(skill.getUserId());
+                        UserEntity author = authorMap.get(skill.getUserId());
                         if (author != null) {
                             dto.setAuthorName(author.getName());
                         }

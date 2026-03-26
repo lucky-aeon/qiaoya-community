@@ -13,6 +13,7 @@ import org.xhy.community.domain.user.service.UserDomainService;
 import org.xhy.community.domain.post.service.PostDomainService;
 import org.xhy.community.domain.course.service.CourseDomainService;
 import org.xhy.community.domain.course.service.ChapterDomainService;
+import org.xhy.community.domain.skill.service.SkillDomainService;
 import org.xhy.community.domain.like.service.LikeDomainService;
 import org.xhy.community.domain.like.valueobject.LikeTargetType;
 import org.xhy.community.application.like.helper.LikeCountHelper;
@@ -40,6 +41,7 @@ public class UserCommentAppService {
     private final ChapterDomainService chapterDomainService;
     private final LikeDomainService likeDomainService;
     private final org.xhy.community.domain.interview.service.InterviewQuestionDomainService interviewQuestionDomainService;
+    private final SkillDomainService skillDomainService;
 
     public UserCommentAppService(CommentDomainService commentDomainService,
                                 UserDomainService userDomainService,
@@ -47,7 +49,8 @@ public class UserCommentAppService {
                                 CourseDomainService courseDomainService,
                                 ChapterDomainService chapterDomainService,
                                 LikeDomainService likeDomainService,
-                                org.xhy.community.domain.interview.service.InterviewQuestionDomainService interviewQuestionDomainService) {
+                                org.xhy.community.domain.interview.service.InterviewQuestionDomainService interviewQuestionDomainService,
+                                SkillDomainService skillDomainService) {
         this.commentDomainService = commentDomainService;
         this.userDomainService = userDomainService;
         this.postDomainService = postDomainService;
@@ -55,6 +58,7 @@ public class UserCommentAppService {
         this.chapterDomainService = chapterDomainService;
         this.likeDomainService = likeDomainService;
         this.interviewQuestionDomainService = interviewQuestionDomainService;
+        this.skillDomainService = skillDomainService;
     }
     
     public CommentDTO createComment(CreateCommentRequest request, String userId) {
@@ -212,17 +216,19 @@ public class UserCommentAppService {
         Map<String, String> courseTitleMap;
         Map<String, String> chapterTitleMap;
         Map<String, String> interviewQuestionTitleMap;
-        TitleMaps(Map<String, String> p, Map<String, String> c, Map<String, String> ch, Map<String, String> iq) {
+        Map<String, String> skillTitleMap;
+        TitleMaps(Map<String, String> p, Map<String, String> c, Map<String, String> ch, Map<String, String> iq, Map<String, String> s) {
             this.postTitleMap = p;
             this.courseTitleMap = c;
             this.chapterTitleMap = ch;
             this.interviewQuestionTitleMap = iq;
+            this.skillTitleMap = s;
         }
     }
 
     private TitleMaps buildTitleMapsFromComments(List<CommentEntity> comments) {
         if (comments == null || comments.isEmpty()) {
-            return new TitleMaps(Map.of(), Map.of(), Map.of(), Map.of());
+            return new TitleMaps(Map.of(), Map.of(), Map.of(), Map.of(), Map.of());
         }
 
         Set<String> postIds = comments.stream()
@@ -249,12 +255,19 @@ public class UserCommentAppService {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
+        Set<String> skillIds = comments.stream()
+                .filter(comment -> BusinessType.SKILL.equals(comment.getBusinessType()))
+                .map(CommentEntity::getBusinessId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
         Map<String, String> postTitleMap = postDomainService.getPostTitleMapByIds(postIds);
         Map<String, String> courseTitleMap = courseDomainService.getCourseTitleMapByIds(courseIds);
         Map<String, String> chapterTitleMap = chapterDomainService.getChapterTitleMapByIds(chapterIds);
         Map<String, String> interviewQuestionTitleMap = interviewQuestionDomainService.getQuestionTitleMapByIds(interviewQuestionIds);
+        Map<String, String> skillTitleMap = skillDomainService.getSkillTitleMapByIds(skillIds);
 
-        return new TitleMaps(postTitleMap, courseTitleMap, chapterTitleMap, interviewQuestionTitleMap);
+        return new TitleMaps(postTitleMap, courseTitleMap, chapterTitleMap, interviewQuestionTitleMap, skillTitleMap);
     }
 
     private String resolveBusinessName(BusinessType type, String businessId, TitleMaps maps) {
@@ -266,6 +279,7 @@ public class UserCommentAppService {
             case COURSE -> maps.courseTitleMap.get(businessId);
             case CHAPTER -> maps.chapterTitleMap.get(businessId);
             case INTERVIEW_QUESTION -> maps.interviewQuestionTitleMap.get(businessId);
+            case SKILL -> maps.skillTitleMap.get(businessId);
             case COMMENT, MEETING, AI_NEWS -> null;
         };
     }
@@ -282,7 +296,7 @@ public class UserCommentAppService {
         TitleMaps titleMaps = buildTitleMapsFromComments(comments);
 
         return comments.stream()
-                .map(comment -> convertToLatestCommentDTO(comment, userMap, titleMaps.postTitleMap, titleMaps.courseTitleMap, titleMaps.chapterTitleMap, titleMaps.interviewQuestionTitleMap))
+                .map(comment -> convertToLatestCommentDTO(comment, userMap, titleMaps.postTitleMap, titleMaps.courseTitleMap, titleMaps.chapterTitleMap, titleMaps.interviewQuestionTitleMap, titleMaps.skillTitleMap))
                 .collect(Collectors.toList());
     }
 
@@ -291,7 +305,8 @@ public class UserCommentAppService {
                                                       Map<String, String> postTitleMap,
                                                       Map<String, String> courseTitleMap,
                                                       Map<String, String> chapterTitleMap,
-                                                      Map<String, String> interviewQuestionTitleMap) {
+                                                      Map<String, String> interviewQuestionTitleMap,
+                                                      Map<String, String> skillTitleMap) {
         LatestCommentDTO dto = new LatestCommentDTO();
         dto.setId(comment.getId());
         dto.setContent(comment.getContent());
@@ -319,7 +334,7 @@ public class UserCommentAppService {
         }
 
         // 设置业务名称
-        dto.setBusinessName(resolveBusinessName(comment.getBusinessType(), comment.getBusinessId(), new TitleMaps(postTitleMap, courseTitleMap, chapterTitleMap, interviewQuestionTitleMap)));
+        dto.setBusinessName(resolveBusinessName(comment.getBusinessType(), comment.getBusinessId(), new TitleMaps(postTitleMap, courseTitleMap, chapterTitleMap, interviewQuestionTitleMap, skillTitleMap)));
 
         return dto;
     }
