@@ -7,11 +7,18 @@ import org.junit.jupiter.api.Test;
 import org.xhy.community.application.skill.dto.SkillDetailDTO;
 import org.xhy.community.application.skill.dto.SkillListDTO;
 import org.xhy.community.application.skill.dto.SkillStatsDTO;
+import org.xhy.community.domain.comment.service.CommentDomainService;
+import org.xhy.community.domain.comment.valueobject.BusinessType;
+import org.xhy.community.domain.favorite.service.FavoriteDomainService;
+import org.xhy.community.domain.favorite.valueobject.FavoriteTargetType;
+import org.xhy.community.domain.like.service.LikeDomainService;
+import org.xhy.community.domain.like.valueobject.LikeTargetType;
 import org.xhy.community.domain.skill.entity.SkillEntity;
 import org.xhy.community.domain.skill.query.SkillQuery;
 import org.xhy.community.domain.skill.service.SkillDomainService;
 import org.xhy.community.domain.user.entity.UserEntity;
 import org.xhy.community.domain.user.service.UserDomainService;
+import org.xhy.community.infrastructure.config.ValidationErrorCode;
 import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.interfaces.skill.request.CreateSkillRequest;
 import org.xhy.community.interfaces.skill.request.SkillQueryRequest;
@@ -20,6 +27,7 @@ import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -29,13 +37,25 @@ class SkillAppServiceUnitTest {
 
     private FakeSkillDomainService skillDomainService;
     private FakeUserDomainService userDomainService;
+    private FakeLikeDomainService likeDomainService;
+    private FakeFavoriteDomainService favoriteDomainService;
+    private FakeCommentDomainService commentDomainService;
     private SkillAppService skillAppService;
 
     @BeforeEach
     void setUp() {
         skillDomainService = new FakeSkillDomainService();
         userDomainService = new FakeUserDomainService();
-        skillAppService = new SkillAppService(skillDomainService, userDomainService);
+        likeDomainService = new FakeLikeDomainService();
+        favoriteDomainService = new FakeFavoriteDomainService();
+        commentDomainService = new FakeCommentDomainService();
+        skillAppService = new SkillAppService(
+                skillDomainService,
+                userDomainService,
+                likeDomainService,
+                favoriteDomainService,
+                commentDomainService
+        );
     }
 
     @Test
@@ -81,6 +101,46 @@ class SkillAppServiceUnitTest {
     }
 
     @Test
+    void queryPublicSkillsShouldFillInteractionCountsAndAuthorName() {
+        SkillQueryRequest request = new SkillQueryRequest();
+        request.setPageNum(1);
+        request.setPageSize(10);
+
+        SkillEntity skill = buildSkill("skill-1", "user-1", "Workflow Skill", "自动化工作流", "https://github.com/acme/workflow-skill");
+        skillDomainService.queryResult = pageOf(1, 10, List.of(skill));
+
+        UserEntity author = new UserEntity();
+        author.setId("user-1");
+        author.setName("Alice");
+        userDomainService.userMap = Map.of("user-1", author);
+        likeDomainService.batchCountMap = Map.of("SKILL:skill-1", 3L);
+        favoriteDomainService.batchCountMap = Map.of("SKILL:skill-1", 5L);
+        commentDomainService.batchCountMap = Map.of("skill-1", 7L);
+
+        IPage<SkillListDTO> result = skillAppService.queryPublicSkills(request);
+
+        assertEquals("Alice", result.getRecords().get(0).getAuthorName());
+        assertEquals(3L, result.getRecords().get(0).getLikeCount());
+        assertEquals(5L, result.getRecords().get(0).getFavoriteCount());
+        assertEquals(7L, result.getRecords().get(0).getCommentCount());
+        assertEquals(Map.of("skill-1", LikeTargetType.SKILL), likeDomainService.lastBatchTargets);
+        assertEquals(Map.of("skill-1", FavoriteTargetType.SKILL), favoriteDomainService.lastBatchTargets);
+        assertEquals(Set.of("skill-1"), commentDomainService.lastBatchBusinessIds);
+        assertEquals(BusinessType.SKILL, commentDomainService.lastBusinessType);
+    }
+
+    @Test
+    void queryPublicSkillsShouldReturnEmptyRecordsWhenNoSkillExists() {
+        SkillQueryRequest request = new SkillQueryRequest();
+        skillDomainService.queryResult = pageOf(1, 10, List.of());
+
+        IPage<SkillListDTO> result = skillAppService.queryPublicSkills(request);
+
+        assertTrue(result.getRecords().isEmpty());
+        assertEquals(0L, result.getTotal());
+    }
+
+    @Test
     void getPublicSkillByIdShouldFillAuthorName() {
         SkillEntity skill = buildSkill("skill-2", "user-2", "CLI Skill", "命令行交付", "https://github.com/acme/cli-skill");
         skillDomainService.skillById = skill;
@@ -97,6 +157,34 @@ class SkillAppServiceUnitTest {
         assertEquals("Bob", detail.getAuthorName());
         assertEquals("https://github.com/acme/cli-skill", detail.getGithubUrl());
         assertEquals("命令行交付", detail.getDescription());
+    }
+
+    @Test
+    void getPublicSkillByIdShouldFillLikeFavoriteAndCommentCounts() {
+        SkillEntity skill = buildSkill("skill-3", "user-3", "CLI Skill", "命令行交付", "https://github.com/acme/cli-skill");
+        skillDomainService.skillById = skill;
+
+        UserEntity author = new UserEntity();
+        author.setId("user-3");
+        author.setName("Carol");
+        userDomainService.userById = author;
+        likeDomainService.singleLikeCount = 11L;
+        favoriteDomainService.singleFavoriteCount = 13L;
+        commentDomainService.singleCommentCount = 17L;
+
+        SkillDetailDTO detail = skillAppService.getPublicSkillById("skill-3");
+
+        assertEquals(11L, detail.getLikeCount());
+        assertEquals(13L, detail.getFavoriteCount());
+        assertEquals(17L, detail.getCommentCount());
+        assertEquals("Carol", detail.getAuthorName());
+    }
+
+    @Test
+    void getPublicSkillByIdShouldPropagateSkillNotFound() {
+        skillDomainService.skillByIdException = new BusinessException(ValidationErrorCode.PARAM_INVALID, "技能不存在");
+
+        assertThrows(BusinessException.class, () -> skillAppService.getPublicSkillById("missing"));
     }
 
     @Test
@@ -126,7 +214,9 @@ class SkillAppServiceUnitTest {
         private SkillQuery lastQuery;
         private IPage<SkillEntity> queryResult = new Page<>();
         private SkillEntity skillById;
+        private BusinessException skillByIdException;
         private Long countValue = 0L;
+        private Set<String> lastQueryIds = Set.of();
 
         FakeSkillDomainService() {
             super(null);
@@ -135,11 +225,17 @@ class SkillAppServiceUnitTest {
         @Override
         public IPage<SkillEntity> querySkills(SkillQuery query) {
             this.lastQuery = query;
+            this.lastQueryIds = queryResult.getRecords().stream()
+                    .map(SkillEntity::getId)
+                    .collect(java.util.stream.Collectors.toSet());
             return queryResult;
         }
 
         @Override
         public SkillEntity getSkillById(String skillId) {
+            if (skillByIdException != null) {
+                throw skillByIdException;
+            }
             return skillById;
         }
 
@@ -165,6 +261,71 @@ class SkillAppServiceUnitTest {
         @Override
         public Map<String, UserEntity> getUserEntityMapByIds(Collection<String> userIds) {
             return userMap;
+        }
+    }
+
+    private static class FakeLikeDomainService extends LikeDomainService {
+        private Map<String, Long> batchCountMap = Map.of();
+        private Map<String, LikeTargetType> lastBatchTargets = Map.of();
+        private Long singleLikeCount = 0L;
+
+        FakeLikeDomainService() {
+            super(null);
+        }
+
+        @Override
+        public Map<String, Long> batchCountLikes(Map<String, LikeTargetType> targets) {
+            lastBatchTargets = targets;
+            return batchCountMap;
+        }
+
+        @Override
+        public long countLikes(String targetId, LikeTargetType targetType) {
+            return singleLikeCount;
+        }
+    }
+
+    private static class FakeFavoriteDomainService extends FavoriteDomainService {
+        private Map<String, Long> batchCountMap = Map.of();
+        private Map<String, FavoriteTargetType> lastBatchTargets = Map.of();
+        private Long singleFavoriteCount = 0L;
+
+        FakeFavoriteDomainService() {
+            super(null);
+        }
+
+        @Override
+        public Map<String, Long> batchCountFavorites(Map<String, FavoriteTargetType> targets) {
+            lastBatchTargets = targets;
+            return batchCountMap;
+        }
+
+        @Override
+        public long countFavorites(String targetId, FavoriteTargetType targetType) {
+            return singleFavoriteCount;
+        }
+    }
+
+    private static class FakeCommentDomainService extends CommentDomainService {
+        private Map<String, Long> batchCountMap = Map.of();
+        private Set<String> lastBatchBusinessIds = Set.of();
+        private BusinessType lastBusinessType;
+        private Long singleCommentCount = 0L;
+
+        FakeCommentDomainService() {
+            super(null, null);
+        }
+
+        @Override
+        public Map<String, Long> getCommentCountMapByBusinessIds(Collection<String> businessIds, BusinessType businessType) {
+            lastBatchBusinessIds = businessIds == null ? Set.of() : Set.copyOf(businessIds);
+            lastBusinessType = businessType;
+            return batchCountMap;
+        }
+
+        @Override
+        public Long getCommentCountByBusiness(String businessId, BusinessType businessType) {
+            return singleCommentCount;
         }
     }
 }

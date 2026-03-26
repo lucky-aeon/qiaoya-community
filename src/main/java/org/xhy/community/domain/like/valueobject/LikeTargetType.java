@@ -5,7 +5,8 @@ public enum LikeTargetType {
     POST("文章"),
     CHAPTER("章节"),
     COMMENT("评论"),
-    INTERVIEW_QUESTION("面试题");
+    INTERVIEW_QUESTION("面试题"),
+    SKILL("技能");
 
     private final String description;
 

@@ -7,7 +7,8 @@ public enum BusinessType {
     CHAPTER("章节"),
     MEETING("分享会"),
     AI_NEWS("AI日报"),
-    INTERVIEW_QUESTION("面试题");
+    INTERVIEW_QUESTION("面试题"),
+    SKILL("技能");
     
     private final String description;
     

@@ -16,6 +16,12 @@ public class SkillListDTO {
 
     private String authorName;
 
+    private Long likeCount;
+
+    private Long favoriteCount;
+
+    private Long commentCount;
+
     private LocalDateTime createTime;
 
     private LocalDateTime updateTime;
@@ -66,6 +72,30 @@ public class SkillListDTO {
 
     public void setAuthorName(String authorName) {
         this.authorName = authorName;
+    }
+
+    public Long getLikeCount() {
+        return likeCount;
+    }
+
+    public void setLikeCount(Long likeCount) {
+        this.likeCount = likeCount;
+    }
+
+    public Long getFavoriteCount() {
+        return favoriteCount;
+    }
+
+    public void setFavoriteCount(Long favoriteCount) {
+        this.favoriteCount = favoriteCount;
+    }
+
+    public Long getCommentCount() {
+        return commentCount;
+    }
+
+    public void setCommentCount(Long commentCount) {
+        this.commentCount = commentCount;
     }
 
     public LocalDateTime getCreateTime() {

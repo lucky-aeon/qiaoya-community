@@ -4,7 +4,8 @@ public enum FavoriteTargetType {
     POST("文章"),
     CHAPTER("章节"),
     COMMENT("评论"),
-    INTERVIEW_QUESTION("题目");
+    INTERVIEW_QUESTION("题目"),
+    SKILL("技能");
 
     private final String description;
 

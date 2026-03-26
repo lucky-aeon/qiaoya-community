@@ -11,6 +11,11 @@ import org.xhy.community.domain.skill.repository.SkillRepository;
 import org.xhy.community.infrastructure.config.ValidationErrorCode;
 import org.xhy.community.infrastructure.exception.BusinessException;
 
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 @Service
 public class SkillDomainService {
 
@@ -74,6 +79,42 @@ public class SkillDomainService {
 
     public Long countSkills() {
         return skillRepository.selectCount(null);
+    }
+
+    public Map<String, SkillEntity> getSkillEntityMapByIds(Collection<String> skillIds) {
+        if (skillIds == null || skillIds.isEmpty()) {
+            return Map.of();
+        }
+
+        List<SkillEntity> skills = skillRepository.selectBatchIds(skillIds);
+        if (skills == null || skills.isEmpty()) {
+            return Map.of();
+        }
+
+        return skills.stream()
+                .filter(skill -> skill.getId() != null)
+                .collect(Collectors.toMap(
+                        SkillEntity::getId,
+                        skill -> skill
+                ));
+    }
+
+    public Map<String, String> getSkillTitleMapByIds(Collection<String> skillIds) {
+        if (skillIds == null || skillIds.isEmpty()) {
+            return Map.of();
+        }
+
+        List<SkillEntity> skills = skillRepository.selectBatchIds(skillIds);
+        if (skills == null || skills.isEmpty()) {
+            return Map.of();
+        }
+
+        return skills.stream()
+                .filter(skill -> skill.getId() != null)
+                .collect(Collectors.toMap(
+                        SkillEntity::getId,
+                        SkillEntity::getName
+                ));
     }
 
     private void validateAuthor(SkillEntity skill, String currentUserId) {

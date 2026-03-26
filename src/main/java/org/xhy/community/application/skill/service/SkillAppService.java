@@ -9,6 +9,12 @@ import org.xhy.community.application.skill.assembler.SkillAssembler;
 import org.xhy.community.application.skill.dto.SkillDetailDTO;
 import org.xhy.community.application.skill.dto.SkillListDTO;
 import org.xhy.community.application.skill.dto.SkillStatsDTO;
+import org.xhy.community.domain.comment.service.CommentDomainService;
+import org.xhy.community.domain.comment.valueobject.BusinessType;
+import org.xhy.community.domain.favorite.service.FavoriteDomainService;
+import org.xhy.community.domain.favorite.valueobject.FavoriteTargetType;
+import org.xhy.community.domain.like.service.LikeDomainService;
+import org.xhy.community.domain.like.valueobject.LikeTargetType;
 import org.xhy.community.domain.skill.entity.SkillEntity;
 import org.xhy.community.domain.skill.query.SkillQuery;
 import org.xhy.community.domain.skill.service.SkillDomainService;
@@ -32,10 +38,20 @@ public class SkillAppService {
 
     private final SkillDomainService skillDomainService;
     private final UserDomainService userDomainService;
+    private final LikeDomainService likeDomainService;
+    private final FavoriteDomainService favoriteDomainService;
+    private final CommentDomainService commentDomainService;
 
-    public SkillAppService(SkillDomainService skillDomainService, UserDomainService userDomainService) {
+    public SkillAppService(SkillDomainService skillDomainService,
+                           UserDomainService userDomainService,
+                           LikeDomainService likeDomainService,
+                           FavoriteDomainService favoriteDomainService,
+                           CommentDomainService commentDomainService) {
         this.skillDomainService = skillDomainService;
         this.userDomainService = userDomainService;
+        this.likeDomainService = likeDomainService;
+        this.favoriteDomainService = favoriteDomainService;
+        this.commentDomainService = commentDomainService;
     }
 
     @Transactional
@@ -43,7 +59,7 @@ public class SkillAppService {
         validateGithubUrl(request.getGithubUrl());
         SkillEntity createdSkill = skillDomainService.createSkill(SkillAssembler.fromCreateRequest(request, currentUserId));
         UserEntity author = userDomainService.getUserById(createdSkill.getUserId());
-        return SkillAssembler.toDetailDTO(createdSkill, author);
+        return buildDetailDTO(createdSkill, author);
     }
 
     @Transactional
@@ -55,19 +71,19 @@ public class SkillAppService {
                 currentUserId
         );
         UserEntity author = userDomainService.getUserById(updatedSkill.getUserId());
-        return SkillAssembler.toDetailDTO(updatedSkill, author);
+        return buildDetailDTO(updatedSkill, author);
     }
 
     public SkillDetailDTO getUserSkillById(String skillId, String currentUserId) {
         SkillEntity skill = skillDomainService.getUserSkillById(skillId, currentUserId);
         UserEntity author = userDomainService.getUserById(skill.getUserId());
-        return SkillAssembler.toDetailDTO(skill, author);
+        return buildDetailDTO(skill, author);
     }
 
     public SkillDetailDTO getPublicSkillById(String skillId) {
         SkillEntity skill = skillDomainService.getSkillById(skillId);
         UserEntity author = userDomainService.getUserById(skill.getUserId());
-        return SkillAssembler.toDetailDTO(skill, author);
+        return buildDetailDTO(skill, author);
     }
 
     public IPage<SkillListDTO> queryMySkills(String currentUserId, SkillQueryRequest request) {
@@ -101,12 +117,48 @@ public class SkillAppService {
                 .map(SkillEntity::getUserId)
                 .collect(Collectors.toSet());
         Map<String, UserEntity> userMap = userDomainService.getUserEntityMapByIds(userIds);
+        Set<String> skillIds = records.stream()
+                .map(SkillEntity::getId)
+                .filter(StringUtils::hasText)
+                .collect(Collectors.toSet());
+        Map<String, Long> likeCountMap = likeDomainService.batchCountLikes(buildLikeTargetMap(skillIds));
+        Map<String, Long> favoriteCountMap = favoriteDomainService.batchCountFavorites(buildFavoriteTargetMap(skillIds));
+        Map<String, Long> commentCountMap = commentDomainService.getCommentCountMapByBusinessIds(skillIds, BusinessType.SKILL);
 
         List<SkillListDTO> dtoList = records.stream()
-                .map(skill -> SkillAssembler.toListDTO(skill, userMap.get(skill.getUserId())))
+                .map(skill -> SkillAssembler.toListDTO(
+                        skill,
+                        userMap.get(skill.getUserId()),
+                        likeCountMap.getOrDefault(buildTargetKey(LikeTargetType.SKILL.name(), skill.getId()), 0L),
+                        favoriteCountMap.getOrDefault(buildTargetKey(FavoriteTargetType.SKILL.name(), skill.getId()), 0L),
+                        commentCountMap.getOrDefault(skill.getId(), 0L)
+                ))
                 .toList();
         dtoPage.setRecords(dtoList);
         return dtoPage;
+    }
+
+    private SkillDetailDTO buildDetailDTO(SkillEntity skill, UserEntity author) {
+        long likeCount = likeDomainService.countLikes(skill.getId(), LikeTargetType.SKILL);
+        long favoriteCount = favoriteDomainService.countFavorites(skill.getId(), FavoriteTargetType.SKILL);
+        long commentCount = commentDomainService.getCommentCountByBusiness(skill.getId(), BusinessType.SKILL);
+        return SkillAssembler.toDetailDTO(skill, author, likeCount, favoriteCount, commentCount);
+    }
+
+    private Map<String, LikeTargetType> buildLikeTargetMap(Set<String> skillIds) {
+        Map<String, LikeTargetType> targets = new java.util.HashMap<>();
+        skillIds.forEach(id -> targets.put(id, LikeTargetType.SKILL));
+        return targets;
+    }
+
+    private Map<String, FavoriteTargetType> buildFavoriteTargetMap(Set<String> skillIds) {
+        Map<String, FavoriteTargetType> targets = new java.util.HashMap<>();
+        skillIds.forEach(id -> targets.put(id, FavoriteTargetType.SKILL));
+        return targets;
+    }
+
+    private String buildTargetKey(String targetTypeName, String targetId) {
+        return targetTypeName + ":" + targetId;
     }
 
     private void validateGithubUrl(String githubUrl) {

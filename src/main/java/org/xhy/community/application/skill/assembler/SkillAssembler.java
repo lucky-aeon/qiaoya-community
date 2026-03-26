@@ -44,6 +44,11 @@ public class SkillAssembler {
     }
 
     public static SkillListDTO toListDTO(SkillEntity entity, UserEntity author) {
+        return toListDTO(entity, author, null, null, null);
+    }
+
+    public static SkillListDTO toListDTO(SkillEntity entity, UserEntity author,
+                                         Long likeCount, Long favoriteCount, Long commentCount) {
         if (entity == null) {
             return null;
         }
@@ -53,10 +58,18 @@ public class SkillAssembler {
         if (author != null) {
             dto.setAuthorName(author.getName());
         }
+        dto.setLikeCount(normalizeCount(likeCount));
+        dto.setFavoriteCount(normalizeCount(favoriteCount));
+        dto.setCommentCount(normalizeCount(commentCount));
         return dto;
     }
 
     public static SkillDetailDTO toDetailDTO(SkillEntity entity, UserEntity author) {
+        return toDetailDTO(entity, author, null, null, null);
+    }
+
+    public static SkillDetailDTO toDetailDTO(SkillEntity entity, UserEntity author,
+                                             Long likeCount, Long favoriteCount, Long commentCount) {
         if (entity == null) {
             return null;
         }
@@ -66,6 +79,13 @@ public class SkillAssembler {
         if (author != null) {
             dto.setAuthorName(author.getName());
         }
+        dto.setLikeCount(normalizeCount(likeCount));
+        dto.setFavoriteCount(normalizeCount(favoriteCount));
+        dto.setCommentCount(normalizeCount(commentCount));
         return dto;
+    }
+
+    private static Long normalizeCount(Long count) {
+        return count == null ? 0L : count;
     }
 }
