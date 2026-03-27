@@ -497,3 +497,10 @@ feat(admin-cdk): 显示使用者昵称并支持订阅策略与价格
 - 数量上限改为 1000，新增 code 筛选
 - 类型对齐：CDKDTO/CreateCDKRequest/CDKQueryRequest
 ```
+
+# 文档索引
+
+## skills
+- `docs/superpowers/specs/skills/`
+- `docs/superpowers/plans/skills/`
+- `docs/superpowers/commits/skills/`
