@@ -49,6 +49,12 @@ class SkillAppServiceTest {
     @Test
     void createAndPublicVisibility() {
         UserEntity user = createUser("creator");
+        userDomainService.updateUserProfile(
+                user.getId(),
+                user.getName(),
+                "社区技能作者",
+                "https://cdn.example.com/creator.png"
+        );
         CreateSkillRequest request = buildCreateRequest("Spring AI 实战", "LangChain4j + Spring Boot", "完整技能描述");
 
         SkillDetailDTO created = skillAppService.createSkill(request, user.getId());
@@ -57,10 +63,16 @@ class SkillAppServiceTest {
 
         assertNotNull(created.getId());
         assertEquals(user.getName(), created.getAuthorName());
+        assertEquals("https://cdn.example.com/creator.png", created.getAuthorAvatar());
+        assertEquals("社区技能作者", created.getAuthorDescription());
         assertEquals(created.getId(), publicDetail.getId());
         assertEquals("完整技能描述", publicDetail.getDescription());
+        assertEquals("https://cdn.example.com/creator.png", publicDetail.getAuthorAvatar());
+        assertEquals("社区技能作者", publicDetail.getAuthorDescription());
         assertEquals(1L, publicPage.getTotal());
         assertEquals(created.getId(), publicPage.getRecords().get(0).getId());
+        assertEquals("https://cdn.example.com/creator.png", publicPage.getRecords().get(0).getAuthorAvatar());
+        assertEquals("社区技能作者", publicPage.getRecords().get(0).getAuthorDescription());
     }
 
     @Test

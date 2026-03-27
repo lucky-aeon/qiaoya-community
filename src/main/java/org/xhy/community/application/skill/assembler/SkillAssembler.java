@@ -57,6 +57,8 @@ public class SkillAssembler {
         BeanUtils.copyProperties(entity, dto);
         if (author != null) {
             dto.setAuthorName(author.getName());
+            dto.setAuthorAvatar(author.getAvatar());
+            dto.setAuthorDescription(author.getDescription());
         }
         dto.setLikeCount(normalizeCount(likeCount));
         dto.setFavoriteCount(normalizeCount(favoriteCount));
@@ -78,6 +80,8 @@ public class SkillAssembler {
         BeanUtils.copyProperties(entity, dto);
         if (author != null) {
             dto.setAuthorName(author.getName());
+            dto.setAuthorAvatar(author.getAvatar());
+            dto.setAuthorDescription(author.getDescription());
         }
         dto.setLikeCount(normalizeCount(likeCount));
         dto.setFavoriteCount(normalizeCount(favoriteCount));

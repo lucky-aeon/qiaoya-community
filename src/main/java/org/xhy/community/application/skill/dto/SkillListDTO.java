@@ -16,6 +16,10 @@ public class SkillListDTO {
 
     private String authorName;
 
+    private String authorAvatar;
+
+    private String authorDescription;
+
     private Long likeCount;
 
     private Long favoriteCount;
@@ -72,6 +76,22 @@ public class SkillListDTO {
 
     public void setAuthorName(String authorName) {
         this.authorName = authorName;
+    }
+
+    public String getAuthorAvatar() {
+        return authorAvatar;
+    }
+
+    public void setAuthorAvatar(String authorAvatar) {
+        this.authorAvatar = authorAvatar;
+    }
+
+    public String getAuthorDescription() {
+        return authorDescription;
+    }
+
+    public void setAuthorDescription(String authorDescription) {
+        this.authorDescription = authorDescription;
     }
 
     public Long getLikeCount() {

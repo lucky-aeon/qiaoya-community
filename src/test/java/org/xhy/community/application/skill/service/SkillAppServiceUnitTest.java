@@ -87,6 +87,8 @@ class SkillAppServiceUnitTest {
         UserEntity author = new UserEntity();
         author.setId("user-1");
         author.setName("Alice");
+        author.setAvatar("https://cdn.example.com/alice.png");
+        author.setDescription("专注自动化工作流");
         userDomainService.userMap = Map.of("user-1", author);
 
         IPage<SkillListDTO> result = skillAppService.queryMySkills("user-1", request);
@@ -97,11 +99,13 @@ class SkillAppServiceUnitTest {
         assertEquals(5, skillDomainService.lastQuery.getPageSize());
         assertEquals(1, result.getRecords().size());
         assertEquals("Alice", result.getRecords().get(0).getAuthorName());
+        assertEquals("https://cdn.example.com/alice.png", result.getRecords().get(0).getAuthorAvatar());
+        assertEquals("专注自动化工作流", result.getRecords().get(0).getAuthorDescription());
         assertEquals("Workflow Skill", result.getRecords().get(0).getName());
     }
 
     @Test
-    void queryPublicSkillsShouldFillInteractionCountsAndAuthorName() {
+    void queryPublicSkillsShouldFillInteractionCountsAndAuthorProfile() {
         SkillQueryRequest request = new SkillQueryRequest();
         request.setPageNum(1);
         request.setPageSize(10);
@@ -112,6 +116,8 @@ class SkillAppServiceUnitTest {
         UserEntity author = new UserEntity();
         author.setId("user-1");
         author.setName("Alice");
+        author.setAvatar("https://cdn.example.com/alice.png");
+        author.setDescription("专注自动化工作流");
         userDomainService.userMap = Map.of("user-1", author);
         likeDomainService.batchCountMap = Map.of("SKILL:skill-1", 3L);
         favoriteDomainService.batchCountMap = Map.of("SKILL:skill-1", 5L);
@@ -120,6 +126,8 @@ class SkillAppServiceUnitTest {
         IPage<SkillListDTO> result = skillAppService.queryPublicSkills(request);
 
         assertEquals("Alice", result.getRecords().get(0).getAuthorName());
+        assertEquals("https://cdn.example.com/alice.png", result.getRecords().get(0).getAuthorAvatar());
+        assertEquals("专注自动化工作流", result.getRecords().get(0).getAuthorDescription());
         assertEquals(3L, result.getRecords().get(0).getLikeCount());
         assertEquals(5L, result.getRecords().get(0).getFavoriteCount());
         assertEquals(7L, result.getRecords().get(0).getCommentCount());
@@ -141,13 +149,15 @@ class SkillAppServiceUnitTest {
     }
 
     @Test
-    void getPublicSkillByIdShouldFillAuthorName() {
+    void getPublicSkillByIdShouldFillAuthorProfile() {
         SkillEntity skill = buildSkill("skill-2", "user-2", "CLI Skill", "命令行交付", "https://github.com/acme/cli-skill");
         skillDomainService.skillById = skill;
 
         UserEntity author = new UserEntity();
         author.setId("user-2");
         author.setName("Bob");
+        author.setAvatar("https://cdn.example.com/bob.png");
+        author.setDescription("命令行工具作者");
         userDomainService.userById = author;
 
         SkillDetailDTO detail = skillAppService.getPublicSkillById("skill-2");
@@ -155,6 +165,8 @@ class SkillAppServiceUnitTest {
         assertEquals("skill-2", detail.getId());
         assertEquals("CLI Skill", detail.getName());
         assertEquals("Bob", detail.getAuthorName());
+        assertEquals("https://cdn.example.com/bob.png", detail.getAuthorAvatar());
+        assertEquals("命令行工具作者", detail.getAuthorDescription());
         assertEquals("https://github.com/acme/cli-skill", detail.getGithubUrl());
         assertEquals("命令行交付", detail.getDescription());
     }
@@ -167,6 +179,8 @@ class SkillAppServiceUnitTest {
         UserEntity author = new UserEntity();
         author.setId("user-3");
         author.setName("Carol");
+        author.setAvatar("https://cdn.example.com/carol.png");
+        author.setDescription("CLI 与平台集成");
         userDomainService.userById = author;
         likeDomainService.singleLikeCount = 11L;
         favoriteDomainService.singleFavoriteCount = 13L;
@@ -178,6 +192,8 @@ class SkillAppServiceUnitTest {
         assertEquals(13L, detail.getFavoriteCount());
         assertEquals(17L, detail.getCommentCount());
         assertEquals("Carol", detail.getAuthorName());
+        assertEquals("https://cdn.example.com/carol.png", detail.getAuthorAvatar());
+        assertEquals("CLI 与平台集成", detail.getAuthorDescription());
     }
 
     @Test
