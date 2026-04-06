@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.BeanUtils;
 import org.xhy.community.application.config.dto.SystemConfigDTO;
 import org.xhy.community.domain.config.entity.SystemConfigEntity;
+import org.xhy.community.domain.config.valueobject.IndependentServicesConfig;
 import org.xhy.community.domain.codex.valueobject.CodexConfigSet;
 import org.xhy.community.domain.config.valueobject.DefaultSubscriptionConfig;
 import org.xhy.community.domain.config.valueobject.SystemConfigType;
@@ -53,6 +54,7 @@ public class SystemConfigAssembler {
     private static Object parseDataByType(SystemConfigType type, String jsonData) throws JsonProcessingException {
         return switch (type) {
             case DEFAULT_SUBSCRIPTION_PLAN -> objectMapper.readValue(jsonData, DefaultSubscriptionConfig.class);
+            case INDEPENDENT_SERVICES -> objectMapper.readValue(jsonData, IndependentServicesConfig.class);
             case USER_SESSION_LIMIT -> objectMapper.readValue(jsonData, UserSessionConfig.class);
             case EMAIL_TEMPLATE, SYSTEM_MAINTENANCE -> objectMapper.readValue(jsonData, Object.class);
             case OAUTH_GITHUB -> objectMapper.readValue(jsonData, GithubOAuthConfig.class);

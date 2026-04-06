@@ -3,10 +3,13 @@ package org.xhy.community.application.config.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 import org.xhy.community.application.config.assembler.SystemConfigAssembler;
+import org.xhy.community.application.config.dto.IndependentServiceDTO;
 import org.xhy.community.application.config.dto.SystemConfigDTO;
 import org.xhy.community.domain.config.entity.SystemConfigEntity;
 import org.xhy.community.domain.config.service.SystemConfigDomainService;
 import org.xhy.community.domain.config.valueobject.DefaultSubscriptionConfig;
+import org.xhy.community.domain.config.valueobject.IndependentServiceConfig;
+import org.xhy.community.domain.config.valueobject.IndependentServicesConfig;
 import org.xhy.community.domain.config.valueobject.SystemConfigType;
 import org.xhy.community.domain.config.valueobject.UserSessionConfig;
 import org.xhy.community.domain.config.valueobject.GithubOAuthConfig;
@@ -37,6 +40,9 @@ public class AdminSystemConfigAppService {
     public SystemConfigDTO getConfigByType(SystemConfigType type) {
         SystemConfigEntity entity = systemConfigDomainService.getConfigEntity(type);
         if (entity == null) {
+            if (type == SystemConfigType.INDEPENDENT_SERVICES) {
+                return buildDefaultIndependentServicesConfigDTO();
+            }
             return new SystemConfigDTO();
         }
 
@@ -55,6 +61,7 @@ public class AdminSystemConfigAppService {
         // 根据配置类型进行特殊验证和处理，并返回规范化后的对象用于持久化
         Object normalized = switch (type) {
             case DEFAULT_SUBSCRIPTION_PLAN -> { validateAndUpdateDefaultSubscriptionConfig(configData); yield configData; }
+            case INDEPENDENT_SERVICES -> validateAndBuildIndependentServicesConfig(configData);
             case EMAIL_TEMPLATE, SYSTEM_MAINTENANCE -> { validateGeneralConfig(configData); yield configData; }
             case USER_SESSION_LIMIT -> validateAndBuildUserSessionConfig(configData);
             case OAUTH_GITHUB -> { validateAndUpdateGithubOAuthConfig(configData); yield configData; }
@@ -144,6 +151,35 @@ public class AdminSystemConfigAppService {
     }
 
     /**
+     * 验证并更新独立服务配置
+     */
+    private IndependentServicesConfig validateAndBuildIndependentServicesConfig(Object configData) {
+        try {
+            IndependentServicesConfig config;
+            if (configData instanceof IndependentServicesConfig independentServicesConfig) {
+                config = independentServicesConfig;
+            } else {
+                config = objectMapper.convertValue(configData, IndependentServicesConfig.class);
+            }
+
+            if (config == null) {
+                throw new BusinessException(SystemConfigErrorCode.INVALID_CONFIG_DATA,
+                    "独立服务配置数据不能为空");
+            }
+
+            config.normalize();
+            config.validate();
+            return config;
+        } catch (Exception e) {
+            if (e instanceof BusinessException) {
+                throw e;
+            }
+            throw new BusinessException(SystemConfigErrorCode.INVALID_CONFIG_DATA,
+                "独立服务配置数据格式错误");
+        }
+    }
+
+    /**
      * 验证并更新用户会话限制配置
      */
     private UserSessionConfig validateAndBuildUserSessionConfig(Object configData) {
@@ -214,6 +250,14 @@ public class AdminSystemConfigAppService {
             throw new BusinessException(SystemConfigErrorCode.INVALID_CONFIG_DATA,
                 "GitHub OAuth 配置数据格式错误");
         }
+    }
+
+    private SystemConfigDTO buildDefaultIndependentServicesConfigDTO() {
+        SystemConfigDTO dto = new SystemConfigDTO();
+        dto.setType(SystemConfigType.INDEPENDENT_SERVICES);
+        dto.setDescription(SystemConfigType.INDEPENDENT_SERVICES.getDescription());
+        dto.setData(IndependentServicesConfig.defaultConfig());
+        return dto;
     }
 
     /**

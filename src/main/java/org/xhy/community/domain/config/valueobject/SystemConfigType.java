@@ -2,6 +2,7 @@ package org.xhy.community.domain.config.valueobject;
 
 public enum SystemConfigType {
     DEFAULT_SUBSCRIPTION_PLAN("新用户默认套餐配置"),
+    INDEPENDENT_SERVICES("独立服务配置"),
     EMAIL_TEMPLATE("邮件模板配置"),
     SYSTEM_MAINTENANCE("系统维护配置"),
     USER_SESSION_LIMIT("用户会话限制配置"),

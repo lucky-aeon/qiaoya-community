@@ -129,6 +129,7 @@ public class OrderEventHandler {
                     yield "未知订阅计划";
                 }
             }
+            case SERVICE -> "独立服务";
         };
     }
 
@@ -150,6 +151,7 @@ public class OrderEventHandler {
                     yield java.math.BigDecimal.ZERO;
                 }
             }
+            case SERVICE -> java.math.BigDecimal.ZERO;
         };
     }
 

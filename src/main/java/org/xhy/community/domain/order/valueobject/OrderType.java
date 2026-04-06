@@ -5,7 +5,8 @@ package org.xhy.community.domain.order.valueobject;
  */
 public enum OrderType {
     PURCHASE("购买订单"),
-    GIFT("赠送订单");
+    GIFT("赠送订单"),
+    SERVICE("服务订单");
 
     private final String description;
 

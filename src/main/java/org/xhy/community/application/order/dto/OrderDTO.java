@@ -20,6 +20,17 @@ public class OrderDTO {
     private BigDecimal amount;
     private LocalDateTime activatedTime;
     private String remark;
+    private String contactId;
+    private String sourceChannel;
+    private BigDecimal unitPrice;
+    private BigDecimal quantity;
+    private String quantityUnit;
+    private BigDecimal totalAmount;
+    private String status;
+    private String createdBy;
+    private LocalDateTime confirmedAt;
+    private LocalDateTime completedAt;
+    private LocalDateTime canceledAt;
     private LocalDateTime createTime;
 
     // Getters and Setters
@@ -58,6 +69,39 @@ public class OrderDTO {
 
     public String getRemark() { return remark; }
     public void setRemark(String remark) { this.remark = remark; }
+
+    public String getContactId() { return contactId; }
+    public void setContactId(String contactId) { this.contactId = contactId; }
+
+    public String getSourceChannel() { return sourceChannel; }
+    public void setSourceChannel(String sourceChannel) { this.sourceChannel = sourceChannel; }
+
+    public BigDecimal getUnitPrice() { return unitPrice; }
+    public void setUnitPrice(BigDecimal unitPrice) { this.unitPrice = unitPrice; }
+
+    public BigDecimal getQuantity() { return quantity; }
+    public void setQuantity(BigDecimal quantity) { this.quantity = quantity; }
+
+    public String getQuantityUnit() { return quantityUnit; }
+    public void setQuantityUnit(String quantityUnit) { this.quantityUnit = quantityUnit; }
+
+    public BigDecimal getTotalAmount() { return totalAmount; }
+    public void setTotalAmount(BigDecimal totalAmount) { this.totalAmount = totalAmount; }
+
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
+
+    public String getCreatedBy() { return createdBy; }
+    public void setCreatedBy(String createdBy) { this.createdBy = createdBy; }
+
+    public LocalDateTime getConfirmedAt() { return confirmedAt; }
+    public void setConfirmedAt(LocalDateTime confirmedAt) { this.confirmedAt = confirmedAt; }
+
+    public LocalDateTime getCompletedAt() { return completedAt; }
+    public void setCompletedAt(LocalDateTime completedAt) { this.completedAt = completedAt; }
+
+    public LocalDateTime getCanceledAt() { return canceledAt; }
+    public void setCanceledAt(LocalDateTime canceledAt) { this.canceledAt = canceledAt; }
 
     public LocalDateTime getCreateTime() { return createTime; }
     public void setCreateTime(LocalDateTime createTime) { this.createTime = createTime; }

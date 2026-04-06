@@ -7,6 +7,7 @@ import org.xhy.community.application.order.dto.OrderDTO;
 import org.xhy.community.application.order.dto.OrderStatisticsDTO;
 import org.xhy.community.application.order.service.AdminOrderAppService;
 import org.xhy.community.infrastructure.config.ApiResponse;
+import org.xhy.community.interfaces.order.request.CreateServiceOrderRequest;
 import org.xhy.community.interfaces.order.request.OrderQueryRequest;
 import org.xhy.community.interfaces.order.request.OrderStatisticsRequest;
 
@@ -35,6 +36,15 @@ public class AdminOrderController {
     public ApiResponse<IPage<OrderDTO>> getOrders(OrderQueryRequest request) {
         IPage<OrderDTO> orders = adminOrderAppService.getOrdersByPage(request);
         return ApiResponse.success(orders);
+    }
+
+    /**
+     * 手工创建服务订单
+     */
+    @PostMapping
+    public ApiResponse<OrderDTO> createOrder(@Valid @RequestBody CreateServiceOrderRequest request) {
+        OrderDTO order = adminOrderAppService.createServiceOrder(request);
+        return ApiResponse.success("创建成功", order);
     }
 
     /**

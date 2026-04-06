@@ -7,12 +7,14 @@ public class OrderStatisticsDTO {
     private long totalCount;       // 总订单数
     private long purchaseCount;    // 购买订单数
     private long giftCount;        // 赠送订单数
+    private long serviceCount;     // 服务订单数
     private BigDecimal totalAmount; // 总金额
 
-    public OrderStatisticsDTO(long totalCount, long purchaseCount, long giftCount, BigDecimal totalAmount) {
+    public OrderStatisticsDTO(long totalCount, long purchaseCount, long giftCount, long serviceCount, BigDecimal totalAmount) {
         this.totalCount = totalCount;
         this.purchaseCount = purchaseCount;
         this.giftCount = giftCount;
+        this.serviceCount = serviceCount;
         this.totalAmount = totalAmount;
     }
 
@@ -25,6 +27,9 @@ public class OrderStatisticsDTO {
 
     public long getGiftCount() { return giftCount; }
     public void setGiftCount(long giftCount) { this.giftCount = giftCount; }
+
+    public long getServiceCount() { return serviceCount; }
+    public void setServiceCount(long serviceCount) { this.serviceCount = serviceCount; }
 
     public BigDecimal getTotalAmount() { return totalAmount; }
     public void setTotalAmount(BigDecimal totalAmount) { this.totalAmount = totalAmount; }

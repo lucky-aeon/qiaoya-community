@@ -35,6 +35,9 @@ public class OrderDomainService {
         if (order.getOrderNo() == null) {
             order.setOrderNo(generateOrderNo());
         }
+        if (order.getActivatedTime() == null) {
+            order.setActivatedTime(LocalDateTime.now());
+        }
         orderRepository.insert(order);
         return order;
     }
@@ -55,6 +58,9 @@ public class OrderDomainService {
      * 根据CDK码获取订单
      */
     public OrderEntity getOrderByCdkCode(String cdkCode) {
+        if (cdkCode == null) {
+            return null;
+        }
         LambdaQueryWrapper<OrderEntity> queryWrapper = new LambdaQueryWrapper<OrderEntity>()
             .eq(OrderEntity::getCdkCode, cdkCode);
 
