@@ -13,6 +13,7 @@ import org.xhy.community.domain.config.valueobject.IndependentServicesConfig;
 import org.xhy.community.domain.config.valueobject.SystemConfigType;
 import org.xhy.community.domain.config.valueobject.UserSessionConfig;
 import org.xhy.community.domain.config.valueobject.GithubOAuthConfig;
+import org.xhy.community.domain.config.valueobject.CreatorAboutPageConfig;
 import org.xhy.community.domain.subscription.service.SubscriptionPlanDomainService;
 import org.xhy.community.domain.subscription.entity.SubscriptionPlanEntity;
 import org.xhy.community.infrastructure.exception.BusinessException;
@@ -65,6 +66,7 @@ public class AdminSystemConfigAppService {
             case EMAIL_TEMPLATE, SYSTEM_MAINTENANCE -> { validateGeneralConfig(configData); yield configData; }
             case USER_SESSION_LIMIT -> validateAndBuildUserSessionConfig(configData);
             case OAUTH_GITHUB -> { validateAndUpdateGithubOAuthConfig(configData); yield configData; }
+            case CREATOR_ABOUT_PAGE -> validateAndBuildCreatorAboutPageConfig(configData);
             case CODEX_CONFIGS -> { validateGeneralConfig(configData); yield configData; }
         };
 
@@ -176,6 +178,31 @@ public class AdminSystemConfigAppService {
             }
             throw new BusinessException(SystemConfigErrorCode.INVALID_CONFIG_DATA,
                 "独立服务配置数据格式错误");
+        }
+    }
+
+    private CreatorAboutPageConfig validateAndBuildCreatorAboutPageConfig(Object configData) {
+        try {
+            CreatorAboutPageConfig config;
+            if (configData instanceof CreatorAboutPageConfig creatorAboutPageConfig) {
+                config = creatorAboutPageConfig;
+            } else {
+                config = objectMapper.convertValue(configData, CreatorAboutPageConfig.class);
+            }
+
+            if (config == null) {
+                throw new BusinessException(SystemConfigErrorCode.INVALID_CONFIG_DATA, "关于我页面配置不能为空");
+            }
+
+            config.normalize();
+            config.validate();
+            return config;
+        } catch (Exception e) {
+            if (e instanceof BusinessException) {
+                throw e;
+            }
+            throw new BusinessException(SystemConfigErrorCode.INVALID_CONFIG_DATA,
+                    "关于我页面配置数据格式错误: " + e.getMessage());
         }
     }
 

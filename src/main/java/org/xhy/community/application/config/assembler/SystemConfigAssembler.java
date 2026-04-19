@@ -7,6 +7,7 @@ import org.xhy.community.application.config.dto.SystemConfigDTO;
 import org.xhy.community.domain.config.entity.SystemConfigEntity;
 import org.xhy.community.domain.config.valueobject.IndependentServicesConfig;
 import org.xhy.community.domain.codex.valueobject.CodexConfigSet;
+import org.xhy.community.domain.config.valueobject.CreatorAboutPageConfig;
 import org.xhy.community.domain.config.valueobject.DefaultSubscriptionConfig;
 import org.xhy.community.domain.config.valueobject.SystemConfigType;
 import org.xhy.community.domain.config.valueobject.GithubOAuthConfig;
@@ -58,6 +59,7 @@ public class SystemConfigAssembler {
             case USER_SESSION_LIMIT -> objectMapper.readValue(jsonData, UserSessionConfig.class);
             case EMAIL_TEMPLATE, SYSTEM_MAINTENANCE -> objectMapper.readValue(jsonData, Object.class);
             case OAUTH_GITHUB -> objectMapper.readValue(jsonData, GithubOAuthConfig.class);
+            case CREATOR_ABOUT_PAGE -> objectMapper.readValue(jsonData, CreatorAboutPageConfig.class);
             case CODEX_CONFIGS -> objectMapper.readValue(jsonData, CodexConfigSet.class);
         };
     }

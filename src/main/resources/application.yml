@@ -147,6 +147,11 @@ oauth2:
     # 前端授权页面URL（用户未登录或需要授权同意时重定向到此页面）
     authorize-url: ${OAUTH2_FRONTEND_AUTHORIZE_URL:http://localhost:5173/oauth2/authorize}
 
+# GitHub 仓库公开信息抓取配置
+github:
+  # 建议在服务端配置 PAT，避免匿名 API 触发低频率限制
+  api-token: ${GITHUB_API_TOKEN:}
+
 # 备份报表读取配置（平台查看备份情况）
 backup:
   enabled: ${BACKUP_ENABLED:true}
