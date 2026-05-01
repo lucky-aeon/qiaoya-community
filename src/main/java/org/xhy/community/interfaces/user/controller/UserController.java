@@ -96,7 +96,6 @@ public class UserController {
      * @return 更新后的用户信息
      */
     @PostMapping("/plus-guide/complete")
-    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "USER_PLUS_GUIDE_COMPLETE", name = "标记Plus指引完成")})
     public ApiResponse<UserDTO> completePlusGuide() {
         String userId = UserContext.getCurrentUserId();
         UserDTO user = userAppService.completePlusGuide(userId);
@@ -143,7 +142,6 @@ public class UserController {
      * @return Plus 指引配置
      */
     @GetMapping("/plus-guide/config")
-    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "USER_PLUS_GUIDE_CONFIG", name = "获取Plus指引配置")})
     public ApiResponse<PlusGuideConfig> getPlusGuideConfig() {
         PlusGuideConfig config = userAppService.getPlusGuideConfig();
         return ApiResponse.success(config);
