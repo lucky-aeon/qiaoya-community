@@ -17,6 +17,7 @@ import org.xhy.community.interfaces.user.request.UpdateProfileRequest;
 import org.xhy.community.infrastructure.annotation.RequiresPlanPermissions;
 import org.xhy.community.infrastructure.annotation.LogUserActivity;
 import org.xhy.community.domain.common.valueobject.ActivityType;
+import org.xhy.community.domain.config.valueobject.PlusGuideConfig;
 
 /**
  * 用户个人信息管理控制器
@@ -132,6 +133,20 @@ public class UserController {
     public ApiResponse<UserPublicProfileDTO> getUserPublicProfile(@PathVariable String userId) {
         UserPublicProfileDTO user = userAppService.getUserPublicProfile(userId);
         return ApiResponse.success(user);
+    }
+
+    /**
+     * 获取 Plus 指引配置
+     * 返回 Plus 导览所需的配置信息，如 CLI 安装命令等
+     * 需要JWT令牌认证
+     *
+     * @return Plus 指引配置
+     */
+    @GetMapping("/plus-guide/config")
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "USER_PLUS_GUIDE_CONFIG", name = "获取Plus指引配置")})
+    public ApiResponse<PlusGuideConfig> getPlusGuideConfig() {
+        PlusGuideConfig config = userAppService.getPlusGuideConfig();
+        return ApiResponse.success(config);
     }
 
     /**

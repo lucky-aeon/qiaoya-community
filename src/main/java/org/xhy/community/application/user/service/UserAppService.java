@@ -35,6 +35,9 @@ import org.xhy.community.domain.user.valueobject.UserStatus;
 import org.xhy.community.domain.tag.service.TagDomainService;
 import org.xhy.community.domain.tag.entity.UserTagAssignmentEntity;
 import org.xhy.community.domain.tag.entity.TagDefinitionEntity;
+import org.xhy.community.domain.config.service.SystemConfigDomainService;
+import org.xhy.community.domain.config.valueobject.PlusGuideConfig;
+import org.xhy.community.domain.config.valueobject.SystemConfigType;
 
 import java.util.List;
 
@@ -55,6 +58,7 @@ public class UserAppService {
     private final EmailService emailService;
     private final ApplicationEventPublisher eventPublisher;
     private final AppEnvironment appEnvironment;
+    private final SystemConfigDomainService systemConfigDomainService;
 
     public UserAppService(UserDomainService userDomainService,
                           TagDomainService tagDomainService,
@@ -69,7 +73,8 @@ public class UserAppService {
                           PasswordResetDomainService passwordResetDomainService,
                           EmailService emailService,
                           ApplicationEventPublisher eventPublisher,
-                          AppEnvironment appEnvironment) {
+                          AppEnvironment appEnvironment,
+                          SystemConfigDomainService systemConfigDomainService) {
         this.userDomainService = userDomainService;
         this.tagDomainService = tagDomainService;
         this.jwtUtil = jwtUtil;
@@ -84,6 +89,7 @@ public class UserAppService {
         this.emailService = emailService;
         this.eventPublisher = eventPublisher;
         this.appEnvironment = appEnvironment;
+        this.systemConfigDomainService = systemConfigDomainService;
     }
     
     public LoginResponseDTO login(String email, String password, String ip, String deviceId) {
@@ -245,6 +251,12 @@ public class UserAppService {
 
         UserEntity user = userDomainService.updateUserSettings(userId, newSetting, null);
         return UserAssembler.toDTO(user);
+    }
+
+    public PlusGuideConfig getPlusGuideConfig() {
+        PlusGuideConfig config = systemConfigDomainService.getConfigData(
+            SystemConfigType.PLUS_GUIDE, PlusGuideConfig.class);
+        return config != null ? config : new PlusGuideConfig();
     }
 
     public UserDTO completePlusGuide(String userId) {

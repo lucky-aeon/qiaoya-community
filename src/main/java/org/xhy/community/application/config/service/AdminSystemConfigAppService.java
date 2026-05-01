@@ -68,6 +68,7 @@ public class AdminSystemConfigAppService {
             case OAUTH_GITHUB -> { validateAndUpdateGithubOAuthConfig(configData); yield configData; }
             case CREATOR_ABOUT_PAGE -> validateAndBuildCreatorAboutPageConfig(configData);
             case CODEX_CONFIGS -> { validateGeneralConfig(configData); yield configData; }
+            case PLUS_GUIDE -> { validateGeneralConfig(configData); yield configData; }
         };
 
         // 使用规范化对象进行持久化，避免未知字段导致后续解析失败

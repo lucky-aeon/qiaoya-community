@@ -8,7 +8,8 @@ public enum SystemConfigType {
     USER_SESSION_LIMIT("用户会话限制配置"),
     OAUTH_GITHUB("GitHub OAuth 配置"),
     CREATOR_ABOUT_PAGE("关于我页面配置"),
-    CODEX_CONFIGS("Codex 多实例配置");
+    CODEX_CONFIGS("Codex 多实例配置"),
+    PLUS_GUIDE("Plus指引配置");
 
     private final String description;
 

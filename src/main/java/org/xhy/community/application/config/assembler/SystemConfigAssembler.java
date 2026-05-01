@@ -12,6 +12,7 @@ import org.xhy.community.domain.config.valueobject.DefaultSubscriptionConfig;
 import org.xhy.community.domain.config.valueobject.SystemConfigType;
 import org.xhy.community.domain.config.valueobject.GithubOAuthConfig;
 import org.xhy.community.domain.config.valueobject.UserSessionConfig;
+import org.xhy.community.domain.config.valueobject.PlusGuideConfig;
 import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.infrastructure.exception.SystemConfigErrorCode;
 
@@ -61,6 +62,7 @@ public class SystemConfigAssembler {
             case OAUTH_GITHUB -> objectMapper.readValue(jsonData, GithubOAuthConfig.class);
             case CREATOR_ABOUT_PAGE -> objectMapper.readValue(jsonData, CreatorAboutPageConfig.class);
             case CODEX_CONFIGS -> objectMapper.readValue(jsonData, CodexConfigSet.class);
+            case PLUS_GUIDE -> objectMapper.readValue(jsonData, PlusGuideConfig.class);
         };
     }
 
