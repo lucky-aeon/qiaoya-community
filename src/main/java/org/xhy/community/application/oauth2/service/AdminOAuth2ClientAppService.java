@@ -39,9 +39,12 @@ public class AdminOAuth2ClientAppService {
         OAuth2ClientEntity entity = OAuth2ClientAssembler.fromCreateRequest(request);
         entity.setCreatedBy(createdBy);
 
-        // 生成客户端密钥
-        String plainSecret = oauth2ClientDomainService.generateClientSecret();
-        entity.setClientSecretEnc(plainSecret);
+        // public client 不持有密钥；confidential client 才生成密钥。
+        String plainSecret = null;
+        if (!entity.isPublicClient()) {
+            plainSecret = oauth2ClientDomainService.generateClientSecret();
+            entity.setClientSecretEnc(plainSecret);
+        }
 
         // 调用 Domain 服务创建客户端（会加密密钥）
         OAuth2ClientEntity createdClient = oauth2ClientDomainService.createClient(entity);
@@ -52,7 +55,9 @@ public class AdminOAuth2ClientAppService {
         // 返回结果（包含明文密钥，仅此一次）
         Map<String, Object> result = new HashMap<>();
         result.put("client", dto);
-        result.put("clientSecret", plainSecret);
+        if (plainSecret != null) {
+            result.put("clientSecret", plainSecret);
+        }
         return result;
     }
 

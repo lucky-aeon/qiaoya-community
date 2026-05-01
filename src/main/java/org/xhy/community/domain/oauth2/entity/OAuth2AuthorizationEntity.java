@@ -1,5 +1,6 @@
 package org.xhy.community.domain.oauth2.entity;
 
+import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
@@ -27,6 +28,7 @@ public class OAuth2AuthorizationEntity extends BaseEntity {
     // ========== 授权码相关 ==========
 
     /** 授权码值 */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String authorizationCodeValue;
 
     /** 授权码签发时间 */
@@ -38,6 +40,15 @@ public class OAuth2AuthorizationEntity extends BaseEntity {
     /** 授权码元数据（JSON） */
     @TableField(typeHandler = JacksonTypeHandler.class)
     private String authorizationCodeMetadata;
+
+    /** 授权请求使用的重定向URI */
+    private String redirectUri;
+
+    /** PKCE code_challenge */
+    private String authorizationCodeChallenge;
+
+    /** PKCE code_challenge_method */
+    private String authorizationCodeChallengeMethod;
 
     // ========== Access Token 相关 ==========
 
@@ -197,6 +208,30 @@ public class OAuth2AuthorizationEntity extends BaseEntity {
 
     public void setAuthorizationCodeMetadata(String authorizationCodeMetadata) {
         this.authorizationCodeMetadata = authorizationCodeMetadata;
+    }
+
+    public String getRedirectUri() {
+        return redirectUri;
+    }
+
+    public void setRedirectUri(String redirectUri) {
+        this.redirectUri = redirectUri;
+    }
+
+    public String getAuthorizationCodeChallenge() {
+        return authorizationCodeChallenge;
+    }
+
+    public void setAuthorizationCodeChallenge(String authorizationCodeChallenge) {
+        this.authorizationCodeChallenge = authorizationCodeChallenge;
+    }
+
+    public String getAuthorizationCodeChallengeMethod() {
+        return authorizationCodeChallengeMethod;
+    }
+
+    public void setAuthorizationCodeChallengeMethod(String authorizationCodeChallengeMethod) {
+        this.authorizationCodeChallengeMethod = authorizationCodeChallengeMethod;
     }
 
     public String getAccessTokenValue() {

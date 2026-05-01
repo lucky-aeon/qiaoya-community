@@ -56,8 +56,10 @@ public class OAuth2AuthorizationAppService {
      * @return 授权码
      */
     public String generateAuthorizationCode(String clientId, String userId,
-                                            List<String> scopes, String redirectUri, String state) {
-        return authorizationDomainService.createAuthorizationCode(clientId, userId, scopes, redirectUri, state);
+                                            List<String> scopes, String redirectUri, String state,
+                                            String codeChallenge, String codeChallengeMethod) {
+        return authorizationDomainService.createAuthorizationCode(
+                clientId, userId, scopes, redirectUri, state, codeChallenge, codeChallengeMethod);
     }
 
     /**
@@ -79,7 +81,8 @@ public class OAuth2AuthorizationAppService {
                     request.getClientId(),
                     request.getClientSecret(),
                     request.getCode(),
-                    request.getRedirectUri()
+                    request.getRedirectUri(),
+                    request.getCodeVerifier()
             );
         } else if (GrantType.REFRESH_TOKEN.getValue().equals(grantType)) {
             // 刷新令牌模式

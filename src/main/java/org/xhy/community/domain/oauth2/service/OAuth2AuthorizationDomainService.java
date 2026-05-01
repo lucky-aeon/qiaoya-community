@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.xhy.community.domain.oauth2.entity.OAuth2AuthorizationConsentEntity;
 import org.xhy.community.domain.oauth2.entity.OAuth2AuthorizationEntity;
 import org.xhy.community.domain.oauth2.entity.OAuth2ClientEntity;
@@ -17,7 +18,11 @@ import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.infrastructure.exception.OAuth2ErrorCode;
 import org.xhy.community.infrastructure.oauth.OAuth2TokenService;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
+import java.util.Base64;
 import java.util.List;
 
 /**
@@ -60,7 +65,8 @@ public class OAuth2AuthorizationDomainService {
      * @return 授权码
      */
     public String createAuthorizationCode(String clientId, String userId,
-                                         List<String> scopes, String redirectUri, String state) {
+                                          List<String> scopes, String redirectUri, String state,
+                                          String codeChallenge, String codeChallengeMethod) {
         // 验证客户端
         OAuth2ClientEntity client = clientDomainService.getClientByClientId(clientId);
         validateClientActive(client);
@@ -74,6 +80,8 @@ public class OAuth2AuthorizationDomainService {
         if (!client.isGrantTypeSupported(GrantType.AUTHORIZATION_CODE.getValue())) {
             throw new BusinessException(OAuth2ErrorCode.INVALID_GRANT_TYPE);
         }
+
+        validatePkceAuthorizationRequest(client, codeChallenge, codeChallengeMethod);
 
         // 验证 Scope
         for (String scope : scopes) {
@@ -95,6 +103,9 @@ public class OAuth2AuthorizationDomainService {
         authorization.setAuthorizationCodeValue(authorizationCode);
         authorization.setAuthorizationCodeIssuedAt(now);
         authorization.setAuthorizationCodeExpiresAt(expiresAt);
+        authorization.setRedirectUri(redirectUri);
+        authorization.setAuthorizationCodeChallenge(normalizeBlank(codeChallenge));
+        authorization.setAuthorizationCodeChallengeMethod(normalizeCodeChallengeMethod(codeChallengeMethod));
         authorization.setAccessTokenScopes(String.join(",", scopes));
         authorization.setState(state);
 
@@ -114,16 +125,18 @@ public class OAuth2AuthorizationDomainService {
      * @return 授权记录（包含 Access Token 和 Refresh Token）
      */
     public OAuth2AuthorizationEntity exchangeAuthorizationCodeForToken(
-            String clientId, String clientSecret, String authorizationCode, String redirectUri) {
+            String clientId, String clientSecret, String authorizationCode, String redirectUri, String codeVerifier) {
 
         // 验证客户端
         OAuth2ClientEntity client = clientDomainService.getClientByClientId(clientId);
         validateClientActive(client);
 
-        // 验证客户端密钥
-        if (!clientDomainService.validateClientSecret(clientId, clientSecret)) {
-            throw new BusinessException(OAuth2ErrorCode.INVALID_CLIENT_CREDENTIALS);
+        // 验证授权类型
+        if (!client.isGrantTypeSupported(GrantType.AUTHORIZATION_CODE.getValue())) {
+            throw new BusinessException(OAuth2ErrorCode.INVALID_GRANT_TYPE);
         }
+
+        validateClientAuthentication(client, clientSecret, true);
 
         // 查询授权码记录
         LambdaQueryWrapper<OAuth2AuthorizationEntity> queryWrapper = new LambdaQueryWrapper<OAuth2AuthorizationEntity>()
@@ -141,6 +154,13 @@ public class OAuth2AuthorizationDomainService {
         if (!authorization.isAuthorizationCodeValid()) {
             throw new BusinessException(OAuth2ErrorCode.EXPIRED_AUTHORIZATION_CODE);
         }
+
+        // Token 交换时必须使用授权时一致的 redirect_uri。
+        if (!StringUtils.hasText(redirectUri) || !redirectUri.equals(authorization.getRedirectUri())) {
+            throw new BusinessException(OAuth2ErrorCode.INVALID_REDIRECT_URI);
+        }
+
+        validatePkceTokenRequest(client, authorization, codeVerifier);
 
         // 授权码使用后立即失效
         authorization.invalidateAuthorizationCode();
@@ -184,10 +204,12 @@ public class OAuth2AuthorizationDomainService {
         OAuth2ClientEntity client = clientDomainService.getClientByClientId(clientId);
         validateClientActive(client);
 
-        // 验证客户端密钥
-        if (!clientDomainService.validateClientSecret(clientId, clientSecret)) {
-            throw new BusinessException(OAuth2ErrorCode.INVALID_CLIENT_CREDENTIALS);
+        // 验证授权类型
+        if (!client.isGrantTypeSupported(GrantType.REFRESH_TOKEN.getValue())) {
+            throw new BusinessException(OAuth2ErrorCode.INVALID_GRANT_TYPE);
         }
+
+        validateClientAuthentication(client, clientSecret, true);
 
         // 查询 Refresh Token 记录
         LambdaQueryWrapper<OAuth2AuthorizationEntity> queryWrapper = new LambdaQueryWrapper<OAuth2AuthorizationEntity>()
@@ -244,15 +266,12 @@ public class OAuth2AuthorizationDomainService {
         OAuth2ClientEntity client = clientDomainService.getClientByClientId(clientId);
         validateClientActive(client);
 
-        // 验证客户端密钥
-        if (!clientDomainService.validateClientSecret(clientId, clientSecret)) {
-            throw new BusinessException(OAuth2ErrorCode.INVALID_CLIENT_CREDENTIALS);
-        }
-
         // 验证授权类型
         if (!client.isGrantTypeSupported(GrantType.CLIENT_CREDENTIALS.getValue())) {
             throw new BusinessException(OAuth2ErrorCode.INVALID_GRANT_TYPE);
         }
+
+        validateClientAuthentication(client, clientSecret, false);
 
         // 验证 Scope
         for (String scope : scopes) {
@@ -433,6 +452,95 @@ public class OAuth2AuthorizationDomainService {
             throw new BusinessException(OAuth2ErrorCode.EXPIRED_ACCESS_TOKEN);
         }
         return authorization;
+    }
+
+    private void validateClientAuthentication(OAuth2ClientEntity client, String clientSecret, boolean allowPublicClient) {
+        if (client.isPublicClient()) {
+            if (!allowPublicClient || !Boolean.TRUE.equals(client.getRequireProofKey())) {
+                throw new BusinessException(OAuth2ErrorCode.INVALID_CLIENT_CREDENTIALS);
+            }
+            return;
+        }
+
+        if (!clientDomainService.validateClientSecret(client.getClientId(), clientSecret)) {
+            throw new BusinessException(OAuth2ErrorCode.INVALID_CLIENT_CREDENTIALS);
+        }
+    }
+
+    private void validatePkceAuthorizationRequest(OAuth2ClientEntity client, String codeChallenge, String codeChallengeMethod) {
+        boolean requiresPkce = client.isPublicClient() || Boolean.TRUE.equals(client.getRequireProofKey());
+        if (!StringUtils.hasText(codeChallenge)) {
+            if (requiresPkce) {
+                throw new BusinessException(OAuth2ErrorCode.INVALID_PKCE_CHALLENGE, "缺少code_challenge");
+            }
+            return;
+        }
+
+        String method = normalizeCodeChallengeMethod(codeChallengeMethod);
+        if (!"S256".equals(method) && !"plain".equals(method)) {
+            throw new BusinessException(OAuth2ErrorCode.INVALID_PKCE_CHALLENGE, "不支持的code_challenge_method");
+        }
+        if (requiresPkce && !"S256".equals(method)) {
+            throw new BusinessException(OAuth2ErrorCode.INVALID_PKCE_CHALLENGE, "公开客户端必须使用S256");
+        }
+    }
+
+    private void validatePkceTokenRequest(OAuth2ClientEntity client, OAuth2AuthorizationEntity authorization, String codeVerifier) {
+        boolean requiresPkce = client.isPublicClient() || Boolean.TRUE.equals(client.getRequireProofKey());
+        String codeChallenge = authorization.getAuthorizationCodeChallenge();
+        if (!StringUtils.hasText(codeChallenge)) {
+            if (requiresPkce) {
+                throw new BusinessException(OAuth2ErrorCode.INVALID_PKCE_CHALLENGE, "授权码缺少PKCE信息");
+            }
+            return;
+        }
+        if (!StringUtils.hasText(codeVerifier)) {
+            throw new BusinessException(OAuth2ErrorCode.INVALID_PKCE_VERIFIER, "缺少code_verifier");
+        }
+
+        String method = normalizeCodeChallengeMethod(authorization.getAuthorizationCodeChallengeMethod());
+        String expectedChallenge = "S256".equals(method) ? s256(codeVerifier) : codeVerifier;
+        if (!constantTimeEquals(codeChallenge, expectedChallenge)) {
+            throw new BusinessException(OAuth2ErrorCode.INVALID_PKCE_VERIFIER);
+        }
+    }
+
+    private String normalizeCodeChallengeMethod(String method) {
+        if (!StringUtils.hasText(method)) {
+            return "plain";
+        }
+        String normalized = method.trim();
+        if ("S256".equalsIgnoreCase(normalized)) {
+            return "S256";
+        }
+        if ("plain".equalsIgnoreCase(normalized)) {
+            return "plain";
+        }
+        return normalized;
+    }
+
+    private String normalizeBlank(String value) {
+        return StringUtils.hasText(value) ? value.trim() : null;
+    }
+
+    private String s256(String codeVerifier) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(codeVerifier.getBytes(StandardCharsets.US_ASCII));
+            return Base64.getUrlEncoder().withoutPadding().encodeToString(hash);
+        } catch (NoSuchAlgorithmException ex) {
+            throw new IllegalStateException("SHA-256不可用", ex);
+        }
+    }
+
+    private boolean constantTimeEquals(String left, String right) {
+        if (left == null || right == null) {
+            return false;
+        }
+        return MessageDigest.isEqual(
+                left.getBytes(StandardCharsets.US_ASCII),
+                right.getBytes(StandardCharsets.US_ASCII)
+        );
     }
 
     /**

@@ -25,8 +25,7 @@ public class OAuth2TokenRequest {
     @JsonAlias("clientId")
     private String clientId;
 
-    /** 客户端密钥 */
-    @NotBlank(message = "client_secret不能为空")
+    /** 客户端密钥；public client 使用 PKCE 时可为空 */
     @JsonProperty("client_secret")
     @JsonAlias("clientSecret")
     private String clientSecret;

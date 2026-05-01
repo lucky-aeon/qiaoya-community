@@ -131,7 +131,9 @@ public class PublicOAuth2AuthorizationController {
                 userId,
                 scopes,
                 request.getRedirectUri(),
-                request.getState()
+                request.getState(),
+                request.getCodeChallenge(),
+                request.getCodeChallengeMethod()
         );
 
         // 重定向回第三方应用
@@ -179,7 +181,9 @@ public class PublicOAuth2AuthorizationController {
                 userId,
                 scopes,
                 request.getRedirectUri(),
-                request.getState()
+                request.getState(),
+                request.getCodeChallenge(),
+                request.getCodeChallengeMethod()
         );
 
         return ApiResponse.success("授权成功", authorizationCode);

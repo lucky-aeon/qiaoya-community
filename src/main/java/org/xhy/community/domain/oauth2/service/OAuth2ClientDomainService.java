@@ -7,6 +7,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.xhy.community.domain.oauth2.entity.OAuth2ClientEntity;
 import org.xhy.community.domain.oauth2.repository.OAuth2ClientRepository;
+import org.xhy.community.domain.oauth2.valueobject.GrantType;
 import org.xhy.community.domain.oauth2.valueobject.OAuth2ClientStatus;
 import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.infrastructure.exception.OAuth2ErrorCode;
@@ -40,16 +41,21 @@ public class OAuth2ClientDomainService {
     public OAuth2ClientEntity createClient(OAuth2ClientEntity client) {
         // 业务规则：clientId 必须唯一
         validateClientIdUnique(client.getClientId(), null);
+        validateClientConfiguration(client);
 
-        // 验证密钥不为空
-        String plainSecret = client.getClientSecretEnc();
-        if (plainSecret == null || plainSecret.isEmpty()) {
-            throw new IllegalArgumentException("客户端密钥不能为空");
+        if (client.isPublicClient()) {
+            client.setClientSecretEnc(null);
+        } else {
+            // 验证密钥不为空
+            String plainSecret = client.getClientSecretEnc();
+            if (plainSecret == null || plainSecret.isEmpty()) {
+                throw new IllegalArgumentException("客户端密钥不能为空");
+            }
+
+            // 加密存储客户端密钥
+            String encryptedSecret = passwordEncoder.encode(plainSecret);
+            client.setClientSecretEnc(encryptedSecret);
         }
-
-        // 加密存储客户端密钥
-        String encryptedSecret = passwordEncoder.encode(plainSecret);
-        client.setClientSecretEnc(encryptedSecret);
 
         oauth2ClientRepository.insert(client);
         return client;
@@ -61,11 +67,18 @@ public class OAuth2ClientDomainService {
     public OAuth2ClientEntity updateClient(OAuth2ClientEntity client) {
         // 业务规则：clientId 必须唯一
         validateClientIdUnique(client.getClientId(), client.getId());
+        validateClientConfiguration(client);
 
         // 如果密钥被更新，需要重新加密
         OAuth2ClientEntity existing = oauth2ClientRepository.selectById(client.getId());
         if (existing == null) {
             throw new BusinessException(OAuth2ErrorCode.CLIENT_NOT_FOUND);
+        }
+
+        if (client.isPublicClient()) {
+            client.setClientSecretEnc(null);
+            oauth2ClientRepository.updateById(client);
+            return client;
         }
 
         // 处理客户端密钥更新：
@@ -76,7 +89,9 @@ public class OAuth2ClientDomainService {
         String incomingSecret = client.getClientSecretEnc();
         String existingEncrypted = existing.getClientSecretEnc();
 
-        if (incomingSecret == null || incomingSecret.isBlank()) {
+        if ((existingEncrypted == null || existingEncrypted.isBlank()) && (incomingSecret == null || incomingSecret.isBlank())) {
+            throw new IllegalArgumentException("非公开客户端密钥不能为空");
+        } else if (incomingSecret == null || incomingSecret.isBlank()) {
             // 未传入密钥，保持不变
             client.setClientSecretEnc(existingEncrypted);
         } else if (incomingSecret.equals(existingEncrypted)) {
@@ -100,6 +115,9 @@ public class OAuth2ClientDomainService {
      */
     public String regenerateClientSecret(String clientId) {
         OAuth2ClientEntity client = getClientByClientId(clientId);
+        if (client.isPublicClient()) {
+            throw new IllegalArgumentException("公开客户端不使用客户端密钥");
+        }
 
         // 生成新的密钥
         String newSecret = generateClientSecret();
@@ -177,6 +195,9 @@ public class OAuth2ClientDomainService {
      */
     public boolean validateClientSecret(String clientId, String rawSecret) {
         OAuth2ClientEntity client = getClientByClientId(clientId);
+        if (rawSecret == null || rawSecret.isBlank() || client.getClientSecretEnc() == null || client.getClientSecretEnc().isBlank()) {
+            return false;
+        }
         return passwordEncoder.matches(rawSecret, client.getClientSecretEnc());
     }
 
@@ -199,6 +220,20 @@ public class OAuth2ClientDomainService {
 
         if (oauth2ClientRepository.exists(queryWrapper)) {
             throw new BusinessException(OAuth2ErrorCode.CLIENT_ID_ALREADY_EXISTS);
+        }
+    }
+
+    private void validateClientConfiguration(OAuth2ClientEntity client) {
+        if (client == null) {
+            return;
+        }
+        if (client.isPublicClient()) {
+            if (!Boolean.TRUE.equals(client.getRequireProofKey())) {
+                throw new IllegalArgumentException("公开客户端必须启用PKCE");
+            }
+            if (client.isGrantTypeSupported(GrantType.CLIENT_CREDENTIALS.getValue())) {
+                throw new IllegalArgumentException("公开客户端不能使用client_credentials授权类型");
+            }
         }
     }
 

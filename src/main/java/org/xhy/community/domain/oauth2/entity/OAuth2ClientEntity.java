@@ -1,13 +1,17 @@
 package org.xhy.community.domain.oauth2.entity;
 
+import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import org.xhy.community.domain.common.entity.BaseEntity;
+import org.xhy.community.domain.oauth2.valueobject.ClientAuthenticationMethod;
 import org.xhy.community.domain.oauth2.valueobject.OAuth2ClientStatus;
 import org.xhy.community.infrastructure.converter.OAuth2ClientStatusConverter;
 
+import java.net.URI;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * OAuth2 客户端实体
@@ -20,6 +24,7 @@ public class OAuth2ClientEntity extends BaseEntity {
     private String clientId;
 
     /** 客户端密钥（加密存储） */
+    @TableField(updateStrategy = FieldStrategy.ALWAYS)
     private String clientSecretEnc;
 
     /** 客户端名称（应用名称） */
@@ -104,7 +109,13 @@ public class OAuth2ClientEntity extends BaseEntity {
      * 验证重定向URI是否合法
      */
     public boolean isValidRedirectUri(String redirectUri) {
-        return redirectUris != null && redirectUris.contains(redirectUri);
+        if (redirectUri == null || redirectUri.isBlank() || redirectUris == null) {
+            return false;
+        }
+        if (redirectUris.contains(redirectUri)) {
+            return true;
+        }
+        return isAllowedLoopbackRedirectUri(redirectUri);
     }
 
     /**
@@ -119,6 +130,72 @@ public class OAuth2ClientEntity extends BaseEntity {
      */
     public boolean isScopeAllowed(String scope) {
         return scopes != null && scopes.contains(scope);
+    }
+
+    /**
+     * 判断客户端是否支持指定认证方式。
+     */
+    public boolean supportsClientAuthenticationMethod(String method) {
+        return method != null
+                && clientAuthenticationMethods != null
+                && clientAuthenticationMethods.contains(method);
+    }
+
+    /**
+     * public client 不持有 client_secret，必须配合 PKCE 使用。
+     */
+    public boolean isPublicClient() {
+        return supportsClientAuthenticationMethod(ClientAuthenticationMethod.NONE.getValue());
+    }
+
+    private boolean isAllowedLoopbackRedirectUri(String redirectUri) {
+        if (!isPublicClient()) {
+            return false;
+        }
+        URI requested = parseUri(redirectUri);
+        if (!isLoopbackCallbackUri(requested) || requested.getPort() <= 0) {
+            return false;
+        }
+
+        for (String registeredRedirectUri : redirectUris) {
+            URI registered = parseUri(registeredRedirectUri);
+            if (!isLoopbackCallbackUri(registered)) {
+                continue;
+            }
+            if (!Objects.equals(normalizeLoopbackHost(registered.getHost()), normalizeLoopbackHost(requested.getHost()))) {
+                continue;
+            }
+            int registeredPort = registered.getPort();
+            if (registeredPort == -1 || registeredPort == 0 || registeredPort == requested.getPort()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private URI parseUri(String uri) {
+        try {
+            return URI.create(uri);
+        } catch (IllegalArgumentException ex) {
+            return null;
+        }
+    }
+
+    private boolean isLoopbackCallbackUri(URI uri) {
+        if (uri == null) {
+            return false;
+        }
+        String scheme = uri.getScheme();
+        String host = uri.getHost();
+        return "http".equalsIgnoreCase(scheme)
+                && ("127.0.0.1".equals(host) || "localhost".equalsIgnoreCase(host))
+                && "/callback".equals(uri.getPath())
+                && uri.getQuery() == null
+                && uri.getFragment() == null;
+    }
+
+    private String normalizeLoopbackHost(String host) {
+        return host == null ? null : host.toLowerCase();
     }
 
     // Getters and Setters

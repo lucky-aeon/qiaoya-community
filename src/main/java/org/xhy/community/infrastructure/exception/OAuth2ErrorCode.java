@@ -23,6 +23,8 @@ public enum OAuth2ErrorCode implements ErrorCode {
     // 授权码相关错误 (3320-3329)
     INVALID_AUTHORIZATION_CODE(3320, "无效的授权码"),
     EXPIRED_AUTHORIZATION_CODE(3321, "授权码已过期"),
+    INVALID_PKCE_CHALLENGE(3322, "无效的PKCE挑战参数"),
+    INVALID_PKCE_VERIFIER(3323, "无效的PKCE校验参数"),
 
     // Token相关错误 (3330-3339)
     INVALID_ACCESS_TOKEN(3330, "无效的Access Token"),
