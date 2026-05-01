@@ -185,6 +185,15 @@ public class UserDomainService {
         return user;
     }
 
+    public UserEntity completePlusGuide(String userId) {
+        UserEntity user = getUserById(userId);
+        if (user.getPlusGuideCompletedAt() == null) {
+            user.completePlusGuide();
+            userRepository.updateById(user);
+        }
+        return user;
+    }
+
     public void deleteUser(String userId) {
         getUserById(userId); // 验证用户存在
         userRepository.deleteById(userId);

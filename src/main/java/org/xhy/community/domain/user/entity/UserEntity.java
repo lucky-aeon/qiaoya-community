@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import org.springframework.util.StringUtils;
 import org.xhy.community.domain.common.entity.BaseEntity;
+import java.time.LocalDateTime;
 import org.xhy.community.domain.user.valueobject.UserStatus;
 import org.xhy.community.domain.user.valueobject.UserRole;
 import org.xhy.community.infrastructure.converter.UserStatusConverter;
@@ -42,7 +43,10 @@ public class UserEntity extends BaseEntity {
     
     /** 最大并发设备数，范围：1-10 */
     private Integer maxConcurrentDevices;
-    
+
+    /** Plus 指引完成时间，NULL 表示未完成 */
+    private LocalDateTime plusGuideCompletedAt;
+
     public UserEntity() {
     }
     
@@ -144,7 +148,14 @@ public class UserEntity extends BaseEntity {
     }
     
     public Integer getMaxConcurrentDevices() { return maxConcurrentDevices; }
-    public void setMaxConcurrentDevices(Integer maxConcurrentDevices) { 
-        this.maxConcurrentDevices = maxConcurrentDevices; 
+    public void setMaxConcurrentDevices(Integer maxConcurrentDevices) {
+        this.maxConcurrentDevices = maxConcurrentDevices;
+    }
+
+    public LocalDateTime getPlusGuideCompletedAt() { return plusGuideCompletedAt; }
+    public void setPlusGuideCompletedAt(LocalDateTime plusGuideCompletedAt) { this.plusGuideCompletedAt = plusGuideCompletedAt; }
+
+    public void completePlusGuide() {
+        this.plusGuideCompletedAt = LocalDateTime.now();
     }
 }

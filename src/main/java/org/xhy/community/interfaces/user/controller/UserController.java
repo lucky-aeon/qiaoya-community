@@ -86,6 +86,21 @@ public class UserController {
         UserDTO user = userAppService.toggleEmailNotification(userId);
         return ApiResponse.success("邮箱通知设置修改成功", user);
     }
+
+    /**
+     * 标记 Plus 指引完成
+     * 记录当前用户已完成 Plus 套餐引导导览
+     * 需要JWT令牌认证
+     *
+     * @return 更新后的用户信息
+     */
+    @PostMapping("/plus-guide/complete")
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "USER_PLUS_GUIDE_COMPLETE", name = "标记Plus指引完成")})
+    public ApiResponse<UserDTO> completePlusGuide() {
+        String userId = UserContext.getCurrentUserId();
+        UserDTO user = userAppService.completePlusGuide(userId);
+        return ApiResponse.success("Plus指引已标记完成", user);
+    }
     
     /**
      * 查看当前用户信息

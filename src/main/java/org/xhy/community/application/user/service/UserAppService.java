@@ -242,8 +242,13 @@ public class UserAppService {
         UserEntity currentUser = userDomainService.getUserById(userId);
         Boolean currentSetting = currentUser.getEmailNotificationEnabled();
         Boolean newSetting = !Boolean.TRUE.equals(currentSetting);
-        
+
         UserEntity user = userDomainService.updateUserSettings(userId, newSetting, null);
+        return UserAssembler.toDTO(user);
+    }
+
+    public UserDTO completePlusGuide(String userId) {
+        UserEntity user = userDomainService.completePlusGuide(userId);
         return UserAssembler.toDTO(user);
     }
     

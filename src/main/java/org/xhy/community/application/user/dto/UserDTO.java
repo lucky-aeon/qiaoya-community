@@ -16,6 +16,7 @@ public class UserDTO {
     private UserStatus status;
     private Boolean emailNotificationEnabled;
     private Integer maxConcurrentDevices;
+    private LocalDateTime plusGuideCompletedAt;
     private UserRole role;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
@@ -54,10 +55,13 @@ public class UserDTO {
     }
     
     public Integer getMaxConcurrentDevices() { return maxConcurrentDevices; }
-    public void setMaxConcurrentDevices(Integer maxConcurrentDevices) { 
-        this.maxConcurrentDevices = maxConcurrentDevices; 
+    public void setMaxConcurrentDevices(Integer maxConcurrentDevices) {
+        this.maxConcurrentDevices = maxConcurrentDevices;
     }
-    
+
+    public LocalDateTime getPlusGuideCompletedAt() { return plusGuideCompletedAt; }
+    public void setPlusGuideCompletedAt(LocalDateTime plusGuideCompletedAt) { this.plusGuideCompletedAt = plusGuideCompletedAt; }
+
     public LocalDateTime getCreateTime() { return createTime; }
     public void setCreateTime(LocalDateTime createTime) { this.createTime = createTime; }
     
