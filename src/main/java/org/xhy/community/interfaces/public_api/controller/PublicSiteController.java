@@ -7,6 +7,9 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import org.xhy.community.application.site.dto.CreatorAboutPageDTO;
 import org.xhy.community.application.site.service.CreatorAboutPageAppService;
+import org.xhy.community.domain.config.valueobject.PlusGuideConfig;
+import org.xhy.community.domain.config.service.SystemConfigDomainService;
+import org.xhy.community.domain.config.valueobject.SystemConfigType;
 import org.xhy.community.infrastructure.config.ApiResponse;
 import org.xhy.community.infrastructure.exception.BusinessException;
 import org.xhy.community.infrastructure.exception.SystemConfigErrorCode;
@@ -16,9 +19,12 @@ import org.xhy.community.infrastructure.exception.SystemConfigErrorCode;
 public class PublicSiteController {
 
     private final CreatorAboutPageAppService creatorAboutPageAppService;
+    private final SystemConfigDomainService systemConfigDomainService;
 
-    public PublicSiteController(CreatorAboutPageAppService creatorAboutPageAppService) {
+    public PublicSiteController(CreatorAboutPageAppService creatorAboutPageAppService,
+                                SystemConfigDomainService systemConfigDomainService) {
         this.creatorAboutPageAppService = creatorAboutPageAppService;
+        this.systemConfigDomainService = systemConfigDomainService;
     }
 
     @GetMapping("/about")
@@ -31,5 +37,12 @@ public class PublicSiteController {
             }
             throw ex;
         }
+    }
+
+    @GetMapping("/plus-guide-config")
+    public ApiResponse<PlusGuideConfig> getPlusGuideConfig() {
+        PlusGuideConfig config = systemConfigDomainService.getConfigData(
+            SystemConfigType.PLUS_GUIDE, PlusGuideConfig.class);
+        return ApiResponse.success(config != null ? config : new PlusGuideConfig());
     }
 }
