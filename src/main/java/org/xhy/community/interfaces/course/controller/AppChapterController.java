@@ -2,8 +2,10 @@ package org.xhy.community.interfaces.course.controller;
 
 import org.springframework.web.bind.annotation.*;
 import org.xhy.community.application.course.dto.FrontChapterDetailDTO;
+import org.xhy.community.application.course.dto.ChapterTranscriptDTO;
 import org.xhy.community.application.course.dto.LatestChapterDTO;
 import org.xhy.community.application.course.service.ChapterAppService;
+import org.xhy.community.application.course.service.ChapterTranscriptAppService;
 import org.xhy.community.infrastructure.config.ApiResponse;
 import org.xhy.community.infrastructure.config.UserContext;
 import org.xhy.community.infrastructure.annotation.RequiresPlanPermissions;
@@ -20,9 +22,12 @@ import java.util.List;
 public class AppChapterController {
 
     private final ChapterAppService chapterAppService;
+    private final ChapterTranscriptAppService chapterTranscriptAppService;
 
-    public AppChapterController(ChapterAppService chapterAppService) {
+    public AppChapterController(ChapterAppService chapterAppService,
+                                ChapterTranscriptAppService chapterTranscriptAppService) {
         this.chapterAppService = chapterAppService;
+        this.chapterTranscriptAppService = chapterTranscriptAppService;
     }
 
     /**
@@ -42,6 +47,17 @@ public class AppChapterController {
         String userId = UserContext.getCurrentUserId();
         FrontChapterDetailDTO chapterDetail = chapterAppService.getChapterById(id, userId);
         return ApiResponse.success(chapterDetail);
+    }
+
+    /**
+     * 获取章节视频文字稿
+     * 只返回用户有权限访问的章节文字稿；未生成时返回 NOT_GENERATED 状态。
+     */
+    @GetMapping("/{id}/transcript")
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "CHAPTER_APP_TRANSCRIPT", name = "前台章节视频文字稿")})
+    public ApiResponse<ChapterTranscriptDTO> getChapterTranscript(@PathVariable String id) {
+        String userId = UserContext.getCurrentUserId();
+        return ApiResponse.success(chapterTranscriptAppService.getChapterTranscript(id, userId));
     }
 
     /**

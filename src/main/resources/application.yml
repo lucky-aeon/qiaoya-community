@@ -158,3 +158,18 @@ backup:
   # 容器内可见的报表目录，建议通过 Docker 将宿主机路径只读挂载到该目录
   # 宿主机路径：/www/project/qiaoya/backup/reports -> 容器内：/data/db-backups/reports
   reports-dir: ${BACKUP_REPORTS_DIR:/www/project/qiaoya/backup/reports}
+
+# 课程视频转写与 AI 课代表配置
+transcript:
+  enabled: ${TRANSCRIPT_ENABLED:true}
+  provider: ${TRANSCRIPT_PROVIDER:dashscope-qwen-asr}
+  model: ${TRANSCRIPT_MODEL:qwen3-asr-flash-filetrans}
+  language: ${TRANSCRIPT_LANGUAGE:zh}
+  file-url-expiration-seconds: ${TRANSCRIPT_FILE_URL_EXPIRATION_SECONDS:43200}
+  poll:
+    fixed-delay-ms: ${TRANSCRIPT_POLL_FIXED_DELAY_MS:60000}
+    submit-limit: ${TRANSCRIPT_SUBMIT_LIMIT:5}
+    query-limit: ${TRANSCRIPT_QUERY_LIMIT:10}
+  dashscope:
+    api-key: ${DASHSCOPE_API_KEY:sk-a9e1b2f641b74505abccfd11d906be9e}
+    base-url: ${DASHSCOPE_BASE_URL:https://dashscope.aliyuncs.com}

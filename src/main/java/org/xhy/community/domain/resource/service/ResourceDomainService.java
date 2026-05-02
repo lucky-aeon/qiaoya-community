@@ -88,12 +88,23 @@ public class ResourceDomainService {
     }
     
     public String getDownloadUrl(String resourceId) {
+        return getDownloadUrl(resourceId, null);
+    }
+
+    public String getDownloadUrl(String resourceId, Long expirationSeconds) {
         ResourceEntity resource = getResourceById(resourceId);
-        String presignedUrl = aliyunOssService.generatePresignedDownloadUrl(resource.getFileKey());
+        String presignedUrl = expirationSeconds == null
+                ? aliyunOssService.generatePresignedDownloadUrl(resource.getFileKey())
+                : aliyunOssService.generatePresignedDownloadUrl(resource.getFileKey(), expirationSeconds);
 
         // 在URL上添加resourceId参数
         String separator = presignedUrl.contains("?") ? "&" : "?";
         return presignedUrl + separator + "resourceId=" + resourceId;
+    }
+
+    public String getOriginDownloadUrl(String resourceId, long expirationSeconds) {
+        ResourceEntity resource = getResourceById(resourceId);
+        return aliyunOssService.generatePresignedOriginDownloadUrl(resource.getFileKey(), expirationSeconds);
     }
     
     public List<ResourceEntity> getUserResources(String userId) {

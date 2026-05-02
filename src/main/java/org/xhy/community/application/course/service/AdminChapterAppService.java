@@ -25,13 +25,16 @@ public class AdminChapterAppService {
     private final ChapterDomainService chapterDomainService;
     private final ResourceBindingDomainService resourceBindingDomainService;
     private final LikeDomainService likeDomainService;
+    private final ChapterTranscriptTriggerService chapterTranscriptTriggerService;
     
     public AdminChapterAppService(ChapterDomainService chapterDomainService,
                                   ResourceBindingDomainService resourceBindingDomainService,
-                                  LikeDomainService likeDomainService) {
+                                  LikeDomainService likeDomainService,
+                                  ChapterTranscriptTriggerService chapterTranscriptTriggerService) {
         this.chapterDomainService = chapterDomainService;
         this.resourceBindingDomainService = resourceBindingDomainService;
         this.likeDomainService = likeDomainService;
+        this.chapterTranscriptTriggerService = chapterTranscriptTriggerService;
     }
     
     public ChapterDTO createChapter(CreateChapterRequest request, String authorId) {
@@ -44,12 +47,15 @@ public class AdminChapterAppService {
             resourceBindingDomainService.syncBindingsForChapterFromMarkdown(createdChapter.getId(), request.getContent());
         } catch (Exception ignore) {}
 
+        chapterTranscriptTriggerService.handleChapterSaved(null, createdChapter);
+
         ChapterDTO dto = ChapterAssembler.toDTO(createdChapter);
         dto.setLikeCount(0);
         return dto;
     }
     
     public ChapterDTO updateChapter(String chapterId, UpdateChapterRequest request) {
+        ChapterEntity before = chapterDomainService.getChapterById(chapterId);
         ChapterEntity chapter = ChapterAssembler.fromUpdateRequest(request, chapterId);
         
         ChapterEntity updatedChapter = chapterDomainService.updateChapter(chapter);
@@ -58,6 +64,8 @@ public class AdminChapterAppService {
         try {
             resourceBindingDomainService.syncBindingsForChapterFromMarkdown(updatedChapter.getId(), request.getContent());
         } catch (Exception ignore) {}
+
+        chapterTranscriptTriggerService.handleChapterSaved(before, updatedChapter);
 
         ChapterDTO dto = ChapterAssembler.toDTO(updatedChapter);
         dto.setLikeCount(LikeCountHelper.getLikeCount(updatedChapter.getId(), LikeTargetType.CHAPTER, likeDomainService));
