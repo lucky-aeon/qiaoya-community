@@ -5,6 +5,8 @@ import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 import org.xhy.community.application.course.dto.ChapterDTO;
 import org.xhy.community.application.course.service.AdminChapterAppService;
+import org.xhy.community.application.transcript.dto.AdminChapterTranscriptDTO;
+import org.xhy.community.application.transcript.service.ChapterTranscriptAppService;
 import org.xhy.community.infrastructure.config.ApiResponse;
 import org.xhy.community.infrastructure.config.UserContext;
 import org.xhy.community.interfaces.course.request.CreateChapterRequest;
@@ -26,9 +28,12 @@ import java.util.List;
 public class AdminChapterController {
     
     private final AdminChapterAppService adminChapterAppService;
+    private final ChapterTranscriptAppService chapterTranscriptAppService;
     
-    public AdminChapterController(AdminChapterAppService adminChapterAppService) {
+    public AdminChapterController(AdminChapterAppService adminChapterAppService,
+                                  ChapterTranscriptAppService chapterTranscriptAppService) {
         this.adminChapterAppService = adminChapterAppService;
+        this.chapterTranscriptAppService = chapterTranscriptAppService;
     }
     
     /**
@@ -135,5 +140,22 @@ public class AdminChapterController {
     public ApiResponse<Void> batchUpdateChapterOrder(@Valid @RequestBody BatchUpdateChapterOrderRequest request) {
         adminChapterAppService.batchUpdateChapterOrder(request);
         return ApiResponse.success("更新章节顺序成功");
+    }
+
+    @GetMapping("/{id}/transcript")
+    public ApiResponse<AdminChapterTranscriptDTO> getChapterTranscript(@PathVariable String id) {
+        return ApiResponse.success(chapterTranscriptAppService.getAdminTranscript(id));
+    }
+
+    @PostMapping("/{id}/transcript/retry")
+    public ApiResponse<AdminChapterTranscriptDTO> retryChapterTranscript(@PathVariable String id) {
+        AdminChapterTranscriptDTO transcript = chapterTranscriptAppService.retry(id);
+        return ApiResponse.success("已提交重试", transcript);
+    }
+
+    @PostMapping("/{id}/transcript/regenerate")
+    public ApiResponse<AdminChapterTranscriptDTO> regenerateChapterTranscript(@PathVariable String id) {
+        AdminChapterTranscriptDTO transcript = chapterTranscriptAppService.regenerate(id);
+        return ApiResponse.success("已重新生成", transcript);
     }
 }

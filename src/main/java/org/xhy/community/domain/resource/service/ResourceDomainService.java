@@ -95,6 +95,11 @@ public class ResourceDomainService {
         String separator = presignedUrl.contains("?") ? "&" : "?";
         return presignedUrl + separator + "resourceId=" + resourceId;
     }
+
+    public String getProviderDownloadUrl(String resourceId, Long expirationSeconds) {
+        ResourceEntity resource = getResourceById(resourceId);
+        return aliyunOssService.generateProviderPresignedDownloadUrl(resource.getFileKey(), expirationSeconds);
+    }
     
     public List<ResourceEntity> getUserResources(String userId) {
         LambdaQueryWrapper<ResourceEntity> queryWrapper = new LambdaQueryWrapper<ResourceEntity>()

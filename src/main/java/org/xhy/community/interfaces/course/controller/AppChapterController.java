@@ -3,6 +3,7 @@ package org.xhy.community.interfaces.course.controller;
 import org.springframework.web.bind.annotation.*;
 import org.xhy.community.application.course.dto.FrontChapterDetailDTO;
 import org.xhy.community.application.course.dto.LatestChapterDTO;
+import org.xhy.community.application.transcript.dto.ChapterTranscriptDTO;
 import org.xhy.community.application.course.service.ChapterAppService;
 import org.xhy.community.infrastructure.config.ApiResponse;
 import org.xhy.community.infrastructure.config.UserContext;
@@ -55,5 +56,13 @@ public class AppChapterController {
     public ApiResponse<List<LatestChapterDTO>> getLatestChapters() {
         List<LatestChapterDTO> chapters = chapterAppService.getLatestChapters();
         return ApiResponse.success(chapters);
+    }
+
+    @GetMapping("/{id}/transcript")
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "CHAPTER_APP_TRANSCRIPT", name = "章节文字稿")})
+    public ApiResponse<ChapterTranscriptDTO> getChapterTranscript(@PathVariable String id) {
+        String userId = UserContext.getCurrentUserId();
+        ChapterTranscriptDTO transcript = chapterAppService.getChapterTranscript(id, userId);
+        return ApiResponse.success(transcript);
     }
 }

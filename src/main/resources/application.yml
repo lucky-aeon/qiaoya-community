@@ -46,15 +46,14 @@ spring:
   # Spring AI 配置
   ai:
     openai:
-      # API Key（建议使用环境变量）
-      api-key: ${AI_API_KEY:sk-vvuygphyytcyyordwrcbcjuvctkzmguaqlyhbkipuhcvxibi}
-      # Base URL（可选，支持兼容 OpenAI 接口的其他模型服务）
-      base-url: ${AI_OPENAI_BASE_URL:https://api.siliconflow.cn}
-      # 聊天模型配置（可选）
+      # 百炼 OpenAI 兼容模式 API Key；优先单独配置 AI_API_KEY，默认复用 DASHSCOPE_API_KEY
+      api-key: ${AI_API_KEY}
+      # Spring AI 会自动追加 chat.completions-path，base-url 这里不能带 /v1
+      base-url: ${AI_OPENAI_BASE_URL:https://api.deepseek.com}
       chat:
+        completions-path: ${AI_OPENAI_CHAT_COMPLETIONS_PATH:/chat/completions}
         options:
-          model: ${AI_MODEL:Qwen/Qwen3-VL-30B-A3B-Instruct}
-          temperature: 0.7
+          model: ${AI_MODEL:deepseek-v4-pro}
 
 # MyBatis Plus配置
 mybatis-plus:
@@ -151,6 +150,23 @@ oauth2:
 github:
   # 建议在服务端配置 PAT，避免匿名 API 触发低频率限制
   api-token: ${GITHUB_API_TOKEN:}
+
+# 课程章节视频转文字配置
+transcript:
+  enabled: ${TRANSCRIPT_ENABLED:true}
+  provider: ${TRANSCRIPT_PROVIDER:DASHSCOPE_QWEN_ASR}
+  model: ${TRANSCRIPT_MODEL:qwen3-asr-flash-filetrans}
+  language: ${TRANSCRIPT_LANGUAGE:zh}
+  enable-words: ${TRANSCRIPT_ENABLE_WORDS:true}
+  enable-itn: ${TRANSCRIPT_ENABLE_ITN:false}
+  poll-limit: ${TRANSCRIPT_POLL_LIMIT:10}
+  poll-fixed-delay-ms: ${TRANSCRIPT_POLL_FIXED_DELAY_MS:30000}
+  provider-file-url-expiration-seconds: ${TRANSCRIPT_PROVIDER_FILE_URL_EXPIRATION_SECONDS:172800}
+  price-per-second: ${TRANSCRIPT_PRICE_PER_SECOND:0.00022}
+  dashscope:
+    api-key: ${DASHSCOPE_API_KEY}
+    submit-url: ${DASHSCOPE_SUBMIT_URL:https://dashscope.aliyuncs.com/api/v1/services/audio/asr/transcription}
+    task-url-prefix: ${DASHSCOPE_TASK_URL_PREFIX:https://dashscope.aliyuncs.com/api/v1/tasks/}
 
 # 备份报表读取配置（平台查看备份情况）
 backup:

@@ -256,6 +256,17 @@ public class AliyunOssService {
     }
     
     public String generatePresignedDownloadUrl(String fileKey) {
+        return generatePresignedDownloadUrl(fileKey, ossProperties.getPresignedUrlExpiration(), true);
+    }
+
+    public String generateProviderPresignedDownloadUrl(String fileKey, Long expirationSeconds) {
+        long expires = expirationSeconds == null || expirationSeconds <= 0
+                ? ossProperties.getPresignedUrlExpiration()
+                : expirationSeconds;
+        return generatePresignedDownloadUrl(fileKey, expires, false);
+    }
+
+    private String generatePresignedDownloadUrl(String fileKey, Long expirationSeconds, boolean useCustomDomain) {
         OSS ossClient = new OSSClientBuilder().build(
                 ossProperties.getEndpoint(),
                 ossProperties.getAccessKeyId(),
@@ -263,7 +274,7 @@ public class AliyunOssService {
         );
 
         try {
-            Date expiration = new Date(System.currentTimeMillis() + ossProperties.getPresignedUrlExpiration() * 1000);
+            Date expiration = new Date(System.currentTimeMillis() + expirationSeconds * 1000);
             GeneratePresignedUrlRequest request = new GeneratePresignedUrlRequest(
                     ossProperties.getBucketName(),
                     sanitizeKey(fileKey)
@@ -274,7 +285,7 @@ public class AliyunOssService {
             String urlString = url.toString();
 
             // 如果配置了自定义域名,替换URL中的域名部分
-            if (ossProperties.getCustomDomain() != null && !ossProperties.getCustomDomain().isEmpty()) {
+            if (useCustomDomain && ossProperties.getCustomDomain() != null && !ossProperties.getCustomDomain().isEmpty()) {
                 // 构造原始的bucket域名: bucket-name.oss-region.aliyuncs.com
                 String bucketDomain = String.format("%s.oss-%s.aliyuncs.com",
                         ossProperties.getBucketName(),

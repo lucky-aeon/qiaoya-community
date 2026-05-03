@@ -5,6 +5,8 @@ import org.xhy.community.application.course.assembler.ChapterAssembler;
 import org.xhy.community.application.course.dto.FrontChapterDetailDTO;
 import org.xhy.community.application.course.dto.ChapterContentType;
 import org.xhy.community.application.course.dto.LatestChapterDTO;
+import org.xhy.community.application.transcript.dto.ChapterTranscriptDTO;
+import org.xhy.community.application.transcript.service.ChapterTranscriptAppService;
 import org.xhy.community.domain.course.entity.ChapterEntity;
 import org.xhy.community.domain.course.entity.CourseEntity;
 import org.xhy.community.domain.course.service.ChapterDomainService;
@@ -40,19 +42,22 @@ public class ChapterAppService {
     private final LikeDomainService likeDomainService;
     private final MarkdownParser markdownParser;
     private final DiscussionSummaryDomainService discussionSummaryDomainService;
+    private final ChapterTranscriptAppService chapterTranscriptAppService;
 
     public ChapterAppService(ChapterDomainService chapterDomainService,
                             CourseDomainService courseDomainService,
                             UserPermissionAppService userPermissionAppService,
                             LikeDomainService likeDomainService,
                             MarkdownParser markdownParser,
-                            DiscussionSummaryDomainService discussionSummaryDomainService) {
+                            DiscussionSummaryDomainService discussionSummaryDomainService,
+                            ChapterTranscriptAppService chapterTranscriptAppService) {
         this.chapterDomainService = chapterDomainService;
         this.courseDomainService = courseDomainService;
         this.userPermissionAppService = userPermissionAppService;
         this.likeDomainService = likeDomainService;
         this.markdownParser = markdownParser;
         this.discussionSummaryDomainService = discussionSummaryDomainService;
+        this.chapterTranscriptAppService = chapterTranscriptAppService;
     }
 
     /**
@@ -118,6 +123,10 @@ public class ChapterAppService {
         return chapters.stream()
                 .map(chapter -> convertToLatestChapterDTO(chapter, courseTitleMap))
                 .collect(Collectors.toList());
+    }
+
+    public ChapterTranscriptDTO getChapterTranscript(String chapterId, String userId) {
+        return chapterTranscriptAppService.getAppTranscript(chapterId, userId);
     }
 
     private LatestChapterDTO convertToLatestChapterDTO(ChapterEntity chapter, Map<String, String> courseTitleMap) {

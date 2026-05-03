@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import org.springframework.stereotype.Service;
 import org.xhy.community.application.course.assembler.ChapterAssembler;
 import org.xhy.community.application.course.dto.ChapterDTO;
+import org.xhy.community.application.transcript.service.ChapterTranscriptAppService;
 import org.xhy.community.domain.course.entity.ChapterEntity;
 import org.xhy.community.domain.course.service.ChapterDomainService;
 import org.xhy.community.domain.resourcebinding.service.ResourceBindingDomainService;
@@ -25,13 +26,16 @@ public class AdminChapterAppService {
     private final ChapterDomainService chapterDomainService;
     private final ResourceBindingDomainService resourceBindingDomainService;
     private final LikeDomainService likeDomainService;
+    private final ChapterTranscriptAppService chapterTranscriptAppService;
     
     public AdminChapterAppService(ChapterDomainService chapterDomainService,
                                   ResourceBindingDomainService resourceBindingDomainService,
-                                  LikeDomainService likeDomainService) {
+                                  LikeDomainService likeDomainService,
+                                  ChapterTranscriptAppService chapterTranscriptAppService) {
         this.chapterDomainService = chapterDomainService;
         this.resourceBindingDomainService = resourceBindingDomainService;
         this.likeDomainService = likeDomainService;
+        this.chapterTranscriptAppService = chapterTranscriptAppService;
     }
     
     public ChapterDTO createChapter(CreateChapterRequest request, String authorId) {
@@ -42,6 +46,9 @@ public class AdminChapterAppService {
         // 同步章节中的资源绑定（Domain 解析 Markdown 并抽取业务ID）
         try {
             resourceBindingDomainService.syncBindingsForChapterFromMarkdown(createdChapter.getId(), request.getContent());
+        } catch (Exception ignore) {}
+        try {
+            chapterTranscriptAppService.createPendingTaskForChapter(createdChapter);
         } catch (Exception ignore) {}
 
         ChapterDTO dto = ChapterAssembler.toDTO(createdChapter);
@@ -57,6 +64,9 @@ public class AdminChapterAppService {
         // 同步章节中的资源绑定（Domain 解析 Markdown 并抽取业务ID）
         try {
             resourceBindingDomainService.syncBindingsForChapterFromMarkdown(updatedChapter.getId(), request.getContent());
+        } catch (Exception ignore) {}
+        try {
+            chapterTranscriptAppService.createPendingTaskForChapter(updatedChapter);
         } catch (Exception ignore) {}
 
         ChapterDTO dto = ChapterAssembler.toDTO(updatedChapter);

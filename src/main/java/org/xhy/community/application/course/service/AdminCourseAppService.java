@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.stereotype.Service;
 import org.xhy.community.application.course.assembler.CourseAssembler;
 import org.xhy.community.application.course.dto.CourseDTO;
+import org.xhy.community.application.transcript.service.ChapterTranscriptAppService;
 import org.xhy.community.domain.course.entity.CourseEntity;
 import org.xhy.community.domain.course.query.CourseQuery;
 import org.xhy.community.domain.course.service.CourseDomainService;
@@ -23,11 +24,14 @@ public class AdminCourseAppService {
     
     private final CourseDomainService courseDomainService;
     private final LikeDomainService likeDomainService;
+    private final ChapterTranscriptAppService chapterTranscriptAppService;
     
     public AdminCourseAppService(CourseDomainService courseDomainService,
-                                 LikeDomainService likeDomainService) {
+                                 LikeDomainService likeDomainService,
+                                 ChapterTranscriptAppService chapterTranscriptAppService) {
         this.courseDomainService = courseDomainService;
         this.likeDomainService = likeDomainService;
+        this.chapterTranscriptAppService = chapterTranscriptAppService;
     }
     
     public CourseDTO createCourse(CreateCourseRequest request, String authorId) {
@@ -66,5 +70,9 @@ public class AdminCourseAppService {
             LikeCountHelper.fillLikeCount(dtoPage.getRecords(), CourseDTO::getId, LikeTargetType.COURSE, CourseDTO::setLikeCount, likeDomainService);
         }
         return dtoPage;
+    }
+
+    public int batchGenerateCourseTranscripts(String courseId) {
+        return chapterTranscriptAppService.batchGenerateByCourse(courseId);
     }
 }

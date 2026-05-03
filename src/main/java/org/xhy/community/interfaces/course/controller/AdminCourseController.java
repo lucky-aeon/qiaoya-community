@@ -14,6 +14,8 @@ import org.xhy.community.interfaces.course.request.CourseQueryRequest;
 import org.xhy.community.infrastructure.annotation.ActivityLog;
 import org.xhy.community.domain.common.valueobject.ActivityType;
 
+import java.util.Map;
+
 /**
  * 管理员课程管理控制器
  * 提供课程的增删改查等管理功能，需要管理员权限
@@ -88,5 +90,11 @@ public class AdminCourseController {
     public ApiResponse<IPage<CourseDTO>> getCourses(CourseQueryRequest request) {
         IPage<CourseDTO> courses = adminCourseAppService.getPagedCourses(request);
         return ApiResponse.success(courses);
+    }
+
+    @PostMapping("/{id}/transcripts/batch")
+    public ApiResponse<Map<String, Integer>> batchGenerateTranscripts(@PathVariable String id) {
+        int count = adminCourseAppService.batchGenerateCourseTranscripts(id);
+        return ApiResponse.success("已创建批量生成任务", Map.of("count", count));
     }
 }
