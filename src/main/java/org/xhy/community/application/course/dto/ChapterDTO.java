@@ -1,5 +1,7 @@
 package org.xhy.community.application.course.dto;
 
+import org.xhy.community.application.transcript.dto.AdminChapterTranscriptDTO;
+
 import java.time.LocalDateTime;
 
 public class ChapterDTO {
@@ -14,6 +16,7 @@ public class ChapterDTO {
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
     private Integer likeCount;
+    private AdminChapterTranscriptDTO transcript;
     
     public ChapterDTO() {
     }
@@ -48,4 +51,7 @@ public class ChapterDTO {
 
     public Integer getLikeCount() { return likeCount; }
     public void setLikeCount(Integer likeCount) { this.likeCount = likeCount; }
+
+    public AdminChapterTranscriptDTO getTranscript() { return transcript; }
+    public void setTranscript(AdminChapterTranscriptDTO transcript) { this.transcript = transcript; }
 }

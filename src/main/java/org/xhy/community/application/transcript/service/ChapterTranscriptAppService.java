@@ -37,8 +37,11 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -136,6 +139,26 @@ public class ChapterTranscriptAppService {
             return notGeneratedAdmin(chapterId);
         }
         return toAdminDTO(transcript);
+    }
+
+    public Map<String, AdminChapterTranscriptDTO> getAdminTranscriptMap(Collection<String> chapterIds) {
+        if (chapterIds == null || chapterIds.isEmpty()) {
+            return Map.of();
+        }
+        List<String> normalizedChapterIds = chapterIds.stream()
+                .filter(StringUtils::hasText)
+                .distinct()
+                .toList();
+        if (normalizedChapterIds.isEmpty()) {
+            return Map.of();
+        }
+        Map<String, ChapterTranscriptEntity> transcriptMap = transcriptDomainService.getLatestActiveMapByChapterIds(normalizedChapterIds);
+        Map<String, AdminChapterTranscriptDTO> result = new LinkedHashMap<>();
+        for (String chapterId : normalizedChapterIds) {
+            ChapterTranscriptEntity transcript = transcriptMap.get(chapterId);
+            result.put(chapterId, transcript == null ? notGeneratedAdmin(chapterId) : toAdminDTO(transcript));
+        }
+        return result;
     }
 
     @Transactional

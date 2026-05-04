@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import org.springframework.stereotype.Service;
 import org.xhy.community.application.course.assembler.ChapterAssembler;
 import org.xhy.community.application.course.dto.ChapterDTO;
+import org.xhy.community.application.transcript.dto.AdminChapterTranscriptDTO;
 import org.xhy.community.application.transcript.service.ChapterTranscriptAppService;
 import org.xhy.community.domain.course.entity.ChapterEntity;
 import org.xhy.community.domain.course.service.ChapterDomainService;
@@ -18,6 +19,7 @@ import org.xhy.community.domain.like.valueobject.LikeTargetType;
 import org.xhy.community.application.like.helper.LikeCountHelper;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -53,6 +55,7 @@ public class AdminChapterAppService {
 
         ChapterDTO dto = ChapterAssembler.toDTO(createdChapter);
         dto.setLikeCount(0);
+        dto.setTranscript(chapterTranscriptAppService.getAdminTranscript(createdChapter.getId()));
         return dto;
     }
     
@@ -71,6 +74,7 @@ public class AdminChapterAppService {
 
         ChapterDTO dto = ChapterAssembler.toDTO(updatedChapter);
         dto.setLikeCount(LikeCountHelper.getLikeCount(updatedChapter.getId(), LikeTargetType.CHAPTER, likeDomainService));
+        dto.setTranscript(chapterTranscriptAppService.getAdminTranscript(updatedChapter.getId()));
         return dto;
     }
     
@@ -82,6 +86,7 @@ public class AdminChapterAppService {
         ChapterEntity chapter = chapterDomainService.getChapterById(chapterId);
         ChapterDTO dto = ChapterAssembler.toDTO(chapter);
         dto.setLikeCount(LikeCountHelper.getLikeCount(chapterId, LikeTargetType.CHAPTER, likeDomainService));
+        dto.setTranscript(chapterTranscriptAppService.getAdminTranscript(chapterId));
         return dto;
     }
     
@@ -92,6 +97,7 @@ public class AdminChapterAppService {
             .collect(Collectors.toList());
         if (!list.isEmpty()) {
             LikeCountHelper.fillLikeCount(list, ChapterDTO::getId, LikeTargetType.CHAPTER, ChapterDTO::setLikeCount, likeDomainService);
+            fillTranscripts(list);
         }
         return list;
     }
@@ -105,6 +111,7 @@ public class AdminChapterAppService {
         var dtoPage = chapterPage.convert(ChapterAssembler::toDTO);
         if (dtoPage.getRecords() != null && !dtoPage.getRecords().isEmpty()) {
             LikeCountHelper.fillLikeCount(dtoPage.getRecords(), ChapterDTO::getId, LikeTargetType.CHAPTER, ChapterDTO::setLikeCount, likeDomainService);
+            fillTranscripts(dtoPage.getRecords());
         }
         return dtoPage;
     }
@@ -114,4 +121,12 @@ public class AdminChapterAppService {
     }
 
     // 资源ID解析逻辑：由 Domain 调用 Infrastructure MarkdownParser 完成
+
+    private void fillTranscripts(List<ChapterDTO> chapters) {
+        List<String> chapterIds = chapters.stream()
+            .map(ChapterDTO::getId)
+            .toList();
+        Map<String, AdminChapterTranscriptDTO> transcriptMap = chapterTranscriptAppService.getAdminTranscriptMap(chapterIds);
+        chapters.forEach(chapter -> chapter.setTranscript(transcriptMap.get(chapter.getId())));
+    }
 }

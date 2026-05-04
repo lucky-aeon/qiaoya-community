@@ -9,7 +9,9 @@ import org.xhy.community.domain.transcript.repository.ChapterTranscriptRepositor
 import org.xhy.community.domain.transcript.repository.ChapterTranscriptSegmentRepository;
 
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class ChapterTranscriptDomainService {
@@ -28,6 +30,22 @@ public class ChapterTranscriptDomainService {
                 .eq(ChapterTranscriptEntity::getChapterId, chapterId)
                 .orderByDesc(ChapterTranscriptEntity::getCreateTime)
                 .last("LIMIT 1"));
+    }
+
+    public Map<String, ChapterTranscriptEntity> getLatestActiveMapByChapterIds(Collection<String> chapterIds) {
+        if (chapterIds == null || chapterIds.isEmpty()) {
+            return Map.of();
+        }
+        List<ChapterTranscriptEntity> transcripts = transcriptRepository.selectList(
+                new LambdaQueryWrapper<ChapterTranscriptEntity>()
+                        .in(ChapterTranscriptEntity::getChapterId, chapterIds)
+                        .orderByDesc(ChapterTranscriptEntity::getCreateTime)
+        );
+        Map<String, ChapterTranscriptEntity> result = new LinkedHashMap<>();
+        for (ChapterTranscriptEntity transcript : transcripts) {
+            result.putIfAbsent(transcript.getChapterId(), transcript);
+        }
+        return result;
     }
 
     public ChapterTranscriptEntity getActiveByChapterAndResource(String chapterId, String resourceId) {
