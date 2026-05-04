@@ -38,6 +38,21 @@ public class ChapterTranscriptDomainService {
         }
         List<ChapterTranscriptEntity> transcripts = transcriptRepository.selectList(
                 new LambdaQueryWrapper<ChapterTranscriptEntity>()
+                        .select(
+                                ChapterTranscriptEntity::getId,
+                                ChapterTranscriptEntity::getChapterId,
+                                ChapterTranscriptEntity::getResourceId,
+                                ChapterTranscriptEntity::getStatus,
+                                ChapterTranscriptEntity::getProvider,
+                                ChapterTranscriptEntity::getModel,
+                                ChapterTranscriptEntity::getProviderTaskId,
+                                ChapterTranscriptEntity::getDurationMs,
+                                ChapterTranscriptEntity::getErrorCode,
+                                ChapterTranscriptEntity::getErrorMessage,
+                                ChapterTranscriptEntity::getSubmittedAt,
+                                ChapterTranscriptEntity::getCompletedAt,
+                                ChapterTranscriptEntity::getCreateTime
+                        )
                         .in(ChapterTranscriptEntity::getChapterId, chapterIds)
                         .orderByDesc(ChapterTranscriptEntity::getCreateTime)
         );
