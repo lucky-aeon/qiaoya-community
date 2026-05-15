@@ -124,6 +124,22 @@ public class CourseDomainService {
     }
 
     /**
+     * 批量获取课程实体映射
+     */
+    public Map<String, CourseEntity> getCourseEntityMapByIds(Collection<String> courseIds) {
+        if (courseIds == null || courseIds.isEmpty()) {
+            return Map.of();
+        }
+
+        List<CourseEntity> courses = courseRepository.selectBatchIds(courseIds);
+        return courses.stream()
+                .collect(Collectors.toMap(
+                        CourseEntity::getId,
+                        course -> course
+                ));
+    }
+
+    /**
      * 发布简化的课程内容事件
      * 只包含必要的标识信息，由Application层统一处理通知逻辑
      */
