@@ -59,7 +59,7 @@ public class RequestIdFilter extends OncePerRequestFilter {
             MDC.put(MDC_IP, ClientIpUtil.getClientIp(request));
             // URI 包含查询参数，便于定位
             String uri = request.getRequestURI();
-            String qs = request.getQueryString();
+            String qs = sanitizeQueryString(request.getQueryString());
             if (StringUtils.hasText(qs)) {
                 uri = uri + "?" + qs;
             }
@@ -100,5 +100,12 @@ public class RequestIdFilter extends OncePerRequestFilter {
 
         // 生成 UUID 作为 Request ID
         return UUID.randomUUID().toString();
+    }
+
+    private String sanitizeQueryString(String queryString) {
+        if (!StringUtils.hasText(queryString)) {
+            return queryString;
+        }
+        return queryString.replaceAll("(?i)(^|&)(token=)[^&]*", "$1$2***");
     }
 }

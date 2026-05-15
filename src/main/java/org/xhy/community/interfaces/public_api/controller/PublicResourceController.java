@@ -92,8 +92,9 @@ public class PublicResourceController {
     }
 
     /**
-     * 资源访问接口（Cookie/Bearer 双通道鉴权）
+     * 资源访问接口（Cookie/Bearer/URL token 三通道鉴权）
      * - 优先从 HttpOnly Cookie: RAUTH 读取 token；若不存在则回退到 Authorization Bearer
+     * - URL token 用于移动端 Web/localhost 调试，避免跨站 Cookie 在子资源请求中被 SameSite 拦截
      * - 校验通过后生成带 token 参数的 OSS 签名 URL 并重定向
      * - CDN 远程鉴权通过 URL 中的 token 参数进行验证
      */
@@ -102,6 +103,7 @@ public class PublicResourceController {
     public ResponseEntity<Void> accessResource(@PathVariable String resourceId,
                                                @CookieValue(name = "RAUTH", required = false) String rauthCookie,
                                                @RequestHeader(value = "Authorization", required = false) String authorization,
+                                               @RequestParam(name = "token", required = false) String urlToken,
                                                HttpServletRequest request,
                                                HttpServletResponse response) {
         String token = null;
@@ -109,6 +111,8 @@ public class PublicResourceController {
             token = rauthCookie;
         } else if (StringUtils.hasText(authorization) && authorization.startsWith("Bearer ")) {
             token = authorization.substring(7);
+        } else if (StringUtils.hasText(urlToken)) {
+            token = urlToken;
         }
         if (!StringUtils.hasText(token)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
