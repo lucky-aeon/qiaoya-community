@@ -167,11 +167,20 @@ public class GithubReleaseClient {
         List<String> notes = new ArrayList<>();
         for (String line : cleaned.split("\\R")) {
             String note = line.trim().replaceFirst("^[-*]\\s+", "").trim();
-            if (StringUtils.hasText(note)) {
+            if (StringUtils.hasText(note) && !isReleaseMetadataNote(note)) {
                 notes.add(note);
             }
         }
         return notes;
+    }
+
+    private boolean isReleaseMetadataNote(String note) {
+        String lower = note.toLowerCase();
+        return lower.startsWith("versionname:")
+                || lower.startsWith("versioncode:")
+                || lower.startsWith("apk:")
+                || lower.startsWith("sha256:")
+                || lower.contains("apk 自动构建发布");
     }
 
     private String parseSha256(Map<String, Object> asset) {
