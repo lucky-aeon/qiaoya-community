@@ -150,6 +150,10 @@ oauth2:
 github:
   # 建议在服务端配置 PAT，避免匿名 API 触发低频率限制
   api-token: ${GITHUB_API_TOKEN:}
+  mobile-release:
+    owner: ${GITHUB_MOBILE_RELEASE_OWNER:xhyqaq}
+    repo: ${GITHUB_MOBILE_RELEASE_REPO:qiaoya-community-mobile}
+    cache-ttl-seconds: ${GITHUB_MOBILE_RELEASE_CACHE_TTL_SECONDS:300}
 
 # 课程章节视频转文字配置
 transcript:
