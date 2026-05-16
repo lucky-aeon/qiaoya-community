@@ -7,7 +7,6 @@ import org.xhy.community.domain.codex.service.CodexConfigDomainService;
 import org.xhy.community.domain.codex.valueobject.CodexConfig;
 import org.xhy.community.infrastructure.codex.CodexHttpClient;
 import org.xhy.community.infrastructure.exception.BusinessException;
-import org.xhy.community.infrastructure.exception.CodexErrorCode;
 
 @Service
 public class CodexAppService {
@@ -22,10 +21,13 @@ public class CodexAppService {
     public CodexPublicInfoDTO getPublicInfo() {
         CodexConfig cfg = configService.getConfig();
         if (cfg == null) {
-            throw new BusinessException(CodexErrorCode.CODEX_CONFIG_NOT_FOUND);
+            return null;
         }
         if (Boolean.FALSE.equals(cfg.getEnabled())) {
-            throw new BusinessException(CodexErrorCode.CODEX_DISABLED);
+            return null;
+        }
+        if (isBlank(cfg.getApiKey())) {
+            return null;
         }
         // 容错：authorization 为空也返回 apiKey，标记 usageFetchFailed
         if (cfg.getAuthorization() == null || cfg.getAuthorization().isBlank()) {

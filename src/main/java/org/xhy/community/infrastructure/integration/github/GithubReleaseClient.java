@@ -100,9 +100,6 @@ public class GithubReleaseClient {
         if (notes.isEmpty() && StringUtils.hasText(releaseName)) {
             notes = List.of(releaseName);
         }
-        if (notes.isEmpty()) {
-            notes = List.of("Android 新版本已发布");
-        }
 
         MobileReleaseDTO release = new MobileReleaseDTO(
                 "android",
