@@ -44,9 +44,6 @@ jobs:
       - name: Build with Maven
         run: mvn -B -DskipTests package --no-transfer-progress
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
       - name: Login to CN Registry
         if: ${{ env.CN_REGISTRY != '' }}
         uses: docker/login-action@v3
@@ -55,17 +52,21 @@ jobs:
           username: ${{ secrets.CN_USERNAME }}
           password: ${{ secrets.CN_PASSWORD }}
 
-      - name: Build and push image (CN Registry)
+      - name: Build image
         if: ${{ env.CN_IMAGE != '' }}
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: true
-          platforms: linux/amd64
-          tags: |
-            ${{ env.CN_IMAGE }}:dev-latest
-            ${{ env.CN_IMAGE }}:${{ env.TAG_SHA }}
-          provenance: false
+        run: |
+          set -e
+          time docker build \
+            -t "${CN_IMAGE}:dev-latest" \
+            -t "${CN_IMAGE}:${TAG_SHA}" \
+            .
+
+      - name: Push image
+        if: ${{ env.CN_IMAGE != '' }}
+        run: |
+          set -e
+          time docker push "${CN_IMAGE}:${TAG_SHA}"
+          time docker push "${CN_IMAGE}:dev-latest"
       - name: Compute image for downstream
         id: out-image
         run: |
