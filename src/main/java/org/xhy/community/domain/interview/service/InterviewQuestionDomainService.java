@@ -60,6 +60,21 @@ public class InterviewQuestionDomainService {
     }
 
     /**
+     * 查询自 since 起“已发布”的题目 ID，用于前端逐条未读标识。
+     */
+    public java.util.List<String> listPublishedIdsSince(LocalDateTime since, int limit) {
+        int safeLimit = Math.max(1, Math.min(limit, 200));
+        return interviewQuestionRepository.selectList(
+                new LambdaQueryWrapper<InterviewQuestionEntity>()
+                        .select(InterviewQuestionEntity::getId)
+                        .eq(InterviewQuestionEntity::getStatus, ProblemStatus.PUBLISHED)
+                        .gt(since != null, InterviewQuestionEntity::getPublishTime, since)
+                        .orderByDesc(InterviewQuestionEntity::getPublishTime)
+                        .last("LIMIT " + safeLimit)
+        ).stream().map(InterviewQuestionEntity::getId).toList();
+    }
+
+    /**
      * 批量按标题创建题目（默认发布，难度=3，描述/答案为空串）
      * 仅需标题列表与分类ID与作者ID，领域内部处理默认值
      */

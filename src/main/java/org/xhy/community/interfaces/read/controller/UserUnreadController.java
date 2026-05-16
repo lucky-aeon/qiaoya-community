@@ -9,7 +9,7 @@ import org.xhy.community.infrastructure.config.ApiResponse;
 import org.xhy.community.infrastructure.config.UserContext;
 
 /**
- * 用户未读汇总（文章/题目）控制器
+ * 用户未读汇总（文章/题目/课程章节）控制器
  * 仅用于导航栏小红点展示与清零
  */
 @RestController
@@ -22,12 +22,21 @@ public class UserUnreadController {
         this.unreadAppService = unreadAppService;
     }
 
-    /** 获取用户的未读汇总（文章/题目） */
+    /** 获取用户的未读汇总（文章/题目/课程章节） */
     @GetMapping("/summary")
     @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "UNREAD_SUMMARY", name = "未读汇总")})
     public ApiResponse<UnreadSummaryDTO> getUnreadSummary() {
         String userId = UserContext.getCurrentUserId();
         UnreadSummaryDTO dto = unreadAppService.getUnreadSummary(userId);
+        return ApiResponse.success(dto);
+    }
+
+    /** 获取用户的未读详情（聚合数量 + 逐条内容ID） */
+    @GetMapping("/details")
+    @RequiresPlanPermissions(items = {@RequiresPlanPermissions.Item(code = "UNREAD_SUMMARY", name = "未读汇总")})
+    public ApiResponse<UnreadSummaryDTO> getUnreadDetails() {
+        String userId = UserContext.getCurrentUserId();
+        UnreadSummaryDTO dto = unreadAppService.getUnreadDetails(userId);
         return ApiResponse.success(dto);
     }
 
@@ -40,4 +49,3 @@ public class UserUnreadController {
         return ApiResponse.success();
     }
 }
-

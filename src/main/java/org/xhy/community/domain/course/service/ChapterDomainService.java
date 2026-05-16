@@ -140,6 +140,20 @@ public class ChapterDomainService {
         );
     }
 
+    /**
+     * 查询自 since 起创建的章节 ID，用于前端逐条未读标识。
+     */
+    public List<String> listIdsSince(LocalDateTime since, int limit) {
+        int safeLimit = Math.max(1, Math.min(limit, 200));
+        return chapterRepository.selectList(
+            new LambdaQueryWrapper<ChapterEntity>()
+                .select(ChapterEntity::getId)
+                .gt(since != null, ChapterEntity::getCreateTime, since)
+                .orderByDesc(ChapterEntity::getCreateTime)
+                .last("LIMIT " + safeLimit)
+        ).stream().map(ChapterEntity::getId).toList();
+    }
+
     public Map<String, String> getChapterTitleMapByIds(Collection<String> chapterIds) {
         if (chapterIds == null || chapterIds.isEmpty()) {
             return Map.of();

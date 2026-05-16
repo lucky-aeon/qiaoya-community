@@ -14,6 +14,7 @@ import org.xhy.community.domain.chat.service.ChatMessageDomainService;
 import org.xhy.community.domain.chat.service.ChatRoomDomainService;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 public class UnreadAppService {
@@ -56,8 +57,41 @@ public class UnreadAppService {
         Long questionsUnread = interviewQuestionDomainService.countPublishedSince(questionSeen.getLastSeenAt());
         Long chaptersUnread = chapterDomainService.countSince(chapterSeen.getLastSeenAt());
 
-        // 方案A：聊天室未读聚合（仅统计用户已加入房间，且排除自己发送）
-        Long chatsUnread = 0L;
+        Long chatsUnread = getChatsUnread(userId);
+
+        return UnreadAssembler.toDTO(postsUnread, questionsUnread, chaptersUnread, chatsUnread);
+    }
+
+    /**
+     * 获取用户未读详情：聚合数量 + 最近未读内容 ID。
+     * ID 列表有上限，主要服务首页、列表页的逐条“新”标识。
+     */
+    public UnreadSummaryDTO getUnreadDetails(String userId) {
+        UserLastSeenEntity postSeen = readDomainService.getOrInit(userId, ReadChannel.POSTS);
+        UserLastSeenEntity questionSeen = readDomainService.getOrInit(userId, ReadChannel.QUESTIONS);
+        UserLastSeenEntity chapterSeen = readDomainService.getOrInit(userId, ReadChannel.CHAPTERS);
+
+        Long postsUnread = postDomainService.countPublishedSince(postSeen.getLastSeenAt());
+        Long questionsUnread = interviewQuestionDomainService.countPublishedSince(questionSeen.getLastSeenAt());
+        Long chaptersUnread = chapterDomainService.countSince(chapterSeen.getLastSeenAt());
+        Long chatsUnread = getChatsUnread(userId);
+
+        List<String> postIds = postDomainService.listPublishedIdsSince(postSeen.getLastSeenAt(), 200);
+        List<String> questionIds = interviewQuestionDomainService.listPublishedIdsSince(questionSeen.getLastSeenAt(), 200);
+        List<String> chapterIds = chapterDomainService.listIdsSince(chapterSeen.getLastSeenAt(), 200);
+
+        return UnreadAssembler.toDetailDTO(
+                postsUnread,
+                questionsUnread,
+                chaptersUnread,
+                chatsUnread,
+                postIds,
+                questionIds,
+                chapterIds
+        );
+    }
+
+    private Long getChatsUnread(String userId) {
         try {
             java.util.Set<String> joinedRoomIds = chatRoomDomainService.listJoinedRoomIdsByUser(userId);
             if (joinedRoomIds != null && !joinedRoomIds.isEmpty()) {
@@ -69,13 +103,12 @@ public class UnreadAppService {
                         if (v != null) sum += v;
                     }
                 }
-                chatsUnread = sum;
+                return sum;
             }
         } catch (Exception ignore) {
             // 聚合失败不影响其他频道，保持容错
         }
-
-        return UnreadAssembler.toDTO(postsUnread, questionsUnread, chaptersUnread, chatsUnread);
+        return 0L;
     }
 
     /**

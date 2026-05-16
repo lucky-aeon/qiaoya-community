@@ -2,6 +2,8 @@ package org.xhy.community.application.read.assembler;
 
 import org.xhy.community.application.read.dto.UnreadSummaryDTO;
 
+import java.util.List;
+
 public class UnreadAssembler {
 
     private UnreadAssembler() {}
@@ -20,6 +22,20 @@ public class UnreadAssembler {
     public static UnreadSummaryDTO toDTO(Long postsUnread, Long questionsUnread, Long chaptersUnread, Long chatsUnread) {
         UnreadSummaryDTO dto = toDTO(postsUnread, questionsUnread, chaptersUnread);
         dto.setChatsUnread(chatsUnread == null ? 0L : chatsUnread);
+        return dto;
+    }
+
+    public static UnreadSummaryDTO toDetailDTO(Long postsUnread,
+                                               Long questionsUnread,
+                                               Long chaptersUnread,
+                                               Long chatsUnread,
+                                               List<String> postIds,
+                                               List<String> questionIds,
+                                               List<String> chapterIds) {
+        UnreadSummaryDTO dto = toDTO(postsUnread, questionsUnread, chaptersUnread, chatsUnread);
+        dto.setPostIds(postIds == null ? List.of() : postIds);
+        dto.setQuestionIds(questionIds == null ? List.of() : questionIds);
+        dto.setChapterIds(chapterIds == null ? List.of() : chapterIds);
         return dto;
     }
 }

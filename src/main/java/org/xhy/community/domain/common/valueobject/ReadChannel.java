@@ -4,6 +4,7 @@ package org.xhy.community.domain.common.valueobject;
  * 导航未读数统计的频道维度。
  * POSTS：文章
  * QUESTIONS：面试题/题目
+ * CHAPTERS：课程章节
  */
 public enum ReadChannel {
     POSTS("文章"),

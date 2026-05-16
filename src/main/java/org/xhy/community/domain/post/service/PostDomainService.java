@@ -101,6 +101,21 @@ public class PostDomainService {
     }
 
     /**
+     * 查询自 since 起“已发布”的文章 ID，用于前端逐条未读标识。
+     */
+    public List<String> listPublishedIdsSince(LocalDateTime since, int limit) {
+        int safeLimit = Math.max(1, Math.min(limit, 200));
+        return postRepository.selectList(
+                new LambdaQueryWrapper<PostEntity>()
+                        .select(PostEntity::getId)
+                        .eq(PostEntity::getStatus, PostStatus.PUBLISHED)
+                        .gt(since != null, PostEntity::getPublishTime, since)
+                        .orderByDesc(PostEntity::getPublishTime)
+                        .last("LIMIT " + safeLimit)
+        ).stream().map(PostEntity::getId).toList();
+    }
+
+    /**
      * 采纳评论（作者可对多条评论采纳）
      */
     public PostEntity acceptComment(String postId, String commentId, String operatorId, AccessLevel accessLevel) {
