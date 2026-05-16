@@ -1,0 +1,13 @@
+.git
+.github
+.idea
+docs
+logs
+deploy
+node_modules
+*.iml
+.DS_Store
+**/*.log
+
+target/*
+!target/*.jar
