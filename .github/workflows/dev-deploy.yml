@@ -16,23 +16,14 @@ jobs:
       contents: read
       packages: write
     env:
-      # 国内仓库配置（例如：registry.cn-hangzhou.aliyuncs.com）
-      CN_REGISTRY: ${{ secrets.CN_REGISTRY }}
-      # 完整仓库路径（例如：registry.cn-hangzhou.aliyuncs.com/namespace/qiaoya-community）
-      CN_IMAGE: ${{ secrets.CN_IMAGE }}
-      IMAGE_NAME: ${{ github.repository }}
+      GHCR_IMAGE: ghcr.io/${{ github.repository }}
+      DEPLOY_IMAGE: ghcr.nju.edu.cn/${{ github.repository }}
       TAG_SHA: dev-${{ github.sha }}
     outputs:
       image: ${{ steps.out-image.outputs.image }}
+      pull_image: ${{ steps.out-image.outputs.pull_image }}
     steps:
       - uses: actions/checkout@v4
-
-      - name: Validate CN registry config (domestic-only)
-        run: |
-          if [ -z "${{ env.CN_IMAGE }}" ] || [ -z "${{ env.CN_REGISTRY }}" ]; then
-            echo "CN_IMAGE/CN_REGISTRY must be set for dev (domestic-only mode)." >&2
-            exit 1
-          fi
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -44,33 +35,32 @@ jobs:
       - name: Build with Maven
         run: mvn -B -DskipTests package --no-transfer-progress
 
-      - name: Login to CN Registry
-        if: ${{ env.CN_REGISTRY != '' }}
+      - name: Login to GHCR
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.CN_REGISTRY }}
-          username: ${{ secrets.CN_USERNAME }}
-          password: ${{ secrets.CN_PASSWORD }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build image
-        if: ${{ env.CN_IMAGE != '' }}
         run: |
           set -e
           time docker build \
-            -t "${CN_IMAGE}:dev-latest" \
-            -t "${CN_IMAGE}:${TAG_SHA}" \
+            -t "${GHCR_IMAGE}:dev-latest" \
+            -t "${GHCR_IMAGE}:${TAG_SHA}" \
             .
 
       - name: Push image
-        if: ${{ env.CN_IMAGE != '' }}
         run: |
           set -e
-          time docker push "${CN_IMAGE}:${TAG_SHA}"
-          time docker push "${CN_IMAGE}:dev-latest"
+          time docker push "${GHCR_IMAGE}:${TAG_SHA}"
+          time docker push "${GHCR_IMAGE}:dev-latest"
+
       - name: Compute image for downstream
         id: out-image
         run: |
-          echo "image=${{ env.CN_IMAGE }}:${{ env.TAG_SHA }}" >> "$GITHUB_OUTPUT"
+          echo "image=${GHCR_IMAGE}:${TAG_SHA}" >> "$GITHUB_OUTPUT"
+          echo "pull_image=${DEPLOY_IMAGE}:${TAG_SHA}" >> "$GITHUB_OUTPUT"
 
   smoke-test:
     name: Smoke Test (Container)
@@ -80,13 +70,7 @@ jobs:
       packages: read
     needs: build-and-push
     env:
-      CN_REGISTRY: ${{ secrets.CN_REGISTRY }}
-      CN_USERNAME: ${{ secrets.CN_USERNAME }}
-      CN_PASSWORD: ${{ secrets.CN_PASSWORD }}
-      CN_IMAGE: ${{ secrets.CN_IMAGE }}
-      REGISTRY: ghcr.io
-      IMAGE_NAME: ${{ github.repository }}
-      TAG_SHA: dev-${{ github.sha }}
+      IMAGE: ${{ needs.build-and-push.outputs.image }}
     services:
       postgres:
         image: postgres:16-alpine
@@ -106,20 +90,11 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Login to GHCR
-        if: ${{ env.CN_REGISTRY == '' }}
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Login to CN Registry
-        if: ${{ env.CN_REGISTRY != '' }}
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.CN_REGISTRY }}
-          username: ${{ secrets.CN_USERNAME }}
-          password: ${{ secrets.CN_PASSWORD }}
 
       - name: Prepare DB and tools
         run: |
@@ -129,15 +104,9 @@ jobs:
           done
           PGPASSWORD=postgres psql -h 127.0.0.1 -U postgres -p 5432 -c "CREATE DATABASE qiaoya_community;" || true
 
-      - name: Resolve image tag and pull (CN only)
-        env:
-          IMAGE_FROM_BUILD: ${{ needs.build-and-push.outputs.image }}
+      - name: Pull image
         run: |
           set -e
-          IMAGE="$IMAGE_FROM_BUILD"
-          if [ -z "$IMAGE" ]; then
-            IMAGE="$CN_IMAGE:$TAG_SHA"
-          fi
           echo "Using image: $IMAGE"
           docker pull "$IMAGE"
           echo "IMAGE_RESOLVED=$IMAGE" >> $GITHUB_ENV
@@ -180,48 +149,28 @@ jobs:
     runs-on: ubuntu-latest
     needs: [ build-and-push, smoke-test ]
     env:
-      CN_IMAGE: ${{ secrets.CN_IMAGE }}
-      REGISTRY: ghcr.io
-      IMAGE_NAME: ${{ github.repository }}
-      TAG_SHA: dev-${{ github.sha }}
+      IMAGE: ${{ needs.build-and-push.outputs.image }}
+      PULL_IMAGE: ${{ needs.build-and-push.outputs.pull_image }}
     steps:
-      - name: Resolve image tag for deploy (CN only)
-        env:
-          IMAGE_FROM_BUILD: ${{ needs.build-and-push.outputs.image }}
-        run: |
-          set -e
-          IMAGE="$IMAGE_FROM_BUILD"
-          if [ -z "$IMAGE" ]; then
-            IMAGE="$CN_IMAGE:$TAG_SHA"
-          fi
-          echo "Using deploy image: $IMAGE"
-          echo "IMAGE_RESOLVED=$IMAGE" >> $GITHUB_ENV
       - name: Deploy via SSH (dev)
         uses: appleboy/ssh-action@v1.0.3
         env:
-          GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
-          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
           # Map environment-specific keys to generic names expected by the script
           SCRIPT_PATH: ${{ vars.DEV_SCRIPT_PATH }}
-          IMAGE: ${{ env.IMAGE_RESOLVED }}
+          IMAGE: ${{ env.IMAGE }}
+          PULL_IMAGE: ${{ env.PULL_IMAGE }}
           PROFILE: dev
           PORT: 8528
           CONTAINER_NAME: qiaoya-community-backend
           ENV_FILE: ${{ vars.DEV_ENV_FILE }}
-          CN_REGISTRY: ${{ secrets.CN_REGISTRY }}
-          CN_USERNAME: ${{ secrets.CN_USERNAME }}
-          CN_PASSWORD: ${{ secrets.CN_PASSWORD }}
         with:
           host: ${{ secrets.DEV_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script_stop: true
-          envs: GHCR_USERNAME,GHCR_TOKEN,SCRIPT_PATH,IMAGE,PROFILE,PORT,CONTAINER_NAME,ENV_FILE,CN_REGISTRY,CN_USERNAME,CN_PASSWORD
+          envs: SCRIPT_PATH,IMAGE,PULL_IMAGE,PROFILE,PORT,CONTAINER_NAME,ENV_FILE
           script: |
             set -e
             SCRIPT_PATH="${SCRIPT_PATH:-/www/project/qiaoya/deploy-qiaoya.sh}"
-            if [ -n "${CN_REGISTRY}" ] && [ -n "${CN_USERNAME}" ] && [ -n "${CN_PASSWORD}" ]; then
-              echo "${CN_PASSWORD}" | docker login "${CN_REGISTRY}" -u "${CN_USERNAME}" --password-stdin
-            fi
             chmod +x "$SCRIPT_PATH" || true
             "$SCRIPT_PATH"

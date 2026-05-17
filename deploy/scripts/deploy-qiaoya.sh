@@ -3,6 +3,7 @@ set -euo pipefail
 
 # Required
 IMAGE=${IMAGE:-}
+PULL_IMAGE=${PULL_IMAGE:-$IMAGE}
 
 # Optional with defaults
 PROFILE=${PROFILE:-dev}
@@ -17,12 +18,26 @@ if [[ -z "$IMAGE" ]]; then
 fi
 
 echo "[deploy] IMAGE=$IMAGE"
+echo "[deploy] PULL_IMAGE=$PULL_IMAGE"
 echo "[deploy] PROFILE=$PROFILE"
 echo "[deploy] ENV_FILE=$ENV_FILE"
 echo "[deploy] CONTAINER_NAME=$CONTAINER_NAME"
 echo "[deploy] PORT=$PORT"
 
-# Optional GHCR login for private images
+pull_with_retry() {
+  local image="$1"
+  local attempt
+  for attempt in 1 2 3; do
+    if docker pull "$image"; then
+      return 0
+    fi
+    echo "[deploy] Pull failed for $image (attempt $attempt/3)" >&2
+    sleep $((attempt * 2))
+  done
+  return 1
+}
+
+# Optional GHCR login for private images. Public packages do not need this.
 if [[ -n "${GHCR_USERNAME:-}" && -n "${GHCR_TOKEN:-}" ]]; then
   echo "[deploy] Logging in to GHCR as $GHCR_USERNAME"
   echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin || true
@@ -32,7 +47,16 @@ fi
 
 # Pull latest image
 echo "[deploy] Pulling image..."
-docker pull "$IMAGE"
+RUN_IMAGE="$PULL_IMAGE"
+if ! pull_with_retry "$PULL_IMAGE"; then
+  if [[ "$PULL_IMAGE" != "$IMAGE" ]]; then
+    echo "[deploy] Mirror pull failed, falling back to IMAGE=$IMAGE" >&2
+    pull_with_retry "$IMAGE"
+    RUN_IMAGE="$IMAGE"
+  else
+    exit 1
+  fi
+fi
 
 # Stop and remove existing container if any
 if docker ps -a --format '{{.Names}}' | grep -w "$CONTAINER_NAME" >/dev/null 2>&1; then
@@ -49,11 +73,11 @@ docker run -d --name "$CONTAINER_NAME" --restart unless-stopped \
   -e SPRING_PROFILES_ACTIVE="$PROFILE" \
   -e JAVA_TOOL_OPTIONS="$JAVA_TOOL_OPTIONS" \
   -p "${PORT}:8520" \
-  "$IMAGE"
+  "$RUN_IMAGE"
 
 # Clean up images: keep only the most recent N for this repository
 # Default N: dev=1, prod=2 (override via KEEP_N_IMAGES)
-IMAGE_NO_DIGEST="${IMAGE%%@*}"
+IMAGE_NO_DIGEST="${RUN_IMAGE%%@*}"
 _after_slash="${IMAGE_NO_DIGEST##*/}"
 if [[ "${_after_slash}" == *:* ]]; then
   IMAGE_REPO="${IMAGE_NO_DIGEST%:*}"

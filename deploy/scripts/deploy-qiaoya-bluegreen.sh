@@ -3,7 +3,8 @@ set -euo pipefail
 
 # Blue-Green deployment script for Qiaoya backend (Docker + Nginx optional)
 # Usage (manual run on server):
-#   IMAGE=registry.cn-xx.aliyuncs.com/ns/qiaoya:v1.2.3 \
+#   IMAGE=ghcr.io/lucky-aeon/qiaoya-community:v1.2.3 \
+#   PULL_IMAGE=ghcr.nju.edu.cn/lucky-aeon/qiaoya-community:v1.2.3 \
 #   PROFILE=prod ENV_FILE=/etc/qiaoya.backend.prod.env \
 #   UPSTREAM_SWITCH=nginx NGINX_CONF=/etc/nginx/conf.d/qiaoya.conf \
 #   /www/project/qiaoya/deploy-qiaoya-bluegreen.sh
@@ -15,6 +16,7 @@ set -euo pipefail
 
 # Required
 IMAGE=${IMAGE:-}
+PULL_IMAGE=${PULL_IMAGE:-$IMAGE}
 
 # Optional
 PROFILE=${PROFILE:-prod}
@@ -82,6 +84,7 @@ if [[ ! -f "$ENV_FILE" ]]; then
 fi
 
 echo "[bluegreen] IMAGE=$IMAGE"
+echo "[bluegreen] PULL_IMAGE=$PULL_IMAGE"
 echo "[bluegreen] PROFILE=$PROFILE"
 echo "[bluegreen] ENV_FILE=$ENV_FILE"
 echo "[bluegreen] BLUE_NAME=$BLUE_NAME (port $BLUE_PORT)"
@@ -89,14 +92,36 @@ echo "[bluegreen] GREEN_NAME=$GREEN_NAME (port $GREEN_PORT)"
 echo "[bluegreen] SWITCH=$UPSTREAM_SWITCH"
 echo "[bluegreen] TARGET_SIDE=$TARGET_SIDE"
 
-# Optional CN registry login (private)
-if [[ -n "${CN_REGISTRY:-}" && -n "${CN_USERNAME:-}" && -n "${CN_PASSWORD:-}" ]]; then
-  echo "[bluegreen] Logging in CN registry $CN_REGISTRY as $CN_USERNAME"
-  echo "$CN_PASSWORD" | docker login "$CN_REGISTRY" -u "$CN_USERNAME" --password-stdin || true
+pull_with_retry() {
+  local image="$1"
+  local attempt
+  for attempt in 1 2 3; do
+    if docker pull "$image"; then
+      return 0
+    fi
+    echo "[bluegreen] Pull failed for $image (attempt $attempt/3)" >&2
+    sleep $((attempt * 2))
+  done
+  return 1
+}
+
+# Optional GHCR login for private images. Public packages do not need this.
+if [[ -n "${GHCR_USERNAME:-}" && -n "${GHCR_TOKEN:-}" ]]; then
+  echo "[bluegreen] Logging in to GHCR as $GHCR_USERNAME"
+  echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin || true
 fi
 
 echo "[bluegreen] Pulling image..."
-docker pull "$IMAGE"
+RUN_IMAGE="$PULL_IMAGE"
+if ! pull_with_retry "$PULL_IMAGE"; then
+  if [[ "$PULL_IMAGE" != "$IMAGE" ]]; then
+    echo "[bluegreen] Mirror pull failed, falling back to IMAGE=$IMAGE" >&2
+    pull_with_retry "$IMAGE"
+    RUN_IMAGE="$IMAGE"
+  else
+    exit 1
+  fi
+fi
 
 # Decide target side (auto picks the idle one from Nginx upstream)
 active_side="unknown"
@@ -139,7 +164,7 @@ docker run -d --name "$TARGET_NAME" --restart unless-stopped \
   -e JAVA_TOOL_OPTIONS="$JAVA_TOOL_OPTIONS" \
   -p "${TARGET_PORT}:8520" \
   $CONTAINER_LIMITS $LOG_OPTS \
-  "$IMAGE"
+  "$RUN_IMAGE"
 
 # Health check target
 echo "[bluegreen] Waiting health $HEALTH_PATH on ${TARGET_PORT} (timeout ${HEALTH_TIMEOUT}s)..."
@@ -210,7 +235,7 @@ fi
 
 # Clean up images: keep only the most recent N for this repository
 # Default N: prod=2 (override via KEEP_N_IMAGES). For other profiles, default to 1.
-IMAGE_NO_DIGEST="${IMAGE%%@*}"
+IMAGE_NO_DIGEST="${RUN_IMAGE%%@*}"
 _after_slash="${IMAGE_NO_DIGEST##*/}"
 if [[ "${_after_slash}" == *:* ]]; then
   IMAGE_REPO="${IMAGE_NO_DIGEST%:*}"
@@ -247,4 +272,4 @@ else
   fi
 fi
 
-echo "[bluegreen] Done. Target: $TARGET_NAME ($IMAGE) on $TARGET_PORT."
+echo "[bluegreen] Done. Target: $TARGET_NAME ($RUN_IMAGE) on $TARGET_PORT."
