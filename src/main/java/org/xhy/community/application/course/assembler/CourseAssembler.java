@@ -22,6 +22,12 @@ public class CourseAssembler {
     public static CourseQuery fromPageRequest(Integer pageNum, Integer pageSize) {
         return new CourseQuery(pageNum, pageSize);
     }
+
+    public static CourseQuery fromAdminPageRequest(Integer pageNum, Integer pageSize, Boolean archived) {
+        CourseQuery query = new CourseQuery(pageNum, pageSize);
+        query.setArchived(archived);
+        return query;
+    }
     
     public static CourseDTO toDTO(CourseEntity entity) {
         if (entity == null) {
@@ -159,6 +165,8 @@ public class CourseAssembler {
             return new CourseQuery(1, 10);
         }
 
-        return new CourseQuery(request.getPageNum(), request.getPageSize());
+        CourseQuery query = new CourseQuery(request.getPageNum(), request.getPageSize());
+        query.setArchived(request.getArchived());
+        return query;
     }
 }

@@ -9,6 +9,7 @@ import org.xhy.community.infrastructure.converter.CourseStatusConverter;
 import org.xhy.community.infrastructure.converter.UniversalListConverter;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @TableName("courses")
@@ -62,6 +63,15 @@ public class CourseEntity extends BaseEntity {
 
     /** 排序序号（列表倒序显示，值越大越靠前） */
     private Integer sortOrder;
+
+    /** 是否归档：归档内容仍可访问，但提示内容可能过时 */
+    private Boolean archived;
+
+    /** 归档原因 */
+    private String archiveReason;
+
+    /** 归档时间 */
+    private LocalDateTime archivedAt;
     
     public CourseEntity() {
     }
@@ -75,6 +85,7 @@ public class CourseEntity extends BaseEntity {
         this.price = BigDecimal.ZERO;
         this.originalPrice = BigDecimal.ZERO;
         this.totalReadingTime = 0;
+        this.archived = false;
     }
     
     // Getters and Setters
@@ -122,4 +133,13 @@ public class CourseEntity extends BaseEntity {
 
     public Integer getSortOrder() { return sortOrder; }
     public void setSortOrder(Integer sortOrder) { this.sortOrder = sortOrder; }
+
+    public Boolean getArchived() { return archived; }
+    public void setArchived(Boolean archived) { this.archived = archived; }
+
+    public String getArchiveReason() { return archiveReason; }
+    public void setArchiveReason(String archiveReason) { this.archiveReason = archiveReason; }
+
+    public LocalDateTime getArchivedAt() { return archivedAt; }
+    public void setArchivedAt(LocalDateTime archivedAt) { this.archivedAt = archivedAt; }
 }

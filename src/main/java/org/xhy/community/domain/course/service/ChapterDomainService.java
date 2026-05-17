@@ -1,6 +1,7 @@
 package org.xhy.community.domain.course.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.context.ApplicationEventPublisher;
@@ -42,6 +43,7 @@ public class ChapterDomainService {
         if (course == null) {
             throw new BusinessException(CourseErrorCode.COURSE_NOT_FOUND);
         }
+        inheritCourseArchiveIfNeeded(chapter, course);
         
         chapterRepository.insert(chapter);
 
@@ -56,6 +58,7 @@ public class ChapterDomainService {
         if (course == null) {
             throw new BusinessException(CourseErrorCode.COURSE_NOT_FOUND);
         }
+        inheritCourseArchiveIfNeeded(chapter, course);
         
         chapterRepository.updateById(chapter);
         return chapter;
@@ -63,6 +66,44 @@ public class ChapterDomainService {
     
     public void deleteChapter(String chapterId) {
         chapterRepository.deleteById(chapterId);
+    }
+
+    public ChapterEntity archiveChapter(String chapterId, String reason) {
+        ChapterEntity chapter = getChapterById(chapterId);
+        chapter.setArchived(true);
+        chapter.setArchiveReason(reason);
+        chapter.setArchivedAt(LocalDateTime.now());
+        chapterRepository.updateById(chapter);
+        return chapter;
+    }
+
+    public ChapterEntity unarchiveChapter(String chapterId) {
+        ChapterEntity chapter = getChapterById(chapterId);
+        chapter.setArchived(false);
+        chapter.setArchiveReason(null);
+        chapter.setArchivedAt(null);
+        chapterRepository.updateById(chapter);
+        return chapter;
+    }
+
+    public void archiveChaptersByCourseId(String courseId, String reason) {
+        chapterRepository.update(null,
+            new LambdaUpdateWrapper<ChapterEntity>()
+                .eq(ChapterEntity::getCourseId, courseId)
+                .set(ChapterEntity::getArchived, true)
+                .set(ChapterEntity::getArchiveReason, reason)
+                .set(ChapterEntity::getArchivedAt, LocalDateTime.now())
+        );
+    }
+
+    public void unarchiveChaptersByCourseId(String courseId) {
+        chapterRepository.update(null,
+            new LambdaUpdateWrapper<ChapterEntity>()
+                .eq(ChapterEntity::getCourseId, courseId)
+                .set(ChapterEntity::getArchived, false)
+                .set(ChapterEntity::getArchiveReason, null)
+                .set(ChapterEntity::getArchivedAt, null)
+        );
     }
     
     public ChapterEntity getChapterById(String chapterId) {
@@ -212,6 +253,14 @@ public class ChapterDomainService {
             eventPublisher.publishEvent(event);
         } catch (Exception e) {
             // 事件发布失败不应影响主业务流程
+        }
+    }
+
+    private void inheritCourseArchiveIfNeeded(ChapterEntity chapter, CourseEntity course) {
+        if (Boolean.TRUE.equals(course.getArchived())) {
+            chapter.setArchived(true);
+            chapter.setArchiveReason(course.getArchiveReason());
+            chapter.setArchivedAt(course.getArchivedAt() == null ? LocalDateTime.now() : course.getArchivedAt());
         }
     }
 }

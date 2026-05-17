@@ -31,6 +31,9 @@ public class PublicCourseDetailDTO {
     private List<FrontChapterDTO> chapters;
     private Integer likeCount;
     private List<AppSubscriptionPlanDTO> unlockPlans = new ArrayList<>();
+    private Boolean archived;
+    private String archiveReason;
+    private LocalDateTime archivedAt;
 
     public PublicCourseDetailDTO() {}
 
@@ -44,6 +47,9 @@ public class PublicCourseDetailDTO {
         private Integer readingTime;
         private LocalDateTime createTime;
         private Integer likeCount;
+        private Boolean archived;
+        private String archiveReason;
+        private LocalDateTime archivedAt;
 
         public FrontChapterDTO() {}
 
@@ -65,6 +71,15 @@ public class PublicCourseDetailDTO {
 
         public Integer getLikeCount() { return likeCount; }
         public void setLikeCount(Integer likeCount) { this.likeCount = likeCount; }
+
+        public Boolean getArchived() { return archived; }
+        public void setArchived(Boolean archived) { this.archived = archived; }
+
+        public String getArchiveReason() { return archiveReason; }
+        public void setArchiveReason(String archiveReason) { this.archiveReason = archiveReason; }
+
+        public LocalDateTime getArchivedAt() { return archivedAt; }
+        public void setArchivedAt(LocalDateTime archivedAt) { this.archivedAt = archivedAt; }
     }
 
     // Getters and Setters
@@ -120,4 +135,13 @@ public class PublicCourseDetailDTO {
 
     public List<AppSubscriptionPlanDTO> getUnlockPlans() { return unlockPlans; }
     public void setUnlockPlans(List<AppSubscriptionPlanDTO> unlockPlans) { this.unlockPlans = unlockPlans; }
+
+    public Boolean getArchived() { return archived; }
+    public void setArchived(Boolean archived) { this.archived = archived; }
+
+    public String getArchiveReason() { return archiveReason; }
+    public void setArchiveReason(String archiveReason) { this.archiveReason = archiveReason; }
+
+    public LocalDateTime getArchivedAt() { return archivedAt; }
+    public void setArchivedAt(LocalDateTime archivedAt) { this.archivedAt = archivedAt; }
 }

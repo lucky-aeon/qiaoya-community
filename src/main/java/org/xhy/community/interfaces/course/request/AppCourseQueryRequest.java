@@ -8,9 +8,19 @@ import org.xhy.community.interfaces.common.request.PageRequest;
  */
 public class AppCourseQueryRequest extends PageRequest {
 
+    private Boolean archived;
+
     public AppCourseQueryRequest() {}
 
     public AppCourseQueryRequest(Integer pageNum, Integer pageSize) {
         super(pageNum, pageSize);
+    }
+
+    public Boolean getArchived() {
+        return archived;
+    }
+
+    public void setArchived(Boolean archived) {
+        this.archived = archived;
     }
 }

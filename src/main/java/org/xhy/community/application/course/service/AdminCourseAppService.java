@@ -1,15 +1,15 @@
 package org.xhy.community.application.course.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 import org.xhy.community.application.course.assembler.CourseAssembler;
 import org.xhy.community.application.course.dto.CourseDTO;
 import org.xhy.community.application.transcript.service.ChapterTranscriptAppService;
 import org.xhy.community.domain.course.entity.CourseEntity;
 import org.xhy.community.domain.course.query.CourseQuery;
+import org.xhy.community.domain.course.service.ChapterDomainService;
 import org.xhy.community.domain.course.service.CourseDomainService;
-import org.xhy.community.domain.course.valueobject.CourseStatus;
 import org.xhy.community.domain.like.service.LikeDomainService;
 import org.xhy.community.domain.like.valueobject.LikeTargetType;
 import org.xhy.community.application.like.helper.LikeCountHelper;
@@ -17,19 +17,20 @@ import org.xhy.community.interfaces.course.request.CreateCourseRequest;
 import org.xhy.community.interfaces.course.request.UpdateCourseRequest;
 import org.xhy.community.interfaces.course.request.CourseQueryRequest;
 
-import java.math.BigDecimal;
-
 @Service
 public class AdminCourseAppService {
     
     private final CourseDomainService courseDomainService;
+    private final ChapterDomainService chapterDomainService;
     private final LikeDomainService likeDomainService;
     private final ChapterTranscriptAppService chapterTranscriptAppService;
     
     public AdminCourseAppService(CourseDomainService courseDomainService,
+                                 ChapterDomainService chapterDomainService,
                                  LikeDomainService likeDomainService,
                                  ChapterTranscriptAppService chapterTranscriptAppService) {
         this.courseDomainService = courseDomainService;
+        this.chapterDomainService = chapterDomainService;
         this.likeDomainService = likeDomainService;
         this.chapterTranscriptAppService = chapterTranscriptAppService;
     }
@@ -53,6 +54,20 @@ public class AdminCourseAppService {
     public void deleteCourse(String courseId) {
         courseDomainService.deleteCourse(courseId);
     }
+
+    @Transactional
+    public CourseDTO archiveCourse(String courseId, String reason) {
+        CourseEntity course = courseDomainService.archiveCourse(courseId, reason);
+        chapterDomainService.archiveChaptersByCourseId(courseId, reason);
+        return CourseAssembler.toDTO(course);
+    }
+
+    @Transactional
+    public CourseDTO unarchiveCourse(String courseId) {
+        CourseEntity course = courseDomainService.unarchiveCourse(courseId);
+        chapterDomainService.unarchiveChaptersByCourseId(courseId);
+        return CourseAssembler.toDTO(course);
+    }
     
     public CourseDTO getCourseById(String courseId) {
         CourseEntity course = courseDomainService.getCourseById(courseId);
@@ -62,7 +77,7 @@ public class AdminCourseAppService {
     }
     
     public IPage<CourseDTO> getPagedCourses(CourseQueryRequest request) {
-        CourseQuery query = CourseAssembler.fromPageRequest(request.getPageNum(), request.getPageSize());
+        CourseQuery query = CourseAssembler.fromAdminPageRequest(request.getPageNum(), request.getPageSize(), request.getArchived());
         IPage<CourseEntity> coursePage = courseDomainService.getPagedCourses(query);
 
         IPage<CourseDTO> dtoPage = coursePage.convert(CourseAssembler::toDTO);

@@ -11,6 +11,7 @@ import org.xhy.community.infrastructure.config.UserContext;
 import org.xhy.community.interfaces.course.request.CreateCourseRequest;
 import org.xhy.community.interfaces.course.request.UpdateCourseRequest;
 import org.xhy.community.interfaces.course.request.CourseQueryRequest;
+import org.xhy.community.interfaces.course.request.ArchiveRequest;
 import org.xhy.community.infrastructure.annotation.ActivityLog;
 import org.xhy.community.domain.common.valueobject.ActivityType;
 
@@ -84,6 +85,21 @@ public class AdminCourseController {
     public ApiResponse<Void> deleteCourse(@PathVariable String id) {
         adminCourseAppService.deleteCourse(id);
         return ApiResponse.success("删除成功");
+    }
+
+    @PutMapping("/{id}/archive")
+    @ActivityLog(ActivityType.ADMIN_UPDATE_COURSE)
+    public ApiResponse<CourseDTO> archiveCourse(@PathVariable String id,
+                                                @Valid @RequestBody ArchiveRequest request) {
+        CourseDTO course = adminCourseAppService.archiveCourse(id, request.getReason());
+        return ApiResponse.success("归档成功", course);
+    }
+
+    @PutMapping("/{id}/unarchive")
+    @ActivityLog(ActivityType.ADMIN_UPDATE_COURSE)
+    public ApiResponse<CourseDTO> unarchiveCourse(@PathVariable String id) {
+        CourseDTO course = adminCourseAppService.unarchiveCourse(id);
+        return ApiResponse.success("已取消归档", course);
     }
     
     @GetMapping

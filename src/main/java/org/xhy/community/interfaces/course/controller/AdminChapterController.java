@@ -13,6 +13,7 @@ import org.xhy.community.interfaces.course.request.CreateChapterRequest;
 import org.xhy.community.interfaces.course.request.UpdateChapterRequest;
 import org.xhy.community.interfaces.course.request.ChapterQueryRequest;
 import org.xhy.community.interfaces.course.request.BatchUpdateChapterOrderRequest;
+import org.xhy.community.interfaces.course.request.ArchiveRequest;
 import org.xhy.community.infrastructure.annotation.ActivityLog;
 import org.xhy.community.domain.common.valueobject.ActivityType;
 
@@ -82,6 +83,21 @@ public class AdminChapterController {
     public ApiResponse<Void> deleteChapter(@PathVariable String id) {
         adminChapterAppService.deleteChapter(id);
         return ApiResponse.success("删除成功");
+    }
+
+    @PutMapping("/{id}/archive")
+    @ActivityLog(ActivityType.ADMIN_CHAPTER_UPDATE)
+    public ApiResponse<ChapterDTO> archiveChapter(@PathVariable String id,
+                                                  @Valid @RequestBody ArchiveRequest request) {
+        ChapterDTO chapter = adminChapterAppService.archiveChapter(id, request.getReason());
+        return ApiResponse.success("归档成功", chapter);
+    }
+
+    @PutMapping("/{id}/unarchive")
+    @ActivityLog(ActivityType.ADMIN_CHAPTER_UPDATE)
+    public ApiResponse<ChapterDTO> unarchiveChapter(@PathVariable String id) {
+        ChapterDTO chapter = adminChapterAppService.unarchiveChapter(id);
+        return ApiResponse.success("已取消归档", chapter);
     }
     
     /**

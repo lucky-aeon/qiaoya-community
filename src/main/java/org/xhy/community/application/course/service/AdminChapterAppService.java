@@ -81,6 +81,22 @@ public class AdminChapterAppService {
     public void deleteChapter(String chapterId) {
         chapterDomainService.deleteChapter(chapterId);
     }
+
+    public ChapterDTO archiveChapter(String chapterId, String reason) {
+        ChapterEntity chapter = chapterDomainService.archiveChapter(chapterId, reason);
+        ChapterDTO dto = ChapterAssembler.toDTO(chapter);
+        dto.setLikeCount(LikeCountHelper.getLikeCount(chapterId, LikeTargetType.CHAPTER, likeDomainService));
+        dto.setTranscript(chapterTranscriptAppService.getAdminTranscript(chapterId));
+        return dto;
+    }
+
+    public ChapterDTO unarchiveChapter(String chapterId) {
+        ChapterEntity chapter = chapterDomainService.unarchiveChapter(chapterId);
+        ChapterDTO dto = ChapterAssembler.toDTO(chapter);
+        dto.setLikeCount(LikeCountHelper.getLikeCount(chapterId, LikeTargetType.CHAPTER, likeDomainService));
+        dto.setTranscript(chapterTranscriptAppService.getAdminTranscript(chapterId));
+        return dto;
+    }
     
     public ChapterDTO getChapterById(String chapterId) {
         ChapterEntity chapter = chapterDomainService.getChapterById(chapterId);

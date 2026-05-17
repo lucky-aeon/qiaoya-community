@@ -17,6 +17,7 @@ import org.xhy.community.infrastructure.exception.CourseErrorCode;
 import org.xhy.community.domain.course.query.CourseQuery;
 import org.xhy.community.domain.course.valueobject.CourseStatus;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -52,6 +53,24 @@ public class CourseDomainService {
         getCourseById(courseId);
         courseRepository.deleteById(courseId);
     }
+
+    public CourseEntity archiveCourse(String courseId, String reason) {
+        CourseEntity course = getCourseById(courseId);
+        course.setArchived(true);
+        course.setArchiveReason(reason);
+        course.setArchivedAt(LocalDateTime.now());
+        courseRepository.updateById(course);
+        return course;
+    }
+
+    public CourseEntity unarchiveCourse(String courseId) {
+        CourseEntity course = getCourseById(courseId);
+        course.setArchived(false);
+        course.setArchiveReason(null);
+        course.setArchivedAt(null);
+        courseRepository.updateById(course);
+        return course;
+    }
     
     public CourseEntity getCourseById(String courseId) {
         CourseEntity course = courseRepository.selectById(courseId);
@@ -67,6 +86,7 @@ public class CourseDomainService {
         
         LambdaQueryWrapper<CourseEntity> queryWrapper = new LambdaQueryWrapper<CourseEntity>()
                 .like(StringUtils.hasText(query.getTitle()), CourseEntity::getTitle, query.getTitle())
+                .eq(query.getArchived() != null, CourseEntity::getArchived, query.getArchived())
                 .orderByDesc(CourseEntity::getSortOrder)
                 .orderByDesc(CourseEntity::getCreateTime);
         
@@ -86,6 +106,7 @@ public class CourseDomainService {
         LambdaQueryWrapper<CourseEntity> queryWrapper = new LambdaQueryWrapper<CourseEntity>()
                 .eq(CourseEntity::getStatus, CourseStatus.COMPLETED)
                 .like(StringUtils.hasText(query.getTitle()), CourseEntity::getTitle, query.getTitle())
+                .eq(query.getArchived() != null, CourseEntity::getArchived, query.getArchived())
                 .orderByDesc(CourseEntity::getSortOrder)
                 .orderByDesc(CourseEntity::getCreateTime);
         

@@ -71,6 +71,9 @@ public class CourseAppService {
     public IPage<FrontCourseDTO> queryAppCourses(AppCourseQueryRequest request, String userId) {
         // 转换查询参数
         CourseQuery query = CourseAssembler.fromAppQueryRequest(request);
+        if (query.getArchived() == null) {
+            query.setArchived(false);
+        }
 
         // 查询课程分页数据（不限制为已完成）
         IPage<CourseEntity> coursePage = courseDomainService.getPagedCourses(query);
@@ -122,6 +125,9 @@ public class CourseAppService {
      */
     public IPage<PublicCourseDTO> queryPublicCourses(AppCourseQueryRequest request) {
         CourseQuery query = CourseAssembler.fromAppQueryRequest(request);
+        if (query.getArchived() == null) {
+            query.setArchived(false);
+        }
 
         IPage<CourseEntity> coursePage = courseDomainService.getPagedCourses(query);
         if (coursePage.getRecords().isEmpty()) {

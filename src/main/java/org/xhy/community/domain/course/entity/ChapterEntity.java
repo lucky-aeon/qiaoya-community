@@ -3,6 +3,8 @@ package org.xhy.community.domain.course.entity;
 import com.baomidou.mybatisplus.annotation.TableName;
 import org.xhy.community.domain.common.entity.BaseEntity;
 
+import java.time.LocalDateTime;
+
 @TableName("chapters")
 public class ChapterEntity extends BaseEntity {
     
@@ -23,6 +25,15 @@ public class ChapterEntity extends BaseEntity {
     
     /** 预计阅读时长（分钟） */
     private Integer readingTime;
+
+    /** 是否归档：归档章节仍可访问，但提示内容可能过时 */
+    private Boolean archived;
+
+    /** 归档原因 */
+    private String archiveReason;
+
+    /** 归档时间 */
+    private LocalDateTime archivedAt;
     
     public ChapterEntity() {
     }
@@ -34,6 +45,7 @@ public class ChapterEntity extends BaseEntity {
         this.authorId = authorId;
         this.sortOrder = sortOrder;
         this.readingTime = 0;
+        this.archived = false;
     }
     
     // Getters and Setters
@@ -54,4 +66,13 @@ public class ChapterEntity extends BaseEntity {
     
     public Integer getReadingTime() { return readingTime; }
     public void setReadingTime(Integer readingTime) { this.readingTime = readingTime; }
+
+    public Boolean getArchived() { return archived; }
+    public void setArchived(Boolean archived) { this.archived = archived; }
+
+    public String getArchiveReason() { return archiveReason; }
+    public void setArchiveReason(String archiveReason) { this.archiveReason = archiveReason; }
+
+    public LocalDateTime getArchivedAt() { return archivedAt; }
+    public void setArchivedAt(LocalDateTime archivedAt) { this.archivedAt = archivedAt; }
 }

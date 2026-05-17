@@ -28,6 +28,9 @@ public class CourseDTO {
     private LocalDateTime updateTime;
     private Integer likeCount;
     private Integer sortOrder;
+    private Boolean archived;
+    private String archiveReason;
+    private LocalDateTime archivedAt;
     
     public CourseDTO() {
     }
@@ -89,4 +92,13 @@ public class CourseDTO {
 
     public Integer getSortOrder() { return sortOrder; }
     public void setSortOrder(Integer sortOrder) { this.sortOrder = sortOrder; }
+
+    public Boolean getArchived() { return archived; }
+    public void setArchived(Boolean archived) { this.archived = archived; }
+
+    public String getArchiveReason() { return archiveReason; }
+    public void setArchiveReason(String archiveReason) { this.archiveReason = archiveReason; }
+
+    public LocalDateTime getArchivedAt() { return archivedAt; }
+    public void setArchivedAt(LocalDateTime archivedAt) { this.archivedAt = archivedAt; }
 }

@@ -6,6 +6,7 @@ public class CourseQuery extends BasePageQuery {
     
     private String title;
     private String categoryId;
+    private Boolean archived;
 
     public CourseQuery() {
     }
@@ -28,6 +29,14 @@ public class CourseQuery extends BasePageQuery {
     
     public void setCategoryId(String categoryId) {
         this.categoryId = categoryId;
+    }
+
+    public Boolean getArchived() {
+        return archived;
+    }
+
+    public void setArchived(Boolean archived) {
+        this.archived = archived;
     }
     
 }

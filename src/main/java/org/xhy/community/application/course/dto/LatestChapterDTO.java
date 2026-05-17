@@ -11,6 +11,11 @@ public class LatestChapterDTO {
     private Integer sortOrder;
     private Integer readingTime;
     private LocalDateTime createTime;
+    private Boolean archived;
+    private String archiveReason;
+    private LocalDateTime archivedAt;
+    private Boolean courseArchived;
+    private String courseArchiveReason;
 
     public LatestChapterDTO() {
     }
@@ -36,4 +41,19 @@ public class LatestChapterDTO {
 
     public LocalDateTime getCreateTime() { return createTime; }
     public void setCreateTime(LocalDateTime createTime) { this.createTime = createTime; }
+
+    public Boolean getArchived() { return archived; }
+    public void setArchived(Boolean archived) { this.archived = archived; }
+
+    public String getArchiveReason() { return archiveReason; }
+    public void setArchiveReason(String archiveReason) { this.archiveReason = archiveReason; }
+
+    public LocalDateTime getArchivedAt() { return archivedAt; }
+    public void setArchivedAt(LocalDateTime archivedAt) { this.archivedAt = archivedAt; }
+
+    public Boolean getCourseArchived() { return courseArchived; }
+    public void setCourseArchived(Boolean courseArchived) { this.courseArchived = courseArchived; }
+
+    public String getCourseArchiveReason() { return courseArchiveReason; }
+    public void setCourseArchiveReason(String courseArchiveReason) { this.courseArchiveReason = courseArchiveReason; }
 }

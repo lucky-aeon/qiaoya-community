@@ -77,6 +77,9 @@ public class ChapterAppService {
         validateChapterAccess(chapter.getCourseId(), userId);
 
         FrontChapterDetailDTO dto = ChapterAssembler.toFrontDetailDTO(chapter, course.getTitle());
+        dto.setCourseArchived(course.getArchived());
+        dto.setCourseArchiveReason(course.getArchiveReason());
+        dto.setCourseArchivedAt(course.getArchivedAt());
         // 解析 Markdown 内容，判断是否包含视频节点，返回章节内容类型
         try {
             MarkdownNode root = markdownParser.parse(chapter.getContent());
@@ -118,10 +121,10 @@ public class ChapterAppService {
         Set<String> courseIds = chapters.stream()
                 .map(ChapterEntity::getCourseId)
                 .collect(Collectors.toSet());
-        Map<String, String> courseTitleMap = courseDomainService.getCourseTitleMapByIds(courseIds);
+        Map<String, CourseEntity> courseMap = courseDomainService.getCourseEntityMapByIds(courseIds);
 
         return chapters.stream()
-                .map(chapter -> convertToLatestChapterDTO(chapter, courseTitleMap))
+                .map(chapter -> convertToLatestChapterDTO(chapter, courseMap))
                 .collect(Collectors.toList());
     }
 
@@ -129,15 +132,21 @@ public class ChapterAppService {
         return chapterTranscriptAppService.getAppTranscript(chapterId, userId);
     }
 
-    private LatestChapterDTO convertToLatestChapterDTO(ChapterEntity chapter, Map<String, String> courseTitleMap) {
+    private LatestChapterDTO convertToLatestChapterDTO(ChapterEntity chapter, Map<String, CourseEntity> courseMap) {
+        CourseEntity course = courseMap.get(chapter.getCourseId());
         LatestChapterDTO dto = new LatestChapterDTO();
         dto.setId(chapter.getId());
         dto.setTitle(chapter.getTitle());
         dto.setCourseId(chapter.getCourseId());
-        dto.setCourseName(courseTitleMap.get(chapter.getCourseId()));
+        dto.setCourseName(course == null ? null : course.getTitle());
         dto.setSortOrder(chapter.getSortOrder());
         dto.setReadingTime(chapter.getReadingTime());
         dto.setCreateTime(chapter.getCreateTime());
+        dto.setArchived(chapter.getArchived());
+        dto.setArchiveReason(chapter.getArchiveReason());
+        dto.setArchivedAt(chapter.getArchivedAt());
+        dto.setCourseArchived(course == null ? false : course.getArchived());
+        dto.setCourseArchiveReason(course == null ? null : course.getArchiveReason());
 
         return dto;
     }
