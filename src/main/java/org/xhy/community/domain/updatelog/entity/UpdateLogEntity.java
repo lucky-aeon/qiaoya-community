@@ -12,6 +12,7 @@ public class UpdateLogEntity extends BaseEntity {
     private String description;
     private String authorId;
     private UpdateLogStatus status;
+    private Boolean isImportant = false;
 
     public UpdateLogEntity() {}
 
@@ -78,5 +79,13 @@ public class UpdateLogEntity extends BaseEntity {
 
     public void setStatus(UpdateLogStatus status) {
         this.status = status;
+    }
+
+    public Boolean getIsImportant() {
+        return isImportant;
+    }
+
+    public void setIsImportant(Boolean isImportant) {
+        this.isImportant = Boolean.TRUE.equals(isImportant);
     }
 }

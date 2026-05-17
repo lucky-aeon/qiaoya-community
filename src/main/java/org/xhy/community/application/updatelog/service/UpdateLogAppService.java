@@ -71,7 +71,10 @@ public class UpdateLogAppService {
 
                     // 设置作者名称
                     if (entity.getAuthorId() != null) {
-                        dto.setAuthorName(authorNameMap.get(entity.getAuthorId()).getName());
+                        UserEntity author = authorNameMap.get(entity.getAuthorId());
+                        if (author != null) {
+                            dto.setAuthorName(author.getName());
+                        }
                     }
 
                     return dto;

@@ -14,6 +14,7 @@ public class UpdateLogDTO {
     private String authorId;
     private String authorName;
     private UpdateLogStatus status;
+    private Boolean isImportant;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
     private List<UpdateLogChangeDTO> changes;
@@ -74,6 +75,14 @@ public class UpdateLogDTO {
 
     public void setStatus(UpdateLogStatus status) {
         this.status = status;
+    }
+
+    public Boolean getIsImportant() {
+        return isImportant;
+    }
+
+    public void setIsImportant(Boolean isImportant) {
+        this.isImportant = Boolean.TRUE.equals(isImportant);
     }
 
     public LocalDateTime getCreateTime() {

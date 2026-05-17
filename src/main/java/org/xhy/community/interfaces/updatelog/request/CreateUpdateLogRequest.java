@@ -18,6 +18,8 @@ public class CreateUpdateLogRequest {
 
     private String description;
 
+    private Boolean isImportant = false;
+
     @Valid
     private List<CreateChangeRequest> changes;
 
@@ -52,6 +54,14 @@ public class CreateUpdateLogRequest {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public Boolean getIsImportant() {
+        return isImportant;
+    }
+
+    public void setIsImportant(Boolean isImportant) {
+        this.isImportant = Boolean.TRUE.equals(isImportant);
     }
 
     public List<CreateChangeRequest> getChanges() {
