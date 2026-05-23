@@ -21,6 +21,7 @@ import org.xhy.community.infrastructure.config.AliyunOssProperties;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.InputStream;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.security.InvalidKeyException;
@@ -290,18 +291,70 @@ public class AliyunOssService {
                 String bucketDomain = String.format("%s.oss-%s.aliyuncs.com",
                         ossProperties.getBucketName(),
                         ossProperties.getRegion());
-                // 提取自定义域名(去除协议前缀)
-                String customDomain = ossProperties.getCustomDomain()
-                        .replace("https://", "")
-                        .replace("http://", "");
-                // 替换域名部分
-                urlString = urlString.replace(bucketDomain, customDomain);
+                urlString = replacePresignedUrlHost(urlString, bucketDomain, ossProperties.getCustomDomain());
             }
 
             return urlString;
         } finally {
             ossClient.shutdown();
         }
+    }
+
+    static String replacePresignedUrlHost(String urlString, String bucketDomain, String customDomain) {
+        try {
+            String normalizedCustomDomain = customDomain.trim();
+            if (normalizedCustomDomain.isEmpty()) {
+                return urlString;
+            }
+
+            URI original = URI.create(urlString);
+            if (bucketDomain != null
+                    && !bucketDomain.isBlank()
+                    && !bucketDomain.equalsIgnoreCase(original.getHost())) {
+                return urlString;
+            }
+
+            URI custom = normalizedCustomDomain.contains("://")
+                    ? URI.create(normalizedCustomDomain)
+                    : URI.create(original.getScheme() + "://" + normalizedCustomDomain);
+
+            String customAuthority = custom.getRawAuthority();
+            if (customAuthority == null || customAuthority.isEmpty()) {
+                return urlString;
+            }
+
+            String scheme = custom.getScheme() == null ? original.getScheme() : custom.getScheme();
+            String rawPath = mergeCustomDomainPath(custom.getRawPath(), original.getRawPath());
+
+            StringBuilder result = new StringBuilder();
+            result.append(scheme).append("://").append(customAuthority);
+            if (rawPath != null) {
+                result.append(rawPath);
+            }
+            if (original.getRawQuery() != null) {
+                result.append('?').append(original.getRawQuery());
+            }
+            if (original.getRawFragment() != null) {
+                result.append('#').append(original.getRawFragment());
+            }
+            return result.toString();
+        } catch (IllegalArgumentException ignored) {
+            return urlString;
+        }
+    }
+
+    private static String mergeCustomDomainPath(String customPath, String originalPath) {
+        if (customPath == null || customPath.isBlank() || "/".equals(customPath)) {
+            return originalPath;
+        }
+
+        String normalizedCustomPath = customPath.endsWith("/")
+                ? customPath.substring(0, customPath.length() - 1)
+                : customPath;
+        String normalizedOriginalPath = originalPath == null || originalPath.startsWith("/")
+                ? originalPath
+                : "/" + originalPath;
+        return normalizedCustomPath + (normalizedOriginalPath == null ? "" : normalizedOriginalPath);
     }
     
     public void deleteFile(String fileKey) {
