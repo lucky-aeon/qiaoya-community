@@ -20,9 +20,6 @@ import org.xhy.community.infrastructure.email.EmailService;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.stream.Collectors;
 
 /**
  * 纯粹的通知领域服务 - 不依赖任何其他领域
@@ -31,6 +28,7 @@ import java.util.stream.Collectors;
 public class NotificationDomainService {
     
     private static final Logger log = LoggerFactory.getLogger(NotificationDomainService.class);
+    static final String EMAIL_CONTENT_PLACEHOLDER = "邮件正文未持久化";
     
     private final NotificationRepository notificationRepository;
     private final NotificationTemplateRegistry templateRegistry;
@@ -77,42 +75,58 @@ public class NotificationDomainService {
             String content = template.renderContent(notificationData);
 
             List<NotificationData.Recipient> recipients = notificationData.getRecipients();
+            if (recipients == null || recipients.isEmpty()) {
+                return;
+            }
 
             ArrayList<NotificationEntity> notificationEntities = new ArrayList<>();
 
-            ArrayList<String> notificationEmails = new ArrayList<>();
-
             NotificationTarget target = resolveNotificationTarget(notificationData);
 
+            boolean emailSent = false;
+            if (channelType == ChannelType.EMAIL) {
+                List<String> notificationEmails = recipients.stream()
+                        .filter(this::canReceiveEmail)
+                        .map(NotificationData.Recipient::getRecipientEmail)
+                        .toList();
+                if (notificationEmails.isEmpty()) {
+                    return;
+                }
+                emailSent = sendNotificationToChannel(channelType, notificationEmails, title, content);
+            }
+
             for (NotificationData.Recipient recipient : recipients) {
+                if (channelType == ChannelType.EMAIL && !canReceiveEmail(recipient)) {
+                    continue;
+                }
                 // 3. 创建通知记录
                 NotificationEntity notification = new NotificationEntity();
                 notification.setRecipientId(recipient.getRecipientId());
                 notification.setType(notificationData.getType());
                 notification.setChannelType(channelType);
                 notification.setTitle(title);
-                notification.setContent(content);
+                notification.setContent(channelType == ChannelType.EMAIL ? EMAIL_CONTENT_PLACEHOLDER : content);
                 notification.setContentType(target.contentType());
                 notification.setContentId(target.contentId());
-                notification.setStatus(NotificationStatus.SENT);
+                notification.setStatus(channelType == ChannelType.EMAIL && !emailSent
+                        ? NotificationStatus.FAILED
+                        : NotificationStatus.SENT);
                 notificationEntities.add(notification);
-                if (recipient.getEmailNotificationEnabled()){
-                    if (Strings.hasText(recipient.getRecipientEmail())){
-                        notificationEmails.add(recipient.getRecipientEmail());
-                    }
-                }
             }
-            notificationRepository.insert(notificationEntities);
-
-
-            if (channelType == ChannelType.EMAIL){
-                sendNotificationToChannel(channelType, notificationEmails, title, content);
+            if (!notificationEntities.isEmpty()) {
+                notificationRepository.insert(notificationEntities);
             }
 
         } catch (Exception e) {
             log.error("发送通知异常: dataType={}, channel={}",
                     notificationData.getClass().getSimpleName(), channelType, e);
         }
+    }
+
+    private boolean canReceiveEmail(NotificationData.Recipient recipient) {
+        return recipient != null
+                && Boolean.TRUE.equals(recipient.getEmailNotificationEnabled())
+                && Strings.hasText(recipient.getRecipientEmail());
     }
 
     private NotificationTarget resolveNotificationTarget(NotificationData notificationData) {
@@ -178,6 +192,9 @@ public class NotificationDomainService {
                 return true;
 
             case EMAIL:
+                if (address == null || address.isEmpty()) {
+                    return true;
+                }
                 // 使用真实的邮件服务发送
                 if (emailService.isEnabled()) {
                     return emailService.sendEmail(address, title, content);
